@@ -591,3 +591,21 @@ test("問い合わせ送信ボタンは補助入力欄と同じmd境界で幅を
   assert.match(form, /grid items-start gap-4 md:grid-cols-2/);
   assert.match(form, /w-full[\s\S]*?md:w-auto/);
 });
+
+test("admin inquiry list uses compact status badges", async () => {
+  const [badge, list, core] = await Promise.all([
+    readFile("src/components/contact-status-badge.tsx", "utf8"),
+    readFile("src/components/contact-inquiry-list.tsx", "utf8"),
+    readFile("src/lib/contact-inquiry-core.ts", "utf8")
+  ]);
+  assert.match(badge, /WAITING_FOR_USER:\s*"\\u56de\\u7b54\\u5f85\\u3061"/);
+  assert.match(badge, /compact \? "whitespace-nowrap " : ""/);
+  assert.match(badge, /aria-label=\{compact \? CONTACT_STATUS_LABELS\[status\] : undefined\}/);
+  assert.match(badge, /const label = compact \? compactStatusLabels\[status\] : CONTACT_STATUS_LABELS\[status\]/);
+  assert.match(core, /WAITING_FOR_USER:/);
+  assert.match(list, /flex flex-col items-start gap-1\.5[\s\S]*?<ContactStatusBadge status=\{inquiry\.status\} compact \/>/);
+  assert.match(list, /flex flex-wrap items-center gap-2[\s\S]*?<ContactStatusBadge status=\{inquiry\.status\} compact \/>/);
+  assert.equal((list.match(/<ContactStatusBadge status=\{inquiry\.status\} compact \/>/g) ?? []).length, 2);
+  assert.match(list, /min-w-\[78rem\] table-fixed/);
+  assert.match(list, /<col className="w-\[14%\]" \/>/);
+});

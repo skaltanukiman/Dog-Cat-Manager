@@ -125,7 +125,7 @@ export function AdminContactInquiryList({ inquiries }: { inquiries: ContactInqui
               <tr key={inquiry.id}>
                 <td>
                   <div className="flex flex-col items-start gap-1.5">
-                    <ContactStatusBadge status={inquiry.status} />
+                    <ContactStatusBadge status={inquiry.status} compact />
                     <ContactCategoryBadge category={inquiry.category} />
                   </div>
                 </td>
@@ -159,7 +159,7 @@ export function AdminContactInquiryList({ inquiries }: { inquiries: ContactInqui
         {inquiries.map((inquiry) => (
           <article key={inquiry.id} className="min-w-0 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <ContactStatusBadge status={inquiry.status} />
+              <ContactStatusBadge status={inquiry.status} compact />
               <ContactCategoryBadge category={inquiry.category} />
             </div>
             <h3 className="mt-3 break-words font-bold text-ink [overflow-wrap:anywhere]">{inquiry.subject}</h3>
