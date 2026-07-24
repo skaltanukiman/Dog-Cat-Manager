@@ -19,6 +19,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "prisma:seed": "prisma db seed",
+    "seed:contact-inquiries": "tsx prisma/seed-contact-inquiries.ts",
     "seed:admin-pagination": "tsx prisma/seed-admin-pagination.ts",
     "seed:hamster-pagination": "tsx prisma/seed-hamster-pagination.ts"
   },
