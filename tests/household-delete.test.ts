@@ -201,7 +201,7 @@ test("本番削除は同一transactionのHousehold lockとCascade起点のhouseh
 
 test("Action・画面は再認可、確認入力、削除後分岐、Cookie、集約、招待受諾lockを備える", async () => {
   const action = await readFile(join(process.cwd(), "src/app/actions/members.ts"), "utf8");
-  const page = await readFile(join(process.cwd(), "src/app/settings/members/delete/page.tsx"), "utf8");
+  const page = await readFile(join(process.cwd(), "src/app/(app)/settings/members/delete/page.tsx"), "utf8");
   const form = await readFile(join(process.cwd(), "src/components/household-delete-form.tsx"), "utf8");
   const preview = await readFile(join(process.cwd(), "src/lib/household-delete-preview.ts"), "utf8");
   const authContext = await readFile(join(process.cwd(), "src/lib/auth-context.ts"), "utf8");
@@ -232,7 +232,7 @@ test("Action・画面は再認可、確認入力、削除後分岐、Cookie、�
 });
 
 test("soleMember退出画面はOWNERだけを削除手続きへ案内し、通常退出フォームと分離する", async () => {
-  const leavePage = await readFile(join(process.cwd(), "src/app/settings/members/leave/page.tsx"), "utf8");
+  const leavePage = await readFile(join(process.cwd(), "src/app/(app)/settings/members/leave/page.tsx"), "utf8");
   assert.match(leavePage, /soleMemberRoleStateInvalid/);
   assert.match(leavePage, /currentMembership\.role !== "OWNER"/);
   assert.match(leavePage, /href="\/settings\/members\/delete"/);

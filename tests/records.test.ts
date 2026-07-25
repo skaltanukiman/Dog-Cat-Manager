@@ -496,7 +496,7 @@ async function pngFileForDimensions(width: number, height: number) {
 }
 
 test("記録フィルターは変更時に自動適用し、スクロール位置を維持する", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const form = source("src/components/auto-submit-filter-form.tsx");
   assert.match(page, /<AutoSubmitFilterForm[\s\S]*?action="\/records"/);
   assert.match(page, /ignoreFieldNames=\{\["hamsterId"\]\}/);
@@ -510,7 +510,7 @@ test("記録フィルターは変更時に自動適用し、スクロール位�
 });
 
 test("共通タイムラインは共通ページングを使用し、検索条件とスクロール位置を維持する", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const pagination = source("src/components/pagination.tsx");
   const records = source("src/lib/records.ts");
 
@@ -539,7 +539,7 @@ test("共通タイムラインは共通ページングを使用し、検索条�
 });
 
 test("記録画面は表示範囲を明示し、フィルター・種類・ページング・ハムスター選択でscopeを維持する", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const query = source("src/lib/record-queries.ts");
   assert.match(page, /Object\.prototype\.hasOwnProperty\.call\(params, "scope"\)/);
   assert.match(page, /scopeParam = getParam\(params\.scope\)/);
@@ -594,7 +594,7 @@ test("編集・削除後のURLは対象hamsterIdと表示用hamsterIdを分離�
 });
 
 test("閲覧者権限はグループ表示でもタイムラインの編集・削除UIを有効にしない", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const timeline = source("src/components/record-timeline.tsx");
   assert.match(page, /const canEdit = canEditHouseholdSharedData\(data\.context\.membership\.role\)/);
   assert.match(page, /<RecordTimeline[\s\S]*canEdit=\{canEdit\}/);
@@ -635,7 +635,7 @@ test("共通タイムラインの思い出写真はダッシュボードと同�
 });
 
 test("記録画面はハムスターの空選択を表示せず、クリア時に絞り込み入力を初期化して再取得する", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const selector = source("src/components/hamster-selector-input.tsx");
   const form = source("src/components/auto-submit-filter-form.tsx");
   assert.match(page, /<HamsterSelectorInput[\s\S]*?showEmptyOption=\{false\}/);
@@ -648,7 +648,7 @@ test("記録画面はハムスターの空選択を表示せず、クリア時�
 });
 
 test("キーワード欄は#入力時に選択中ハムスターの使用済みタグ候補を表示する", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const input = source("src/components/record-keyword-input.tsx");
   assert.match(page, /<RecordKeywordInput[\s\S]*?tagSuggestions=\{data\.tagSuggestions\}/);
   assert.match(input, /segment\.startsWith\("#"\)/);
@@ -657,7 +657,7 @@ test("キーワード欄は#入力時に選択中ハムスターの使用済み�
 });
 
 test("思い出フォームは保存済みタグの再利用と同時保存に対応する", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const forms = source("src/components/record-create-forms.tsx");
   const tagInput = source("src/components/memory-tag-input.tsx");
   assert.match(page, /savedMemoryTags=\{data\.savedMemoryTags\}/);

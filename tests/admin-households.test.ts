@@ -55,8 +55,8 @@ test("共有0件は1ページ目の空状態として扱う", async () => {
 });
 
 test("共有管理画面は管理者認可、共有カード、共通ページングを備える", async () => {
-  const pageSource = await readFile("src/app/admin/households/page.tsx", "utf8");
-  const overviewSource = await readFile("src/app/admin/page.tsx", "utf8");
+  const pageSource = await readFile("src/app/(app)/admin/households/page.tsx", "utf8");
+  const overviewSource = await readFile("src/app/(app)/admin/page.tsx", "utf8");
   const listSource = await readFile("src/components/admin-household-list.tsx", "utf8");
   const paginationSource = await readFile("src/components/pagination.tsx", "utf8");
 

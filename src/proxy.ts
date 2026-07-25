@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
-import { isPublicDemoPath, REQUEST_PATHNAME_HEADER } from "@/lib/public-demo";
+import { isPublicDemoPath } from "@/lib/public-demo";
 
 const PUBLIC_PATHS = ["/login", "/invitations/accept", "/api/health"];
 const PUBLIC_PREFIXES = ["/api/auth"];
@@ -15,13 +15,6 @@ function isPublicPath(pathname: string) {
   );
 }
 
-function nextWithPathname(request: { headers: Headers; nextUrl: { pathname: string } }) {
-  const requestHeaders = new Headers(request.headers);
-  // RootLayoutがデモ経路で認証済みHousehold情報を取得しないよう、信頼できる実パスで上書きする。
-  requestHeaders.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname);
-  return NextResponse.next({ request: { headers: requestHeaders } });
-}
-
 export default auth((request) => {
   const { nextUrl } = request;
   const isLoggedIn = Boolean(request.auth?.user);
@@ -29,7 +22,7 @@ export default auth((request) => {
 
   // デモはログイン状態に依存しない。停止中セッションが残っていてもサンプルだけを表示する。
   if (isPublicDemoPath(nextUrl.pathname)) {
-    return nextWithPathname(request);
+    return NextResponse.next();
   }
 
   if (isSuspended) {
@@ -41,7 +34,7 @@ export default auth((request) => {
       return NextResponse.redirect(new URL("/", nextUrl));
     }
 
-    return nextWithPathname(request);
+    return NextResponse.next();
   }
 
   if (!isLoggedIn) {
@@ -51,7 +44,7 @@ export default auth((request) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  return nextWithPathname(request);
+  return NextResponse.next();
 });
 
 export const config = {

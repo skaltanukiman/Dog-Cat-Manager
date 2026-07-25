@@ -70,7 +70,7 @@ test("コンボボックスのprops同期は送信せず、ユーザーが候補
 });
 
 test("記録カードのハムスターリンク後はURL・選択UI・登録先・取得対象が同じIDになる", () => {
-  const page = source("src/app/records/page.tsx");
+  const page = source("src/app/(app)/records/page.tsx");
   const timeline = source("src/components/record-timeline.tsx");
   const queries = source("src/lib/record-queries.ts");
   const records = source("src/lib/records.ts");
@@ -93,8 +93,8 @@ test("記録カードのハムスターリンク後はURL・選択UI・登録先
 
 test("共通選択コンポーネントを使う記録・清掃・体重・CSV出力の既存利用形態を維持する", () => {
   const selector = source("src/components/hamster-selector-input.tsx");
-  const cleaning = source("src/app/cleaning/page.tsx");
-  const weights = source("src/app/weights/page.tsx");
+  const cleaning = source("src/app/(app)/cleaning/page.tsx");
+  const weights = source("src/app/(app)/weights/page.tsx");
   const exportForm = source("src/components/weight-csv-export-form.tsx");
 
   assert.match(cleaning, /<HamsterSelectorInput[\s\S]*selectedId=\{selectedHamster\?\.id \?\? ""\}/);

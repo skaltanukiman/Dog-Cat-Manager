@@ -213,7 +213,7 @@ test("デモ画面は更新UIを持たず、noindexと準備中表示を備え�
 });
 
 test("ログイン画面にデモ導線と読み取り専用説明を表示する", async () => {
-  const source = await readFile("src/app/login/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/login/page.tsx", "utf8");
   assert.match(source, /href="\/demo"/);
   assert.match(source, /サンプルを見てみる/);
   assert.match(source, /登録・編集・削除はできません/);
@@ -221,10 +221,30 @@ test("ログイン画面にデモ導線と読み取り専用説明を表示す�
   assert.match(source, /accountSuspended/);
 });
 
-test("RootLayoutはデモ経路で認証・選択中Householdの取得を行わない", async () => {
-  const source = await readFile("src/app/layout.tsx", "utf8");
-  assert.match(source, /const session = isDemoRequest \? null : await auth\(\)/);
-  assert.match(source, /session\?\.user \? await getCurrentHouseholdSwitcherData\(\) : null/);
+test("永続RootLayoutは経路に依存せず、通常画面とデモ画面を別Route Groupレイアウトで分離する", async () => {
+  const [rootLayout, appLayout, demoLayout, appPage, demoPage] = await Promise.all([
+    readFile("src/app/layout.tsx", "utf8"),
+    readFile("src/app/(app)/layout.tsx", "utf8"),
+    readFile("src/app/demo/layout.tsx", "utf8"),
+    readFile("src/app/(app)/page.tsx", "utf8"),
+    readFile("src/app/demo/page.tsx", "utf8")
+  ]);
+
+  assert.match(rootLayout, /<body>\{children\}<\/body>/);
+  assert.doesNotMatch(rootLayout, /headers\(\)|auth\(\)|isPublicDemoPath|REQUEST_PATHNAME_HEADER/);
+  assert.doesNotMatch(rootLayout, /<header|<main/);
+
+  assert.match(appLayout, /const session = await auth\(\)/);
+  assert.match(appLayout, /session\?\.user \? await getCurrentHouseholdSwitcherData\(\) : null/);
+  assert.match(appLayout, /<header className="border-b border-slate-200 bg-paper">/);
+  assert.match(appLayout, /<main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">/);
+  assert.doesNotMatch(appLayout, /isPublicDemoPath|REQUEST_PATHNAME_HEADER/);
+
+  assert.match(demoLayout, /<header className="border-b border-slate-200 bg-paper">/);
+  assert.match(demoLayout, /<main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">/);
+  assert.doesNotMatch(demoLayout, /auth\(\)|getCurrentHouseholdSwitcherData/);
+  assert.match(appPage, /getDashboardData/);
+  assert.match(demoPage, /getPublicDemoDashboardData/);
 });
 
 test("通常利用のHousehold選択と管理一覧はデモHouseholdを除外する", async () => {

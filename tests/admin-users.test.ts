@@ -58,7 +58,7 @@ test("権限変更の戻り先は管理画面内の許可パスだけを受け�
 });
 
 test("ユーザー管理画面は管理者認可、レスポンシブ一覧、権限変更の戻り先を備える", async () => {
-  const pageSource = await readFile("src/app/admin/users/page.tsx", "utf8");
+  const pageSource = await readFile("src/app/(app)/admin/users/page.tsx", "utf8");
   const listSource = await readFile("src/components/admin-user-list.tsx", "utf8");
   const accessControlsSource = await readFile("src/components/admin-user-access-controls.tsx", "utf8");
   const paginationSource = await readFile("src/components/admin-pagination.tsx", "utf8");

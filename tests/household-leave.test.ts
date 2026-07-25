@@ -278,8 +278,8 @@ test("退出Actionは次のHouseholdを共通選択ロジックで確保してCo
 });
 
 test("共有画面と専用画面は唯一のOWNERでも手続きを開け、移譲先と最終確認を画面内に表示する", () => {
-  const membersPage = readFileSync(join(process.cwd(), "src/app/settings/members/page.tsx"), "utf8");
-  const leavePage = readFileSync(join(process.cwd(), "src/app/settings/members/leave/page.tsx"), "utf8");
+  const membersPage = readFileSync(join(process.cwd(), "src/app/(app)/settings/members/page.tsx"), "utf8");
+  const leavePage = readFileSync(join(process.cwd(), "src/app/(app)/settings/members/leave/page.tsx"), "utf8");
   const leaveForm = readFileSync(join(process.cwd(), "src/components/household-leave-form.tsx"), "utf8");
 
   assert.match(membersPage, /href="\/settings\/members\/leave"/);

@@ -170,12 +170,12 @@ test("ページ移動URLは招待条件だけを維持し、安全にエンコ�
 });
 
 test("フィルタフォームは適用時に1ページ目へ戻す", async () => {
-  const source = await readFile("src/app/admin/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/admin/page.tsx", "utf8");
   assert.match(source, /<input type="hidden" name="invitePage" value="1" \/>/);
 });
 
 test("招待一覧フィルターは変更時に自動適用し、手動の絞り込みボタンを表示しない", async () => {
-  const pageSource = await readFile("src/app/admin/page.tsx", "utf8");
+  const pageSource = await readFile("src/app/(app)/admin/page.tsx", "utf8");
   const formSource = await readFile("src/components/auto-submit-filter-form.tsx", "utf8");
   assert.match(pageSource, /<AutoSubmitFilterForm[\s\S]*?action="\/admin"/);
   assert.doesNotMatch(pageSource, />絞り込む<\/button>/);
@@ -184,7 +184,7 @@ test("招待一覧フィルターは変更時に自動適用し、手動の絞�
 });
 
 test("共有名フィルターは入力候補付きコンボボックスを使う", async () => {
-  const pageSource = await readFile("src/app/admin/page.tsx", "utf8");
+  const pageSource = await readFile("src/app/(app)/admin/page.tsx", "utf8");
   const comboboxSource = await readFile("src/components/admin-invitation-household-combobox.tsx", "utf8");
   assert.match(pageSource, /<AdminInvitationHouseholdCombobox/);
   assert.match(comboboxSource, /normalizeSearchText\(inputValue\)/);
@@ -194,7 +194,7 @@ test("共有名フィルターは入力候補付きコンボボックスを使�
 });
 
 test("招待一覧の絞り込み・クリア・ページ移動はスクロール位置を維持する", async () => {
-  const source = await readFile("src/app/admin/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/admin/page.tsx", "utf8");
   const paginationSource = await readFile("src/components/admin-invitation-pagination.tsx", "utf8");
   const sharedPaginationSource = await readFile("src/components/pagination.tsx", "utf8");
   const formSource = await readFile("src/components/auto-submit-filter-form.tsx", "utf8");
@@ -211,7 +211,7 @@ test("招待一覧の絞り込み・クリア・ページ移動はスクロー�
 });
 
 test("招待一覧は件数サマリーと共通ページングを一覧の上下に表示する", async () => {
-  const source = await readFile("src/app/admin/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/admin/page.tsx", "utf8");
   const paginationSource = await readFile("src/components/admin-invitation-pagination.tsx", "utf8");
   const sharedPaginationSource = await readFile("src/components/pagination.tsx", "utf8");
 
@@ -225,7 +225,7 @@ test("招待一覧は件数サマリーと共通ページングを一覧の上�
 });
 
 test("管理一覧はlg未満で全項目を持つカード表示へ切り替える", async () => {
-  const source = await readFile("src/app/admin/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/admin/page.tsx", "utf8");
   const userListSource = await readFile("src/components/admin-user-list.tsx", "utf8");
 
   assert.equal(source.match(/hidden overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm lg:block/g)?.length, 1);

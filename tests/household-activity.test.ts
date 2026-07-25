@@ -131,8 +131,8 @@ test("業務更新・履歴・revisionは同じtransactionで確定し、履歴�
 
 test("取得は現在所属HouseholdだけをDB側で絞り、安定順・20件ページング・最新5件を使う", () => {
   const queries = source("src/lib/household-activity-queries.ts");
-  const membersPage = source("src/app/settings/members/page.tsx");
-  const activityPage = source("src/app/settings/members/activity/page.tsx");
+  const membersPage = source("src/app/(app)/settings/members/page.tsx");
+  const activityPage = source("src/app/(app)/settings/members/activity/page.tsx");
   assert.match(queries, /getRequiredHouseholdContext\(\)/);
   assert.match(queries, /householdId: context\.household\.id/);
   assert.match(queries, /orderBy: \[\{ createdAt: "desc" \}, \{ id: "desc" \}\]/);
@@ -149,7 +149,7 @@ test("取得は現在所属HouseholdだけをDB側で絞り、安定順・20件�
 });
 
 test("操作履歴画面は自動削除と同じ保持日数設定をServer Componentで表示する", () => {
-  const activityPage = source("src/app/settings/members/activity/page.tsx");
+  const activityPage = source("src/app/(app)/settings/members/activity/page.tsx");
   const cleanupScript = source("scripts/cleanup-household-activities.ts");
 
   assert.match(activityPage, /from "@\/lib\/household-activity-cleanup"/);

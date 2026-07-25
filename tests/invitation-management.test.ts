@@ -454,7 +454,7 @@ test("本番DB実装はユーザー・Household単位で異なるPostgreSQL tran
 });
 
 test("共有画面は有効件数と上限を表示し、上限到達時の作成を無効化する", () => {
-  const pageSource = readFileSync(join(process.cwd(), "src/app/settings/members/page.tsx"), "utf8");
+  const pageSource = readFileSync(join(process.cwd(), "src/app/(app)/settings/members/page.tsx"), "utf8");
   const formSource = readFileSync(
     join(process.cwd(), "src/components/household-invitation-form.tsx"),
     "utf8"

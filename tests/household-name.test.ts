@@ -226,7 +226,7 @@ test("同名がある切り替え候補だけ件数を補足し、選択値はho
 });
 
 test("共有画面はOWNER向け編集フォームとOWNER以外向け理由付き読み取り専用表示を持つ", () => {
-  const page = source("src/app/settings/members/page.tsx");
+  const page = source("src/app/(app)/settings/members/page.tsx");
   assert.match(page, /共有グループ設定/);
   assert.match(page, /canUpdateHouseholdName\(context\.membership\.role\)/);
   assert.match(page, /action=\{updateCurrentHouseholdName\}/);

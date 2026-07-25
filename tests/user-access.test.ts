@@ -346,7 +346,7 @@ test("本番実装は認証・セッション・履歴・確認UIを多層で保
       readFile("src/proxy.ts", "utf8"),
       readFile("src/app/actions/admin.ts", "utf8"),
       readFile("src/components/admin-user-access-controls.tsx", "utf8"),
-      readFile("src/app/login/page.tsx", "utf8"),
+      readFile("src/app/(app)/login/page.tsx", "utf8"),
       readFile("prisma/schema.prisma", "utf8"),
       readFile("prisma/migrations/20260722130000_add_user_access_suspension/migration.sql", "utf8")
     ]);

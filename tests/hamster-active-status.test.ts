@@ -43,7 +43,7 @@ test("成功時はメッセージを表示せず、失敗時だけ既存メッ�
   const [formSource, statusMessageSource, pageSource] = await Promise.all([
     readSource("src/components/hamster-active-status-form.tsx"),
     readSource("src/components/status-message.tsx"),
-    readSource("src/app/hamsters/page.tsx")
+    readSource("src/app/(app)/hamsters/page.tsx")
   ]);
 
   assert.match(

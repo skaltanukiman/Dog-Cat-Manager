@@ -6,19 +6,19 @@
 
 | 項目 | 主なファイル | 注意点 |
 | --- | --- | --- |
-| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`と境界一致する`/demo`配下だけが公開。通常画面は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` と `tests/public-demo.test.tsx` で検証する。 |
+| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`と境界一致する`/demo`配下だけが公開。通常画面は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` と `tests/public-demo.test.tsx` で検証する。 |
 | 現在の Household と権限 | `src/lib/authorization.ts`, `src/lib/auth-context.ts`, `src/app/actions/households.ts`, `src/components/household-switcher.tsx` | `OWNER` / `ADMIN` / `MEMBER` / `VIEWER` の閲覧・共有データ編集・招待・解除・権限変更を共通判定する。`hamster_current_household` Cookie は所属確認後にのみ更新する。 |
-| レイアウト・ナビゲーション | `src/app/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | ログイン済み画面には Household 切替とリアルタイム監視が常設される。1024px 未満では主要5画面をアイコンなしの均等幅タブで表示し、設定・共有・管理は補助メニューにまとめる。`lg` 以上では従来のボタン型ナビゲーションを1行で表示する。 |
+| レイアウト・ナビゲーション | `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/app/demo/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | 永続するRootLayoutは全経路共通の`html`・`body`・メタデータだけを担当する。通常URLは`(app)` Route Groupに置き、同Groupのlayoutが認証・Household切替・リアルタイム監視・通常ヘッダー・main幅を構成する。デモURLは別のlayout枝で専用ヘッダー・ナビ・main幅を構成するため、クライアント遷移や戻る操作でも両シェルが混在しない。1024px 未満では主要5画面をアイコンなしの均等幅タブで表示し、設定・共有・管理は補助メニューにまとめる。`lg` 以上では従来のボタン型ナビゲーションを1行で表示する。 |
 | PWA メタデータ | `src/app/manifest.ts`, `src/app/layout.tsx`, `src/app/favicon.ico`, `src/app/apple-icon.png`, `public/icons/pwa-192.png`, `public/icons/pwa-512.png`, `public/icons/pwa-maskable-512.png` | App Router のファイル規約でブラウザー用faviconとApple用アイコンを、標準 Metadata API でインストール情報、テーマ色、通常・maskableアイコンを配信する。Service Worker、オフライン機能、プッシュ通知は持たない。`tests/manifest.test.ts` でManifestの主要項目を検証する。 |
 | 日付・検索・フォーム状態 | `src/lib/date.ts`, `src/lib/search.ts`, `src/components/form-dirty-state.ts`, `src/components/unsaved-changes-guard.tsx`, `src/components/dirty-submit-button.tsx` | 測定日・掃除日などの日付のみの値は暦日を維持し、`createdAt`・`expiresAt`など時刻を持つUTC timestampは画面表示時にJSTへ変換する。形式だけでなく実在する暦日・年月とJST日付境界を `tests/date-validation.test.ts` で検証する。未保存ガードと保存ボタン活性は一覧・掃除・体重で共有する。 |
 | エラー・ログ | `src/lib/server-errors.ts`, `src/lib/logger.ts`, `src/app/error.tsx`, `src/app/global-error.tsx`, `src/components/status-message.tsx`, `src/components/unexpected-error-panel.tsx` | 利用者には内部例外を出さず errorId を表示する。`tests/error-handling.test.ts`、`tests/logger.test.ts` を併せて更新する。 |
-| サポート・お問い合わせ | `src/app/contact`, `src/app/admin/inquiries`, `src/app/actions/contact.ts`, `src/lib/contact-inquiry-*.ts`, `src/components/contact-*.tsx` | User単位のチケットとメッセージ履歴をDBへ保存する。利用者は自分の問い合わせだけ、ADMIN / SUPER_ADMINは全件を閲覧・返信・管理できる。 |
+| サポート・お問い合わせ | `src/app/(app)/contact`, `src/app/(app)/admin/inquiries`, `src/app/actions/contact.ts`, `src/lib/contact-inquiry-*.ts`, `src/components/contact-*.tsx` | User単位のチケットとメッセージ履歴をDBへ保存する。利用者は自分の問い合わせだけ、ADMIN / SUPER_ADMINは全件を閲覧・返信・管理できる。 |
 
 ## ログイン・認証
 
 - **画面または URL:** `/login`、`/api/auth/[...nextauth]`。
-- **主なコンポーネント:** `src/app/login/page.tsx`（Google ログインフォーム）、`src/app/layout.tsx`（ログアウト）。
-- **Server Action または API:** `signIn` / `signOut`（`src/auth.ts`。ログアウト Action は `layout.tsx` 内）。Auth.js Handler は `src/app/api/auth/[...nextauth]/route.ts`。
+- **主なコンポーネント:** `src/app/(app)/login/page.tsx`（Google ログインフォーム）、`src/app/(app)/layout.tsx`（通常画面シェル・ログアウト）。
+- **Server Action または API:** `signIn` / `signOut`（`src/auth.ts`。ログアウト Action は`(app)/layout.tsx`内）。Auth.js Handler は `src/app/api/auth/[...nextauth]/route.ts`。
 - **データアクセス・Prismaモデル:** `PrismaAdapter(prisma)` が `User`、`Account`、`Session`、`VerificationToken` を利用。セッション callback が `User.appRole` を拡張セッションへ載せる。
 - **バリデーション:** OAuth プロバイダー設定と Auth.js が担当。画面アクセス制御は `src/proxy.ts`。
 - **関連テスト:** `tests/authorization.test.ts`（セッションユーザーID必須、アプリロール判定）、`tests/logger.test.ts`（例外処理）。
@@ -33,10 +33,10 @@
 - **読み取り専用:** デモpageは更新Actionをimportせず、登録・編集・削除・保存・画像アップロード・CSV・設定・共有・管理導線を描画しない。既存Action/APIの認証・Household更新ガードは変更しない。
 - **画像:** `public/demo/hamsters/*.svg`と`public/demo/records/*.svg`を固定配信し、ViewModelの`staticImagePath`で通常の認証付き画像APIと切り替える。`profileImageFileName`と`MemoryRecordImage.fileName`には公開パスを保存しない。
 - **データ投入:** `prisma/seed-demo.ts` / `npm run seed:demo`。固定slugと`isDemo`をtransaction内で再検証し、ユーザー所属がないデモHouseholdだけを削除・再構築する。JSTの実行日を基準に相対日付を生成する。静的画像はseed対象外でリポジトリに同梱する。
-- **親レイアウト:** `proxy.ts`が実パスを内部request headerへ上書きし、`RootLayout`はデモ経路で`auth()`、Household切替データ、リアルタイム監視、通常ナビを読み込まない。ログイン中でも現在Household情報をデモへ混在させない。
+- **親レイアウト:** 永続する`src/app/layout.tsx`はpathname・認証に依存しない。通常画面は`src/app/(app)/layout.tsx`、デモ画面は`src/app/demo/layout.tsx`という別のlayout枝に属する。デモ枝は`auth()`、Household切替データ、リアルタイム監視、通常ナビをimportしないため、ログイン中でも現在Household情報をデモへ混在させない。通常・デモ間のクライアント遷移と戻る操作ではlayout枝自体が切り替わる。
 - **SEO:** `src/app/demo/layout.tsx`で`noindex, nofollow`、`src/app/robots.ts`で`/demo`をDisallowする。アクセス制御は`proxy.ts`と固定デモquery条件が担う。
 - **通常データからの分離:** 通常membership取得・Household切替と、管理者向け共有一覧・件数・招待検索用共有候補は`isDemo: false`でデモHouseholdを除外する。
-- **関連テスト:** `tests/public-demo.test.tsx`（公開パス境界、通常画面認証、固定query、フォールバック禁止、seed再実行・通常Household保護、読み取り専用UI、ナビ、静的画像、noindex、ログイン導線、親レイアウト分離）。
+- **関連テスト:** `tests/public-demo.test.tsx`（公開パス境界、通常画面認証、固定query、フォールバック禁止、seed再実行・通常Household保護、読み取り専用UI、ナビ、静的画像、noindex、ログイン導線、永続RootLayoutのpathname非依存、Route Group layout境界での通常・デモ分離）。
 
 ## Household 共有・メンバー管理
 
@@ -111,7 +111,7 @@
 
 - **画面または URL:** `/weights/export`、ダウンロード API `/export/weights`、旧 `/export` はリダイレクト。
 - **主なコンポーネント:** `WeightCsvExportForm`、`HamsterSelectorInput`、`StatusMessage`。画面全体は Server Component のまま、列選択とダウンロード可否だけを小さな Client Component で管理する。
-- **Server Action または API:** `src/app/export/weights/route.ts` の GET（CSV Response）。
+- **Server Action または API:** `src/app/(app)/export/weights/route.ts` の GET（CSV Response）。
 - **データアクセス・Prismaモデル:** `getHamsterOptions`、`getHamsterSelectorMode`、Route 内の `WeightRecord.findMany` と `Hamster` 所属条件。
 - **バリデーション:** URL の `hamsterId` / `month` を Route 内で解析し、`src/lib/weight-csv-export.ts` で選択列の許可・1列以上・重複なし、UTC / JST、連携用必須列の出力有無を検証する。対象 Household の所属を `getRequiredHouseholdContext` で確定し、既定では `app_id` / `record_type` / `schema_version` / `record_id` を出力するが、閲覧用では4列をまとめて除外できる。
 - **関連テスト:** `tests/weight-csv-export.test.ts`（連携用必須列の一括切り替え、列選択・順序、UTC / JST、測定日維持、CSVエスケープ、不正指定）。
@@ -188,7 +188,7 @@
 
 ## リアルタイム同期
 
-- **画面または URL:** ログイン後の全画面（`RootLayout`）、SSE `/api/realtime/household`、revision API `/api/realtime/household/revision`。
+- **画面または URL:** ログイン後の全画面（`src/app/(app)/layout.tsx`の通常画面シェル）、SSE `/api/realtime/household`、revision API `/api/realtime/household/revision`。
 - **主なコンポーネント:** `RealtimeRefreshListener`、`AutoSubmitInput`、`AutoSubmitSelect`、`DirtySubmitButton`、`form-dirty-state.ts`。
 - **Server Action または API:** 更新系 Action は `commitHouseholdMutation` / `publishHouseholdChangeSafely`（`src/lib/realtime.ts`）を利用。SSE Route はメモリ内 subscribe、revision Route は DB read。
 - **データアクセス・Prismaモデル:** `Household.realtimeRevision`、`realtimeActorClientId`、`realtimeActorUserId`、`HouseholdMember` による API 認可。業務データ更新と revision 増加は同一 transaction。更新元 `source` はハムスター、掃除、体重、記録、設定、共有などを区別する。

@@ -3,7 +3,6 @@ import type { Household } from "@prisma/client";
 export const PUBLIC_DEMO_SLUG = "public-sample";
 export const PUBLIC_DEMO_HOUSEHOLD_ID = "public-demo-household";
 export const PUBLIC_DEMO_HOUSEHOLD_NAME = "サンプル飼育グループ";
-export const REQUEST_PATHNAME_HEADER = "x-hamster-manager-pathname";
 
 export const PUBLIC_DEMO_HAMSTER_IDS = {
   kinako: "public-demo-hamster-kinako",

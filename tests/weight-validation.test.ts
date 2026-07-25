@@ -12,7 +12,7 @@ import {
 import { isWeightInTenths } from "../src/lib/weight-rules";
 
 test("体重履歴は管理一覧と同じ共通ページングを上下に使用する", async () => {
-  const pageSource = await readFile("src/app/weights/page.tsx", "utf8");
+  const pageSource = await readFile("src/app/(app)/weights/page.tsx", "utf8");
   const paginationSource = await readFile("src/components/pagination.tsx", "utf8");
 
   assert.equal(pageSource.match(/<PaginationLayout/g)?.length, 2);
@@ -45,7 +45,7 @@ test("体重履歴の数字リンクは遷移先で保存したスクロール�
 });
 
 test("体重履歴のページ移動は既存の表示条件を共通URL生成関数へ渡す", async () => {
-  const source = await readFile("src/app/weights/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/weights/page.tsx", "utf8");
 
   assert.match(source, /const buildWeightPageHref = \(page: number\)/);
   for (const property of [

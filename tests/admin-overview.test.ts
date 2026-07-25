@@ -5,7 +5,7 @@ import test from "node:test";
 test("管理トップはユーザーと共有を新しい順で最大5件だけ取得する", async () => {
   const userSource = await readFile("src/lib/admin-users.ts", "utf8");
   const householdSource = await readFile("src/lib/admin-households.ts", "utf8");
-  const pageSource = await readFile("src/app/admin/page.tsx", "utf8");
+  const pageSource = await readFile("src/app/(app)/admin/page.tsx", "utf8");
 
   assert.match(userSource, /getAdminUserPreview[\s\S]*?orderBy: \[\{ createdAt: "desc" \}, \{ id: "desc" \}\][\s\S]*?take: 5/);
   assert.match(householdSource, /getAdminHouseholdPreview[\s\S]*?orderBy: \[\{ createdAt: "desc" \}, \{ id: "desc" \}\][\s\S]*?take: 5/);
@@ -16,7 +16,7 @@ test("管理トップはユーザーと共有を新しい順で最大5件だけ�
 });
 
 test("管理トップの集計はプレビュー配列長ではなく独立countを使う", async () => {
-  const source = await readFile("src/app/admin/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/admin/page.tsx", "utf8");
 
   assert.match(source, /prisma\.user\.count\(\)/);
   assert.match(source, /prisma\.household\.count\(\{\s*where:\s*\{\s*isDemo:\s*false/);
@@ -28,7 +28,7 @@ test("管理トップの集計はプレビュー配列長ではなく独立count
 });
 
 test("招待検索候補と全招待有無は5件プレビューから独立して取得する", async () => {
-  const source = await readFile("src/app/admin/page.tsx", "utf8");
+  const source = await readFile("src/app/(app)/admin/page.tsx", "utf8");
 
   assert.match(source, /prisma\.household\.findMany\(\{[\s\S]*?select: \{ id: true, name: true \}/);
   assert.match(source, /findMatchingAdminInvitationHouseholdIds\([\s\S]*?invitationHouseholds/);
@@ -40,7 +40,7 @@ test("招待検索候補と全招待有無は5件プレビューから独立し�
 
 test("管理トップの問い合わせ概要は件数と既存フィルターへのリンクだけを表示する", async () => {
   const [pageSource, querySource] = await Promise.all([
-    readFile("src/app/admin/page.tsx", "utf8"),
+    readFile("src/app/(app)/admin/page.tsx", "utf8"),
     readFile("src/lib/contact-inquiry-queries.ts", "utf8")
   ]);
   const overviewSource = querySource.slice(querySource.indexOf("export async function getAdminContactInquiryOverview"));

@@ -534,16 +534,16 @@ test("PrismaとmigrationはUser削除SetNull、message Cascade、snapshot、inde
 test("ページとActionは認可、所有者条件、二重送信防止、終了時フォーム非表示を備える", async () => {
   const [contactPage, detailPage, adminPage, adminDetail, action, form, replyForm, list, errorPanel, settings] =
     await Promise.all([
-      readFile("src/app/contact/page.tsx", "utf8"),
-      readFile("src/app/contact/[publicId]/page.tsx", "utf8"),
-      readFile("src/app/admin/inquiries/page.tsx", "utf8"),
-      readFile("src/app/admin/inquiries/[publicId]/page.tsx", "utf8"),
+      readFile("src/app/(app)/contact/page.tsx", "utf8"),
+      readFile("src/app/(app)/contact/[publicId]/page.tsx", "utf8"),
+      readFile("src/app/(app)/admin/inquiries/page.tsx", "utf8"),
+      readFile("src/app/(app)/admin/inquiries/[publicId]/page.tsx", "utf8"),
       readFile("src/app/actions/contact.ts", "utf8"),
       readFile("src/components/contact-inquiry-form.tsx", "utf8"),
       readFile("src/components/contact-reply-form.tsx", "utf8"),
       readFile("src/components/contact-inquiry-list.tsx", "utf8"),
       readFile("src/components/unexpected-error-panel.tsx", "utf8"),
-      readFile("src/app/settings/page.tsx", "utf8")
+      readFile("src/app/(app)/settings/page.tsx", "utf8")
     ]);
   assert.match(contactPage, /getRequiredSessionUser\(\)/);
   assert.match(detailPage, /getUserContactInquiryDetail\(user\.id, publicId\)/);

@@ -604,11 +604,11 @@ test("本番処理はユーザーlock、ID順Household lock、既存退出・完
 });
 
 test("設定・確認UIは確認導線、件数サマリー、グループ別表示、移譲選択、キャンセルを備える", async () => {
-  const settingsPage = await readFile(join(process.cwd(), "src/app/settings/page.tsx"), "utf8");
+  const settingsPage = await readFile(join(process.cwd(), "src/app/(app)/settings/page.tsx"), "utf8");
   const entryForm = await readFile(join(process.cwd(), "src/components/account-delete-entry-form.tsx"), "utf8");
-  const deletePage = await readFile(join(process.cwd(), "src/app/settings/account/delete/page.tsx"), "utf8");
+  const deletePage = await readFile(join(process.cwd(), "src/app/(app)/settings/account/delete/page.tsx"), "utf8");
   const deleteForm = await readFile(join(process.cwd(), "src/components/account-delete-form.tsx"), "utf8");
-  const loginPage = await readFile(join(process.cwd(), "src/app/login/page.tsx"), "utf8");
+  const loginPage = await readFile(join(process.cwd(), "src/app/(app)/login/page.tsx"), "utf8");
   const authContext = await readFile(join(process.cwd(), "src/lib/auth-context.ts"), "utf8");
 
   assert.match(settingsPage, /<DashboardSettingsForm[\s\S]+<AccountDeleteEntryForm/);
@@ -706,7 +706,7 @@ test("確認UIの絞り込みは表示配列だけを切り替え、移譲先と
 });
 
 test("多数のHouseholdがあっても共通ヘッダーが横幅を押し広げない", async () => {
-  const layout = await readFile(join(process.cwd(), "src/app/layout.tsx"), "utf8");
+  const appLayout = await readFile(join(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
   const householdSwitcher = await readFile(
     join(process.cwd(), "src/components/household-switcher.tsx"),
     "utf8"
@@ -714,7 +714,7 @@ test("多数のHouseholdがあっても共通ヘッダーが横幅を押し広�
   const globals = await readFile(join(process.cwd(), "src/app/globals.css"), "utf8");
 
   assert.match(
-    layout,
+    appLayout,
     /className="flex min-w-0 max-w-full flex-wrap items-center gap-3 text-sm text-slate-600"/
   );
   assert.match(householdSwitcher, /className="flex min-w-0 flex-wrap items-center gap-2"/);
