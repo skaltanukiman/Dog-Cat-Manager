@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import test from "node:test";
+import { resolve } from "node:path";
 
 import type { PrismaClient } from "@prisma/client";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -17,8 +18,10 @@ import { HamsterThumbnail } from "../src/components/hamster-thumbnail";
 import {
   isPublicDemoHousehold,
   isPublicDemoPath,
+  getPublicDemoHamsterImagePath,
   PUBLIC_DEMO_HAMSTER_IDS,
   PUBLIC_DEMO_HOUSEHOLD_ID,
+  PUBLIC_DEMO_RECORD_IDS,
   PUBLIC_DEMO_SLUG
 } from "../src/lib/public-demo";
 import { getPublicDemoHousehold } from "../src/lib/public-demo-queries";
@@ -136,12 +139,61 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
   assert.equal(demos[0].demoSlug, PUBLIC_DEMO_SLUG);
   assert.deepEqual(deletedIds, [PUBLIC_DEMO_HOUSEHOLD_ID]);
   const data = demos[0].data as {
-    hamsters: { create: Array<{ id: string }> };
+    hamsters: {
+      create: Array<{
+        id: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        birthDate: Date;
+        adoptionDate: Date;
+        weightRecords: { create: Array<{ id: string; recordDate: Date }> };
+        cleaningRecords: { create: Array<{ id: string; recordDate: Date }> };
+        records: { create: Array<{ id: string; recordDate: Date }> };
+      }>;
+    };
   };
+  const hamsters = data.hamsters.create;
+  const today = new Date();
+
+  assert.equal(hamsters.length, 9);
+  assert.deepEqual(hamsters.map((hamster) => hamster.id), Object.values(PUBLIC_DEMO_HAMSTER_IDS));
+  assert.deepEqual(hamsters.map((hamster) => hamster.name), [
+    "きなこ",
+    "こむぎ",
+    "あずき",
+    "もなか",
+    "くるみ",
+    "ごま",
+    "みるく",
+    "しらたま",
+    "ぽてと"
+  ]);
+  assert.equal(hamsters.filter((hamster) => hamster.isActive).length, 6);
+  assert.equal(hamsters.filter((hamster) => !hamster.isActive).length, 3);
+  assert.equal(new Set(hamsters.map((hamster) => hamster.id)).size, 9);
+  assert.equal(new Set(hamsters.map((hamster) => hamster.name)).size, 9);
   assert.deepEqual(
-    data.hamsters.create.map((hamster) => hamster.id),
-    Object.values(PUBLIC_DEMO_HAMSTER_IDS)
+    hamsters.map((hamster) => hamster.createdAt.getTime()),
+    [...hamsters].sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime()).map((hamster) => hamster.createdAt.getTime())
   );
+
+  const weights = hamsters.flatMap((hamster) => hamster.weightRecords.create);
+  const cleanings = hamsters.flatMap((hamster) => hamster.cleaningRecords.create);
+  const records = hamsters.flatMap((hamster) => hamster.records.create);
+  assert.equal(new Set(weights.map((record) => record.id)).size, weights.length);
+  assert.equal(new Set(cleanings.map((record) => record.id)).size, cleanings.length);
+  assert.equal(new Set(records.map((record) => record.id)).size, records.length);
+  assert.deepEqual(records.map((record) => record.id).sort(), Object.values(PUBLIC_DEMO_RECORD_IDS).sort());
+
+  for (const hamster of hamsters) {
+    assert.ok(hamster.birthDate <= today);
+    assert.ok(hamster.adoptionDate <= today);
+    assert.ok(hamster.adoptionDate >= hamster.birthDate);
+    for (const record of [...hamster.weightRecords.create, ...hamster.cleaningRecords.create, ...hamster.records.create]) {
+      assert.ok(record.recordDate <= today);
+    }
+  }
 });
 
 test("デモseedは通常Householdと固定slugまたはIDが競合した場合に中止する", async () => {
@@ -180,7 +232,14 @@ test("デモナビゲーションはすべて/demo以下を指す", () => {
   }
 });
 
-test("デモ用プロフィール画像は公開静的パスを直接使用し、認証画像APIを呼ばない", () => {
+test("デモ用プロフィール画像は全9体で公開静的パスを直接使用し、認証画像APIを呼ばない", async () => {
+  assert.equal(Object.keys(PUBLIC_DEMO_HAMSTER_IDS).length, 9);
+  for (const hamsterId of Object.values(PUBLIC_DEMO_HAMSTER_IDS)) {
+    const imagePath = getPublicDemoHamsterImagePath(hamsterId);
+    assert.ok(imagePath?.startsWith("/demo/hamsters/"));
+    await access(resolve("public", imagePath.slice(1)));
+  }
+
   const markup = renderToStaticMarkup(
     <HamsterThumbnail
       hamsterId={PUBLIC_DEMO_HAMSTER_IDS.kinako}

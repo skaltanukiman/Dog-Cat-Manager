@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">しらたまのサンプル画像</title>
+  <desc id="desc">淡い灰色の架空のハムスターを描いたイラスト</desc>
+  <rect width="512" height="512" rx="64" fill="#f2f0f7"/>
+  <circle cx="168" cy="160" r="70" fill="#bec0ca"/><circle cx="344" cy="160" r="70" fill="#bec0ca"/>
+  <ellipse cx="256" cy="286" rx="178" ry="170" fill="#d6d7df"/><ellipse cx="256" cy="326" rx="126" ry="118" fill="#fffdf8"/>
+  <path d="M178 186c42-24 114-24 156 0l-13 31c-32-15-98-15-130 0z" fill="#a4a7b5"/>
+  <circle cx="201" cy="258" r="17" fill="#4c4b57"/><circle cx="311" cy="258" r="17" fill="#4c4b57"/>
+  <path d="M246 304h20l-10 14z" fill="#d58092"/><path d="M213 329c23 20 63 20 86 0" fill="none" stroke="#858696" stroke-width="9" stroke-linecap="round"/>
+  <path d="M150 307H75m79 24-72 20m280-44h75m-79 24 72 20" stroke="#858696" stroke-width="7" stroke-linecap="round"/>
+</svg>

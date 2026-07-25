@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">みるくのサンプル画像</title>
+  <desc id="desc">白い毛並みの架空のハムスターを描いたイラスト</desc>
+  <rect width="512" height="512" rx="64" fill="#eef6fb"/>
+  <circle cx="168" cy="160" r="70" fill="#d8e2ea"/><circle cx="344" cy="160" r="70" fill="#d8e2ea"/>
+  <ellipse cx="256" cy="286" rx="178" ry="170" fill="#f8fbfd"/><ellipse cx="256" cy="326" rx="126" ry="118" fill="#fffdf5"/>
+  <ellipse cx="256" cy="198" rx="70" ry="38" fill="#d4dde3"/>
+  <circle cx="201" cy="258" r="17" fill="#43515b"/><circle cx="311" cy="258" r="17" fill="#43515b"/>
+  <path d="M246 304h20l-10 14z" fill="#e48695"/><path d="M213 329c23 20 63 20 86 0" fill="none" stroke="#8798a5" stroke-width="9" stroke-linecap="round"/>
+  <path d="M150 307H75m79 24-72 20m280-44h75m-79 24 72 20" stroke="#8798a5" stroke-width="7" stroke-linecap="round"/>
+</svg>

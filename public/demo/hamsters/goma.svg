@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">ごまのサンプル画像</title>
+  <desc id="desc">黒と白の模様がある架空のハムスターを描いたイラスト</desc>
+  <rect width="512" height="512" rx="64" fill="#e6edf2"/>
+  <circle cx="168" cy="160" r="70" fill="#5d6870"/><circle cx="344" cy="160" r="70" fill="#5d6870"/>
+  <ellipse cx="256" cy="286" rx="178" ry="170" fill="#7a858b"/><ellipse cx="256" cy="326" rx="126" ry="118" fill="#f8fbfb"/>
+  <path d="M142 205c46-38 94-45 143-21l-11 38c-43-15-80-9-115 19z" fill="#414a50"/>
+  <circle cx="201" cy="258" r="17" fill="#22272b"/><circle cx="311" cy="258" r="17" fill="#22272b"/>
+  <path d="M246 304h20l-10 14z" fill="#cf7280"/><path d="M213 329c23 20 63 20 86 0" fill="none" stroke="#515b61" stroke-width="9" stroke-linecap="round"/>
+  <path d="M150 307H75m79 24-72 20m280-44h75m-79 24 72 20" stroke="#515b61" stroke-width="7" stroke-linecap="round"/>
+</svg>

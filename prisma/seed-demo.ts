@@ -17,6 +17,12 @@ function relativeDate(days: number, today = todayInputJst()) {
   return value;
 }
 
+function demoCreatedAt(order: number) {
+  const value = relativeDate(-1000);
+  value.setUTCHours(12, 0, order, 0);
+  return value;
+}
+
 function weightRows(
   hamsterKey: string,
   points: ReadonlyArray<readonly [daysAgo: number, weightG: number]>
@@ -53,6 +59,7 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
   return [
     {
       id: PUBLIC_DEMO_HAMSTER_IDS.kinako,
+      createdAt: demoCreatedAt(1),
       name: "きなこ",
       memo: "好奇心旺盛。夕方になると回し車で遊び始めます。",
       birthDate: relativeDate(-420),
@@ -158,6 +165,7 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
     },
     {
       id: PUBLIC_DEMO_HAMSTER_IDS.komugi,
+      createdAt: demoCreatedAt(2),
       name: "こむぎ",
       memo: "のんびり屋。巣箱の入口で眠ることがあります。",
       birthDate: relativeDate(-310),
@@ -234,6 +242,7 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
     },
     {
       id: PUBLIC_DEMO_HAMSTER_IDS.azuki,
+      createdAt: demoCreatedAt(3),
       name: "あずき",
       memo: "以前いっしょに暮らしていた子。過去の記録を保管しています。",
       birthDate: relativeDate(-900),
@@ -302,6 +311,492 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
           }
         ]
       }
+    },
+    {
+      id: PUBLIC_DEMO_HAMSTER_IDS.monaka,
+      createdAt: demoCreatedAt(4),
+      name: "もなか",
+      memo: "お迎えしたばかり。夜になると回し車をゆっくり試しています。",
+      birthDate: relativeDate(-150),
+      adoptionDate: relativeDate(-52),
+      isActive: true,
+      weightRecords: {
+        create: weightRows("monaka", [
+          [-45, 29.6],
+          [-31, 30.2],
+          [-17, 30.8],
+          [-4, 31.1]
+        ])
+      },
+      cleaningRecords: {
+        create: [
+          cleaningRow("monaka", -12, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            memo: "新しい砂場の使い方を確認"
+          }),
+          cleaningRow("monaka", -3, {
+            toiletCleaned: true,
+            flooringPartCleaned: true,
+            memo: "巣箱の近くを少量だけ交換"
+          })
+        ]
+      },
+      records: {
+        create: [
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.monakaHealth,
+            recordType: "HEALTH",
+            recordDate: relativeDate(-6),
+            recordTimeMinutes: 20 * 60 + 10,
+            title: "健康チェック: 環境に慣れてきた様子",
+            memo: "食欲は安定。夕方から活動する時間が少しずつ増えています。",
+            searchText: recordSearchText("健康チェック", "環境", "食欲", "活動量"),
+            healthDetail: {
+              create: {
+                overallCondition: "GOOD",
+                appetite: "NORMAL",
+                activityLevel: "NORMAL",
+                stoolCondition: "NORMAL",
+                urineCondition: "NORMAL",
+                symptoms: []
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.monakaMemory,
+            recordType: "MEMORY",
+            recordDate: relativeDate(-38),
+            title: "はじめての砂浴び",
+            memo: "砂場で何度もくるんと回って、気持ちよさそうにしていました。",
+            searchText: recordSearchText("はじめての砂浴び", "お迎え", "日常"),
+            memoryDetail: {
+              create: {
+                tags: ["お迎え", "日常"],
+                searchTags: ["お迎え", "日常"],
+                isFavorite: false
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: PUBLIC_DEMO_HAMSTER_IDS.kurumi,
+      createdAt: demoCreatedAt(5),
+      name: "くるみ",
+      memo: "慎重な性格。手のひらの匂いを確かめてから近づいてきます。",
+      birthDate: relativeDate(-540),
+      adoptionDate: relativeDate(-470),
+      isActive: true,
+      weightRecords: {
+        create: weightRows("kurumi", [
+          [-180, 46.1],
+          [-150, 46.3],
+          [-120, 46.4],
+          [-90, 46.5],
+          [-60, 46.7],
+          [-30, 46.6],
+          [-5, 46.8]
+        ])
+      },
+      cleaningRecords: {
+        create: [
+          cleaningRow("kurumi", -21, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            memo: "砂場の砂を全量交換"
+          }),
+          cleaningRow("kurumi", -14, {
+            toiletCleaned: true,
+            flooringPartCleaned: true,
+            memo: "給水器の周りを部分交換"
+          }),
+          cleaningRow("kurumi", -7, {
+            toiletCleaned: true,
+            houseCleaned: true,
+            memo: "ハウスの中を整えて乾燥させた"
+          }),
+          cleaningRow("kurumi", -1, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            memo: "月末の砂場とトイレ掃除"
+          })
+        ]
+      },
+      records: {
+        create: [
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.kurumiHealth,
+            recordType: "HEALTH",
+            recordDate: relativeDate(-8),
+            recordTimeMinutes: 21 * 60,
+            title: "健康チェック: 良好",
+            memo: "食欲、活動量、便の状態ともにいつもどおりです。",
+            searchText: recordSearchText("健康チェック", "良好", "食欲", "活動量"),
+            healthDetail: {
+              create: {
+                overallCondition: "GOOD",
+                appetite: "NORMAL",
+                activityLevel: "NORMAL",
+                stoolCondition: "NORMAL",
+                urineCondition: "NORMAL",
+                symptoms: []
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.kurumiMemory,
+            recordType: "MEMORY",
+            recordDate: relativeDate(-24),
+            title: "ひまわりの種を見つけた日",
+            memo: "お気に入りの種を巣箱まで大切に運んでいました。",
+            searchText: recordSearchText("ひまわりの種", "食事", "かわいい行動"),
+            memoryDetail: {
+              create: {
+                tags: ["食事", "かわいい行動"],
+                searchTags: ["食事", "かわいい行動"],
+                isFavorite: true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: PUBLIC_DEMO_HAMSTER_IDS.goma,
+      createdAt: demoCreatedAt(6),
+      name: "ごま",
+      memo: "活発で、トンネルをくぐる遊びが好きです。",
+      birthDate: relativeDate(-380),
+      adoptionDate: relativeDate(-310),
+      isActive: true,
+      weightRecords: {
+        create: weightRows("goma", [
+          [-160, 34.8],
+          [-130, 35.1],
+          [-100, 35.0],
+          [-70, 34.4],
+          [-45, 34.6],
+          [-20, 35.0],
+          [-4, 35.2]
+        ])
+      },
+      cleaningRecords: {
+        create: [
+          cleaningRow("goma", -19, {
+            toiletCleaned: true,
+            flooringPartCleaned: true,
+            memo: "トンネル付近の床材を交換"
+          }),
+          cleaningRow("goma", -9, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            houseCleaned: true,
+            memo: "遊び場とハウスをまとめて掃除"
+          }),
+          cleaningRow("goma", -2, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            memo: "今月の定期掃除"
+          })
+        ]
+      },
+      records: {
+        create: [
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.gomaMedical,
+            recordType: "MEDICAL",
+            recordDate: relativeDate(-54),
+            title: "通院: 体重の変化を相談",
+            memo: "一時的な体重の変化について相談し、食事と活動の様子を観察することにしました。",
+            searchText: recordSearchText("通院", "体重", "食事", "サンプル動物クリニック"),
+            medicalDetail: {
+              create: {
+                hospitalName: "サンプル動物クリニック",
+                reason: "体重が少し下がったため確認",
+                diagnosis: "急いだ対応は不要との説明",
+                examination: "触診と体重測定",
+                treatment: "食事量と活動量の記録を継続",
+                nextVisitDate: relativeDate(-26),
+                consultationFee: 2500
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.gomaHealth,
+            recordType: "HEALTH",
+            recordDate: relativeDate(-25),
+            recordTimeMinutes: 18 * 60 + 40,
+            title: "健康チェック: 回復傾向",
+            memo: "食欲と活動量は戻り、便や尿の状態にも気になる点はありません。",
+            searchText: recordSearchText("健康チェック", "回復", "食欲", "活動量"),
+            healthDetail: {
+              create: {
+                overallCondition: "GOOD",
+                appetite: "NORMAL",
+                activityLevel: "NORMAL",
+                stoolCondition: "NORMAL",
+                urineCondition: "NORMAL",
+                symptoms: []
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.gomaMemory,
+            recordType: "MEMORY",
+            recordDate: relativeDate(-13),
+            title: "トンネルを何度も往復",
+            memo: "新しく置いたトンネルを気に入り、何度も顔を出して遊びました。",
+            searchText: recordSearchText("トンネル", "遊び", "日常"),
+            memoryDetail: {
+              create: {
+                tags: ["遊び", "日常"],
+                searchTags: ["遊び", "日常"],
+                isFavorite: false
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: PUBLIC_DEMO_HAMSTER_IDS.milk,
+      createdAt: demoCreatedAt(7),
+      name: "みるく",
+      memo: "砂場で長く過ごすことがあり、朝の様子を観察するのが楽しみです。",
+      birthDate: relativeDate(-640),
+      adoptionDate: relativeDate(-570),
+      isActive: true,
+      weightRecords: {
+        create: weightRows("milk", [
+          [-150, 40.2],
+          [-120, 40.5],
+          [-90, 40.7],
+          [-60, 40.9],
+          [-30, 41.0],
+          [-3, 40.8]
+        ])
+      },
+      cleaningRecords: {
+        create: [
+          cleaningRow("milk", -20, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            memo: "砂場の容器を洗って砂を交換"
+          }),
+          cleaningRow("milk", -11, {
+            toiletCleaned: true,
+            flooringPartCleaned: true,
+            memo: "巣箱の入口まわりを部分交換"
+          }),
+          cleaningRow("milk", -6, {
+            toiletCleaned: true,
+            houseCleaned: true,
+            memo: "ハウスの中を風通しよく整えた"
+          }),
+          cleaningRow("milk", -2, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            flooringAllCleaned: true,
+            memo: "月初の床材全交換"
+          })
+        ]
+      },
+      records: {
+        create: [
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.milkMemoryMorning,
+            recordType: "MEMORY",
+            recordDate: relativeDate(-42),
+            title: "朝の砂場タイム",
+            memo: "砂場で丸くなって、しばらくのんびり過ごしていました。",
+            searchText: recordSearchText("朝", "砂場", "寝姿", "日常"),
+            memoryDetail: {
+              create: {
+                tags: ["寝姿", "日常"],
+                searchTags: ["寝姿", "日常"],
+                isFavorite: true
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.milkMemoryPlay,
+            recordType: "MEMORY",
+            recordDate: relativeDate(-16),
+            title: "夏のひんやりプレート",
+            memo: "暑い日にひんやりしたプレートの上で休憩していました。",
+            searchText: recordSearchText("夏", "季節", "日常"),
+            memoryDetail: {
+              create: {
+                tags: ["季節", "日常"],
+                searchTags: ["季節", "日常"],
+                isFavorite: false
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.milkHealth,
+            recordType: "HEALTH",
+            recordDate: relativeDate(-7),
+            recordTimeMinutes: 7 * 60 + 20,
+            title: "健康チェック: 良好",
+            memo: "朝の食事も残さず、砂場や巣箱をいつもどおり行き来しています。",
+            searchText: recordSearchText("健康チェック", "良好", "食事", "砂場"),
+            healthDetail: {
+              create: {
+                overallCondition: "GOOD",
+                appetite: "NORMAL",
+                activityLevel: "NORMAL",
+                stoolCondition: "NORMAL",
+                urineCondition: "NORMAL",
+                symptoms: []
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: PUBLIC_DEMO_HAMSTER_IDS.shiratama,
+      createdAt: demoCreatedAt(8),
+      name: "しらたま",
+      memo: "以前いっしょに暮らしていた子。穏やかな日々の記録を保管しています。",
+      birthDate: relativeDate(-1120),
+      adoptionDate: relativeDate(-1050),
+      isActive: false,
+      weightRecords: {
+        create: weightRows("shiratama", [
+          [-470, 31.4],
+          [-440, 31.6],
+          [-410, 31.7],
+          [-380, 31.5]
+        ])
+      },
+      cleaningRecords: {
+        create: [
+          cleaningRow("shiratama", -430, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            memo: "当時の砂場とトイレ掃除"
+          }),
+          cleaningRow("shiratama", -395, {
+            toiletCleaned: true,
+            flooringAllCleaned: true,
+            houseCleaned: true,
+            memo: "季節の変わり目に床材を交換"
+          })
+        ]
+      },
+      records: {
+        create: [
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.shiratamaMemory,
+            recordType: "MEMORY",
+            recordDate: relativeDate(-405),
+            title: "窓辺でのんびり",
+            memo: "明るい時間に巣箱から出て、静かに毛づくろいをしていました。",
+            searchText: recordSearchText("窓辺", "寝姿", "思い出"),
+            memoryDetail: {
+              create: {
+                tags: ["寝姿", "思い出"],
+                searchTags: ["寝姿", "思い出"],
+                isFavorite: true
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.shiratamaHealth,
+            recordType: "HEALTH",
+            recordDate: relativeDate(-420),
+            recordTimeMinutes: 18 * 60,
+            title: "健康チェック: 穏やか",
+            memo: "食欲と活動量は落ち着いており、ゆっくり過ごしていました。",
+            searchText: recordSearchText("健康チェック", "穏やか", "過去の記録"),
+            healthDetail: {
+              create: {
+                overallCondition: "GOOD",
+                appetite: "NORMAL",
+                activityLevel: "LOW",
+                stoolCondition: "NORMAL",
+                urineCondition: "NORMAL",
+                symptoms: []
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: PUBLIC_DEMO_HAMSTER_IDS.potato,
+      createdAt: demoCreatedAt(9),
+      name: "ぽてと",
+      memo: "以前の飼育記録。食べ物を巣箱へ運ぶ姿が印象に残っています。",
+      birthDate: relativeDate(-980),
+      adoptionDate: relativeDate(-910),
+      isActive: false,
+      weightRecords: {
+        create: weightRows("potato", [
+          [-330, 48.0],
+          [-300, 48.4],
+          [-270, 48.2],
+          [-240, 48.5],
+          [-210, 48.3]
+        ])
+      },
+      cleaningRecords: {
+        create: [
+          cleaningRow("potato", -285, {
+            toiletCleaned: true,
+            flooringPartCleaned: true,
+            memo: "巣箱の近くを部分交換"
+          }),
+          cleaningRow("potato", -230, {
+            toiletCleaned: true,
+            bathCleaned: true,
+            houseCleaned: true,
+            memo: "ハウスと砂場を丁寧に掃除"
+          })
+        ]
+      },
+      records: {
+        create: [
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.potatoHealth,
+            recordType: "HEALTH",
+            recordDate: relativeDate(-235),
+            recordTimeMinutes: 19 * 60 + 15,
+            title: "健康チェック: 食欲は良好",
+            memo: "好物のペレットをよく食べ、夜の活動量も十分でした。",
+            searchText: recordSearchText("健康チェック", "食欲", "活動量", "過去の記録"),
+            healthDetail: {
+              create: {
+                overallCondition: "GOOD",
+                appetite: "NORMAL",
+                activityLevel: "NORMAL",
+                stoolCondition: "NORMAL",
+                urineCondition: "NORMAL",
+                symptoms: []
+              }
+            }
+          },
+          {
+            id: PUBLIC_DEMO_RECORD_IDS.potatoMemory,
+            recordType: "MEMORY",
+            recordDate: relativeDate(-250),
+            title: "巣箱へおやつを運ぶ",
+            memo: "小さなおやつを何度も運んで、巣箱に大切にしまっていました。",
+            searchText: recordSearchText("おやつ", "食事", "かわいい行動", "思い出"),
+            memoryDetail: {
+              create: {
+                tags: ["食事", "かわいい行動", "思い出"],
+                searchTags: ["食事", "かわいい行動", "思い出"],
+                isFavorite: false
+              }
+            }
+          }
+        ]
+      }
     }
   ];
 }
@@ -352,7 +847,11 @@ export async function rebuildPublicDemoData(client: PrismaClient) {
             { id: "public-demo-tag-daily", name: "日常", normalizedName: "日常" },
             { id: "public-demo-tag-food", name: "食事", normalizedName: "食事" },
             { id: "public-demo-tag-play", name: "遊び", normalizedName: "遊び" },
-            { id: "public-demo-tag-memory", name: "思い出", normalizedName: "思い出" }
+            { id: "public-demo-tag-memory", name: "思い出", normalizedName: "思い出" },
+            { id: "public-demo-tag-sleep", name: "寝姿", normalizedName: "寝姿" },
+            { id: "public-demo-tag-cute", name: "かわいい行動", normalizedName: "かわいい行動" },
+            { id: "public-demo-tag-welcome", name: "お迎え", normalizedName: "お迎え" },
+            { id: "public-demo-tag-season", name: "季節", normalizedName: "季節" }
           ]
         }
       }

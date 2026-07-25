@@ -837,6 +837,8 @@ docker compose exec app npx prisma db seed
 
 Googleログインなしで、架空のサンプルデータだけを読み取り専用で確認できます。
 
+デモHouseholdには9体（管理中6体・管理外3体）のハムスターを用意しています。個体ごとに異なる体重推移、衛生管理、健康・通院・思い出記録を表示するため、一覧の検索・並び替え・状態絞り込みや、各画面のハムスター切り替えを確認できます。
+
 - `/demo`: ダッシュボード
 - `/demo/hamsters`: ハムスター一覧、新規登録UI、各プロフィールの画像登録・変更・削除UIプレビュー
 - `/demo/records`: 健康・通院・思い出記録とタブ切り替え可能な登録UIプレビュー
@@ -853,7 +855,7 @@ Googleログインなしで、架空のサンプルデータだけを読み取�
 npm run seed:demo
 ```
 
-`Household.isDemo = true`かつ固定`demoSlug = "public-sample"`のHouseholdだけをtransaction内で再構築します。名称だけで対象を選ばず、通常Household、User、Account、Session、HouseholdMemberには触れません。同じコマンドを複数回実行してもデモデータは重複しません。日付は実行時のJST暦日を基準に生成されるため、再実行すると最近のサンプル記録へ更新されます。
+`Household.isDemo = true`かつ固定`demoSlug = "public-sample"`のHouseholdだけをtransaction内で再構築します。固定IDを持つ9体のハムスターと関連記録を同じ順序で再作成し、名称だけで対象を選びません。通常Household、User、Account、Session、HouseholdMemberには触れず、同じコマンドを複数回実行してもデモデータは重複しません。日付は実行時のJST暦日を基準に生成されるため、再実行すると最近のサンプル記録へ更新されます。
 
 デモ用プロフィール・記録画像はアップロード領域を使わず、次に配置します。
 
