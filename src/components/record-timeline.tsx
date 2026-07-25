@@ -47,11 +47,19 @@ const recordTypeStyles = {
   }
 } satisfies Record<RecordItem["recordType"], { card: string; marker: string; badge: string }>;
 
-function RecordPhoto({ recordId, title }: { recordId: string; title: string }) {
+function RecordPhoto({
+  recordId,
+  title,
+  staticImagePath
+}: {
+  recordId: string;
+  title: string;
+  staticImagePath: string | null;
+}) {
   const dialogTitleId = useId();
   const [failed, setFailed] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const imageUrl = `/api/records/${encodeURIComponent(recordId)}/image`;
+  const imageUrl = staticImagePath ?? `/api/records/${encodeURIComponent(recordId)}/image`;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -81,7 +89,7 @@ function RecordPhoto({ recordId, title }: { recordId: string; title: string }) {
         onClick={() => setIsOpen(true)}
         className="block w-full cursor-zoom-in overflow-hidden rounded-md bg-slate-100 transition hover:ring-2 hover:ring-moss/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss"
       >
-        {/* 認証CookieをそのままRoute Handlerへ送るため、画像最適化プロキシは使わない。 */}
+        {/* 通常画像は認証Cookie付きAPI、デモ画像はpublic配下の固定パスを直接参照する。 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={imageUrl} alt={title} onError={handleImageError} className="max-h-96 w-full object-contain" />
       </button>
@@ -213,13 +221,15 @@ export function RecordTimeline({
   scope,
   returnHamsterId,
   canEdit,
-  today
+  today,
+  basePath = "/records"
 }: {
   records: RecordItem[];
   scope: RecordScope;
   returnHamsterId: string;
   canEdit: boolean;
   today: string;
+  basePath?: "/records" | "/demo/records";
 }) {
   function confirmDelete(event: FormEvent<HTMLFormElement>) {
     if (!window.confirm("この記録を削除します。元に戻せません。よろしいですか？")) event.preventDefault();
@@ -238,7 +248,7 @@ export function RecordTimeline({
               <span className={`absolute -left-[2.25rem] top-5 grid h-8 w-8 place-items-center rounded-full border-2 border-white text-white shadow sm:-left-[3.1rem] sm:h-10 sm:w-10 ${typeStyle.marker}`}><TypeIcon type={record.recordType} /></span>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${typeStyle.badge}`}><TypeIcon type={record.recordType} />{RECORD_TYPE_LABELS[record.recordType]}</span>{scope === "household" ? <Link href={recordsUrl({ scope: "hamster", includeScope: true, hamsterId: record.hamster.id })} scroll={false} className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-inset ring-violet-200 hover:bg-violet-100"><PawPrint className="h-3.5 w-3.5" aria-hidden />{record.hamster.name}</Link> : null}{record.memoryDetail?.isFavorite ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"><Star className="h-3.5 w-3.5 fill-current" aria-hidden />お気に入り</span> : null}</div>
+                  <div className="flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${typeStyle.badge}`}><TypeIcon type={record.recordType} />{RECORD_TYPE_LABELS[record.recordType]}</span>{scope === "household" ? <Link href={recordsUrl({ basePath, scope: "hamster", includeScope: true, hamsterId: record.hamster.id })} scroll={false} className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-inset ring-violet-200 hover:bg-violet-100"><PawPrint className="h-3.5 w-3.5" aria-hidden />{record.hamster.name}</Link> : null}{record.memoryDetail?.isFavorite ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"><Star className="h-3.5 w-3.5 fill-current" aria-hidden />お気に入り</span> : null}</div>
                   <h3 className="mt-2 text-lg font-bold text-ink">{record.title}</h3>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{record.recordDate.replaceAll("-", "/")}</span>{record.recordTime ? <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" aria-hidden />{record.recordTime}</span> : null}<span className="inline-flex items-center gap-1"><UserRound className="h-3.5 w-3.5" aria-hidden />{record.createdByLabel}</span></div>
                 </div>
@@ -247,7 +257,7 @@ export function RecordTimeline({
 
               {record.recordType === "HEALTH" && record.healthDetail ? <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3"><p><span className="font-semibold">総合:</span> {HEALTH_OVERALL_LABELS[record.healthDetail.overallCondition]}</p><p><span className="font-semibold">食欲:</span> {HEALTH_AMOUNT_LABELS[record.healthDetail.appetite]}</p><p><span className="font-semibold">活動:</span> {HEALTH_AMOUNT_LABELS[record.healthDetail.activityLevel]}</p><p><span className="font-semibold">便:</span> {HEALTH_EXCRETION_LABELS[record.healthDetail.stoolCondition]}</p><p><span className="font-semibold">尿:</span> {HEALTH_EXCRETION_LABELS[record.healthDetail.urineCondition]}</p>{record.healthDetail.symptoms.length ? <p className="sm:col-span-2 lg:col-span-3"><span className="font-semibold">症状:</span> {record.healthDetail.symptoms.map((value) => HEALTH_SYMPTOM_LABELS[value]).join("、")}</p> : null}</div> : null}
               {record.recordType === "MEDICAL" && record.medicalDetail ? <div className="mt-4 grid gap-2 text-sm"><p><span className="font-semibold">理由・症状:</span> {record.medicalDetail.reason}</p>{record.medicalDetail.diagnosis ? <p><span className="font-semibold">診断:</span> {record.medicalDetail.diagnosis}</p> : null}{record.medicalDetail.medication ? <p><span className="font-semibold">処方薬:</span> {record.medicalDetail.medication}</p> : null}{record.medicalDetail.nextVisitDate ? <p className="inline-flex w-fit items-center gap-2 rounded-md bg-sky-50 px-3 py-2 font-semibold text-sky-800"><CalendarClock className="h-4 w-4" aria-hidden />次回通院予定: {record.medicalDetail.nextVisitDate.replaceAll("-", "/")}</p> : null}</div> : null}
-              {record.recordType === "MEMORY" && record.memoryDetail ? <div className="mt-4 grid gap-3">{record.memoryDetail.imageFileName ? <RecordPhoto recordId={record.id} title={record.title} /> : null}{record.memoryDetail.tags.length ? <div className="flex flex-wrap gap-1.5">{record.memoryDetail.tags.map((tag) => <span key={tag} className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">#{tag}</span>)}</div> : null}</div> : null}
+              {record.recordType === "MEMORY" && record.memoryDetail ? <div className="mt-4 grid gap-3">{record.memoryDetail.imageFileName || record.staticImagePath ? <RecordPhoto recordId={record.id} title={record.title} staticImagePath={record.staticImagePath} /> : null}{record.memoryDetail.tags.length ? <div className="flex flex-wrap gap-1.5">{record.memoryDetail.tags.map((tag) => <span key={tag} className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">#{tag}</span>)}</div> : null}</div> : null}
               {record.memo ? <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{record.memo}</p> : null}
               {editable ? <details className="group mt-4"><summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-moss"><Pencil className="h-4 w-4" aria-hidden /><span className="group-open:hidden">編集フォームを開く</span><span className="hidden group-open:inline">編集フォームを閉じる</span></summary><RecordEditForm record={record} viewScope={scope} returnHamsterId={returnHamsterId} today={today} /></details> : !canEdit ? null : <p className="mt-4 text-xs text-amber-700">管理外のため、この健康・通院記録は閲覧のみです。</p>}
             </article>

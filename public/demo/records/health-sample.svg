@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">食事の思い出サンプル</title>
+  <desc id="desc">野菜を持つハムスターを表したサンプルイラスト</desc>
+  <rect width="960" height="540" rx="32" fill="#f8f2df"/>
+  <circle cx="480" cy="275" r="175" fill="#d9a15f"/>
+  <circle cx="395" cy="170" r="70" fill="#c2864c"/>
+  <circle cx="565" cy="170" r="70" fill="#c2864c"/>
+  <circle cx="425" cy="260" r="16" fill="#28231f"/>
+  <circle cx="535" cy="260" r="16" fill="#28231f"/>
+  <path d="M470 300h20l-10 14z" fill="#b65e62"/>
+  <path d="M430 370c48-66 78-66 100 0-34 29-67 29-100 0z" fill="#78a86f"/>
+  <circle cx="425" cy="367" r="32" fill="#f2d5b4"/>
+  <circle cx="535" cy="367" r="32" fill="#f2d5b4"/>
+  <text x="48" y="492" font-family="sans-serif" font-size="30" fill="#6b6255">架空のサンプル画像</text>
+</svg>

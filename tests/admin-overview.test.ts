@@ -19,7 +19,7 @@ test("管理トップの集計はプレビュー配列長ではなく独立count
   const source = await readFile("src/app/admin/page.tsx", "utf8");
 
   assert.match(source, /prisma\.user\.count\(\)/);
-  assert.match(source, /prisma\.household\.count\(\)/);
+  assert.match(source, /prisma\.household\.count\(\{\s*where:\s*\{\s*isDemo:\s*false/);
   assert.match(source, /getActiveInvitationCount\(now\)/);
   assert.match(source, />\{userCount\}<\/p>/);
   assert.match(source, />\{householdCount\}<\/p>/);

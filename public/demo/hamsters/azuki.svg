@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">あずきのサンプル画像</title>
+  <desc id="desc">あずき色の架空のハムスターを描いたイラスト</desc>
+  <rect width="512" height="512" rx="64" fill="#f3e9ed"/>
+  <circle cx="168" cy="160" r="70" fill="#76504e"/>
+  <circle cx="344" cy="160" r="70" fill="#76504e"/>
+  <ellipse cx="256" cy="286" rx="178" ry="170" fill="#87615b"/>
+  <ellipse cx="256" cy="330" rx="118" ry="112" fill="#ead5c5"/>
+  <circle cx="201" cy="258" r="17" fill="#201d1d"/>
+  <circle cx="311" cy="258" r="17" fill="#201d1d"/>
+  <path d="M246 304h20l-10 14z" fill="#c17878"/>
+  <path d="M218 331c20 16 56 16 76 0" fill="none" stroke="#5a403d" stroke-width="9" stroke-linecap="round"/>
+  <path d="M149 307H76m78 24-70 20m279-44h73m-78 24 70 20" stroke="#5a403d" stroke-width="7" stroke-linecap="round"/>
+</svg>

@@ -72,6 +72,7 @@ export const MEMORY_TAG_SUGGESTIONS = [
 export type RecordTypeFilter = "all" | "health" | "medical" | "memory";
 
 export type RecordsUrlOptions = {
+  basePath?: "/records" | "/demo/records";
   scope?: RecordScope;
   includeScope?: boolean;
   hamsterId?: string | null;
@@ -113,7 +114,7 @@ export function recordsUrl(options: RecordsUrlOptions = {}) {
   if (options.favoriteOnly) params.set("favorite", "1");
   if (options.page && options.page > 1) params.set("page", String(options.page));
   if (options.status) params.set("status", options.status);
-  return `/records${params.size ? `?${params.toString()}` : ""}`;
+  return `${options.basePath ?? "/records"}${params.size ? `?${params.toString()}` : ""}`;
 }
 
 export function normalizeRecordTypeFilter(value?: string): RecordTypeFilter {

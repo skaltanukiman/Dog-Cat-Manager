@@ -21,7 +21,8 @@
     "prisma:seed": "prisma db seed",
     "seed:contact-inquiries": "tsx prisma/seed-contact-inquiries.ts",
     "seed:admin-pagination": "tsx prisma/seed-admin-pagination.ts",
-    "seed:hamster-pagination": "tsx prisma/seed-hamster-pagination.ts"
+    "seed:hamster-pagination": "tsx prisma/seed-hamster-pagination.ts",
+    "seed:demo": "tsx prisma/seed-demo.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

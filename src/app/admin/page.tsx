@@ -37,8 +37,9 @@ async function getAdminPageData(invitationQuery: AdminInvitationQuery) {
       getAdminUserPreview(),
       getAdminHouseholdPreview(),
       prisma.user.count(),
-      prisma.household.count(),
+      prisma.household.count({ where: { isDemo: false } }),
       prisma.household.findMany({
+        where: { isDemo: false },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: { id: true, name: true }
       }),

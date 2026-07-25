@@ -833,6 +833,59 @@ docker compose exec app npx prisma migrate deploy
 docker compose exec app npx prisma db seed
 ```
 
+## 匿名サンプル閲覧モード
+
+Googleログインなしで、架空のサンプルデータだけを読み取り専用で確認できます。
+
+- `/demo`: ダッシュボード
+- `/demo/hamsters`: ハムスター一覧
+- `/demo/records`: 健康・通院・思い出記録
+- `/demo/cleaning`: 衛生管理
+- `/demo/weights`: 体重管理
+
+デモ画面には登録・編集・削除・保存、画像アップロード、CSV入出力、設定・共有・管理・問い合わせ・アカウント操作を置きません。通常画面と既存の更新Action/APIは引き続きGoogleログインとHousehold権限を必要とします。
+
+### デモデータの投入・更新
+
+デモ専用seedは、通常の`prisma db seed`とは独立しています。
+
+```bash
+npm run seed:demo
+```
+
+`Household.isDemo = true`かつ固定`demoSlug = "public-sample"`のHouseholdだけをtransaction内で再構築します。名称だけで対象を選ばず、通常Household、User、Account、Session、HouseholdMemberには触れません。同じコマンドを複数回実行してもデモデータは重複しません。日付は実行時のJST暦日を基準に生成されるため、再実行すると最近のサンプル記録へ更新されます。
+
+デモ用プロフィール・記録画像はアップロード領域を使わず、次に配置します。
+
+```text
+public/demo/hamsters/
+public/demo/records/
+```
+
+画像を更新する場合は、`src/lib/public-demo.ts`の固定IDと静的パスの対応を維持しながら、上記ファイルを差し替えて再ビルドしてください。画像の差し替えだけならseedの再実行は不要です。
+
+### Docker Compose本番環境への反映
+
+現在のDockerfileはappコンテナ起動時に`npx prisma migrate deploy`を実行し、`prisma/`、`package.json`、`node_modules`、`public/`、seedが参照する`src/lib/`をrunnerへコピーします。そのため、既存DBと通常利用データを保持したまま次の順で反映できます。
+
+```bash
+git pull
+docker compose build
+docker compose up -d --wait --wait-timeout 120
+docker compose exec app npx prisma migrate deploy
+docker compose exec app npm run seed:demo
+docker compose logs --tail=100 app
+```
+
+`docker compose up`時にもmigrationは適用されますが、上の明示コマンドは適用済み確認として安全に再実行できます。Docker外で実行する場合は、`DATABASE_URL`が実際のPostgreSQLへ到達できる環境で次を実行します。
+
+```bash
+npx prisma migrate deploy
+npm run seed:demo
+```
+
+デモHouseholdが未投入または見つからない場合、匿名画面は通常Householdへフォールバックせず「現在、サンプルデータを準備中です。」と表示します。
+
 開発中に DB コンテナだけ起動してホスト側から実行する場合:
 
 ```bash

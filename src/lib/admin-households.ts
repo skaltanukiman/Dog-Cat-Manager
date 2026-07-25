@@ -32,8 +32,9 @@ const adminHouseholdSelect = {
 export type AdminHouseholdListItem = Prisma.HouseholdGetPayload<{ select: typeof adminHouseholdSelect }>;
 
 type AdminHouseholdReader = {
-  count: () => Promise<number>;
+  count: (args: { where: { isDemo: false } }) => Promise<number>;
   findMany: (args: {
+    where: { isDemo: false };
     orderBy: Prisma.HouseholdOrderByWithRelationInput[];
     skip: number;
     take: number;
@@ -42,7 +43,7 @@ type AdminHouseholdReader = {
 };
 
 const adminHouseholdReader: AdminHouseholdReader = {
-  count: () => prisma.household.count(),
+  count: (args) => prisma.household.count(args),
   findMany: (args) => prisma.household.findMany(args)
 };
 
@@ -50,9 +51,10 @@ export async function getAdminHouseholdPage(
   requestedPage: number,
   reader: AdminHouseholdReader = adminHouseholdReader
 ) {
-  const totalCount = await reader.count();
+  const totalCount = await reader.count({ where: { isDemo: false } });
   const pagination = createAdminPagination(requestedPage, totalCount);
   const households = await reader.findMany({
+    where: { isDemo: false },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     skip: (pagination.currentPage - 1) * ADMIN_LIST_PAGE_SIZE,
     take: ADMIN_LIST_PAGE_SIZE,
@@ -64,6 +66,7 @@ export async function getAdminHouseholdPage(
 
 export function getAdminHouseholdPreview() {
   return prisma.household.findMany({
+    where: { isDemo: false },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 5,
     select: adminHouseholdSelect

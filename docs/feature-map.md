@@ -6,7 +6,7 @@
 
 | 項目 | 主なファイル | 注意点 |
 | --- | --- | --- |
-| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts` | `/login`、`/api/auth`、`/api/health`以外は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` で検証する。 |
+| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`と境界一致する`/demo`配下だけが公開。通常画面は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` と `tests/public-demo.test.tsx` で検証する。 |
 | 現在の Household と権限 | `src/lib/authorization.ts`, `src/lib/auth-context.ts`, `src/app/actions/households.ts`, `src/components/household-switcher.tsx` | `OWNER` / `ADMIN` / `MEMBER` / `VIEWER` の閲覧・共有データ編集・招待・解除・権限変更を共通判定する。`hamster_current_household` Cookie は所属確認後にのみ更新する。 |
 | レイアウト・ナビゲーション | `src/app/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | ログイン済み画面には Household 切替とリアルタイム監視が常設される。1024px 未満では主要5画面をアイコンなしの均等幅タブで表示し、設定・共有・管理は補助メニューにまとめる。`lg` 以上では従来のボタン型ナビゲーションを1行で表示する。 |
 | PWA メタデータ | `src/app/manifest.ts`, `src/app/layout.tsx`, `src/app/favicon.ico`, `src/app/apple-icon.png`, `public/icons/pwa-192.png`, `public/icons/pwa-512.png`, `public/icons/pwa-maskable-512.png` | App Router のファイル規約でブラウザー用faviconとApple用アイコンを、標準 Metadata API でインストール情報、テーマ色、通常・maskableアイコンを配信する。Service Worker、オフライン機能、プッシュ通知は持たない。`tests/manifest.test.ts` でManifestの主要項目を検証する。 |
@@ -24,6 +24,19 @@
 - **関連テスト:** `tests/authorization.test.ts`（セッションユーザーID必須、アプリロール判定）、`tests/logger.test.ts`（例外処理）。
 - **関連設定:** `.env*.example` の `AUTH_SECRET`、`AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`AUTH_URL`、`src/types/next-auth.d.ts`。
 - **依存関係:** ログイン後の通常データ機能は `auth-context.ts` の初期 Household 作成に依存する。アカウント削除ページ・Actionだけは所属0件で再作成しないよう `getRequiredSessionUser()` を使う。`proxy.ts` の matcher / 公開パス変更は OAuth コールバックを遮断しないよう注意する。
+
+## 匿名・読み取り専用デモ
+
+- **画面または URL:** `/demo`、`/demo/hamsters`、`/demo/records`、`/demo/cleaning`、`/demo/weights`。`/demonstration`などは公開対象外。
+- **主なコンポーネント:** `src/app/demo/layout.tsx`、`DemoNav`、`DemoUnavailable`と、通常画面でも使用する`HamsterList`、`HamsterThumbnail`、`RecordTimeline`、`CleaningMobileForm`、`WeightChart`、`WeightHistoryList`。
+- **データアクセス:** `src/lib/public-demo-queries.ts`の`getPublicDemo...`関数だけを使用する。`Household.isDemo = true`かつ固定`demoSlug = "public-sample"`の両方を満たすHouseholdを最初に取得し、見つからなければ専用準備中表示へ進む。任意Household ID、セッション、選択中Household Cookie、`getRequiredHouseholdContext()`、通常Householdへのフォールバックは使用しない。
+- **読み取り専用:** デモpageは更新Actionをimportせず、登録・編集・削除・保存・画像アップロード・CSV・設定・共有・管理導線を描画しない。既存Action/APIの認証・Household更新ガードは変更しない。
+- **画像:** `public/demo/hamsters/*.svg`と`public/demo/records/*.svg`を固定配信し、ViewModelの`staticImagePath`で通常の認証付き画像APIと切り替える。`profileImageFileName`と`MemoryRecordImage.fileName`には公開パスを保存しない。
+- **データ投入:** `prisma/seed-demo.ts` / `npm run seed:demo`。固定slugと`isDemo`をtransaction内で再検証し、ユーザー所属がないデモHouseholdだけを削除・再構築する。JSTの実行日を基準に相対日付を生成する。静的画像はseed対象外でリポジトリに同梱する。
+- **親レイアウト:** `proxy.ts`が実パスを内部request headerへ上書きし、`RootLayout`はデモ経路で`auth()`、Household切替データ、リアルタイム監視、通常ナビを読み込まない。ログイン中でも現在Household情報をデモへ混在させない。
+- **SEO:** `src/app/demo/layout.tsx`で`noindex, nofollow`、`src/app/robots.ts`で`/demo`をDisallowする。アクセス制御は`proxy.ts`と固定デモquery条件が担う。
+- **通常データからの分離:** 通常membership取得・Household切替と、管理者向け共有一覧・件数・招待検索用共有候補は`isDemo: false`でデモHouseholdを除外する。
+- **関連テスト:** `tests/public-demo.test.tsx`（公開パス境界、通常画面認証、固定query、フォールバック禁止、seed再実行・通常Household保護、読み取り専用UI、ナビ、静的画像、noindex、ログイン導線、親レイアウト分離）。
 
 ## Household 共有・メンバー管理
 
@@ -167,7 +180,7 @@
 - **画面または URL:** 管理トップ `/admin`、ユーザー管理 `/admin/users`、共有管理 `/admin/households`。管理トップは新しいユーザー・共有を最大5件ずつプレビューし、招待一覧は引き続き `/admin` に置く。
 - **主なコンポーネント:** `AdminUserList`、`AdminUserAccessControls`、`AdminHouseholdList`、`AdminPagination`、`AdminInvitationPagination`、`AutoSubmitFilterForm`、`AdminInvitationHouseholdCombobox`、`InvitationStatusBadge`、`StatusMessage`。ユーザー一覧は `lg` 以上でユーザー・アプリ権限・利用状態・利用状況・登録日・操作の6列テーブル、`lg` 未満で全項目名を明示したカードとして表示する。PCでは停止日時を状態セルへまとめ、内部理由・実行者は縦三点メニューの詳細ダイアログで確認する。`SUPER_ADMIN` の停止・解除も同じメニューから既存の確認ダイアログを開き、停止確認では対象名・メール、データ非削除、全Session無効化、必須理由を明示する。共有一覧は共通カードを使う。招待フィルターは選択を即時、共有名入力を短いデバウンス後に自動適用し、スクロール位置を維持する。招待ページングは件数サマリー直下と一覧末尾に表示する。
 - **Server Action または API:** `updateUserAppRole`、`suspendUserAccess`、`restoreUserAccess`（`src/app/actions/admin.ts`）。停止・解除の業務処理は `src/lib/user-access.ts` に集約する。
-- **データアクセス・Prismaモデル:** 全画面で `getRequiredAppAdminUser` を通す。利用状態は `User.accessStatus` と現在の停止情報、永続履歴は `UserAccessAction` に保存する。解除時は現在の停止情報をクリアするが、停止・解除履歴と操作時snapshotは残す。`src/lib/admin-users.ts` と `src/lib/admin-households.ts` が `count` 後に補正したページへ `skip` / `take: 20` を適用し、作成日時・IDの降順で1ページ分だけ取得する。管理トップの全件数、5件プレビュー、招待検索用の全共有ID・名前、招待有無を別クエリに分離する。`src/lib/admin-invitations.ts` は `HouseholdInvitation.findMany` / `count` により従来どおり20件ずつDB側ページングする。
+- **データアクセス・Prismaモデル:** 全画面で `getRequiredAppAdminUser` を通す。利用状態は `User.accessStatus` と現在の停止情報、永続履歴は `UserAccessAction` に保存する。解除時は現在の停止情報をクリアするが、停止・解除履歴と操作時snapshotは残す。`src/lib/admin-users.ts` と `src/lib/admin-households.ts` が `count` 後に補正したページへ `skip` / `take: 20` を適用し、作成日時・IDの降順で1ページ分だけ取得する。共有件数・5件プレビュー・一覧・招待検索用の共有候補は`isDemo: false`で公開デモHouseholdを除外する。管理トップの各全件数、5件プレビュー、招待検索用の全共有ID・名前、招待有無を別クエリに分離する。`src/lib/admin-invitations.ts` は `HouseholdInvitation.findMany` / `count` により従来どおり20件ずつDB側ページングする。
 - **バリデーション:** `src/lib/admin-pagination.ts` が不正・0以下・範囲外の `page` を安全に補正する。Action 内で `AppRole` を許可値として確認し、戻り先も `/admin` と `/admin/users` のホワイトリストに限定する。利用停止理由はtrim後3〜500文字、解除備考は任意で最大500文字とし、定数を `src/lib/user-access-constants.ts` に集約する。停止・解除は画面とActionの両方を `SUPER_ADMIN` に限定し、同じ全体advisory transaction lock内で操作者権限・対象状態・最後の利用中SUPER_ADMINを再確認して条件付き更新する。自己停止、最後の利用中SUPER_ADMIN停止、重複停止・解除を拒否し、停止時は全Session削除と履歴作成まで同一transactionに含める。`SUPER_ADMIN` の自己降格と最後の利用中 `SUPER_ADMIN` 降格も禁止する。招待一覧の状態・共有名・並び順・ページは `admin-invitations.ts` でホワイトリスト検証・正規化し、共有名は `normalizeSearchText` により平仮名・カタカナ・大文字小文字・全角半角の差を吸収する。
 - **関連テスト:** `tests/user-access.test.ts`（停止・解除、Session削除、共有・飼育データ保持、永続履歴、認可、入力、重複、Googleログイン、セッション検証、同時停止・解除、最後の利用中SUPER_ADMIN）、`tests/admin-overview.test.ts`（5件プレビュー、独立count、招待検索用共有一覧）、`tests/admin-users.test.ts` / `tests/admin-households.test.ts`（DB側20件ページング、ページ補正、認可、レスポンシブ・表示項目）、`tests/authorization.test.ts`（SUPER_ADMINのみ許可、自己降格・最後のSUPER_ADMIN降格禁止）、`tests/admin-invitations.test.ts`（招待のDBフィルター・ソート・ページング・URL・作成者表示・独立した有効件数、レスポンシブ切り替えと全項目維持）。
 - **関連設定:** `prisma/schema.prisma` の `AppRole`、`UserAccessStatus`、`UserAccessActionType`。初期付与は `prisma/admin-role.ts`。ページング目視確認用の追加専用・再実行可能なサンプル投入は `prisma/seed-admin-pagination.ts` と `npm run seed:admin-pagination` を使う。
@@ -186,7 +199,7 @@
 
 ## インフラ・永続化
 
-- **対象:** `prisma/schema.prisma`、`prisma/migrations/`、`src/lib/prisma.ts`、`src/lib/health.ts`、`src/app/api/health/route.ts`、`docker-compose.yml`、`Dockerfile`、`next.config.mjs`、`.env*.example`、`package.json`。
+- **対象:** `prisma/schema.prisma`、`prisma/migrations/`、`prisma/seed-demo.ts`、`src/lib/prisma.ts`、`src/lib/health.ts`、`src/app/api/health/route.ts`、`docker-compose.yml`、`Dockerfile`、`next.config.mjs`、`.env*.example`、`package.json`。
 - **役割:** PostgreSQL 接続と Prisma Client、migration、Docker の app / db 分離、standalone build、環境変数・依存ライブラリを定義する。app のホスト側ポートは `127.0.0.1:3001` に限定し、本番アクセスは Nginx / HTTPS を経由させる。`/api/health` とapp healthcheckでNext.js応答・DB接続を確認し、`next.config.mjs` で最低限のセキュリティヘッダーと `X-Powered-By` 無効化を設定する。
 - **関連テスト:** `tests/logger.test.ts`（ログ出力）、`tests/audit-log.test.ts`（Household管理操作の成功監査ログ）、`tests/health.test.ts`（DBヘルス判定）、`tests/security-headers.test.ts`（セキュリティヘッダー設定）、`scripts/log-smoke.ts`。変更内容に応じて `npm.cmd run lint`、`npm.cmd run build`、`npm.cmd test` を実行する。
 - **依存関係:** Prismaモデル変更は migration・生成 Client・関連 Action / query / schema の更新が必要。`Dockerfile` は Prisma generate と migrate deploy を行う。デプロイは `docker compose up -d --wait --wait-timeout 120` でDB・app双方のhealthyを確認する。プロフィール画像は `HAMSTER_IMAGE_DIR`、思い出画像は `RECORD_IMAGE_DIR` を使い、どちらもComposeの `./uploads:/app/uploads` で永続化する。CSV 上限を変更する際は `next.config.mjs` の Action body size と整合させる。

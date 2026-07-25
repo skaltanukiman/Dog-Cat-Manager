@@ -33,6 +33,7 @@ test("共有一覧はcount後に範囲外ページを補正しページ内20件�
   assert.deepEqual(result.pagination, { currentPage: 3, totalPages: 3, totalCount: 41, pageSize: 20 });
   assert.equal(findManyArgs?.skip, 40);
   assert.equal(findManyArgs?.take, 20);
+  assert.deepEqual(findManyArgs?.where, { isDemo: false });
   assert.deepEqual(findManyArgs?.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
   const select = findManyArgs?.select as { members?: unknown } | undefined;
   assert.ok(select?.members, "ページ内共有と同じfindManyで必要なメンバーだけを取得する");
@@ -55,12 +56,15 @@ test("共有0件は1ページ目の空状態として扱う", async () => {
 
 test("共有管理画面は管理者認可、共有カード、共通ページングを備える", async () => {
   const pageSource = await readFile("src/app/admin/households/page.tsx", "utf8");
+  const overviewSource = await readFile("src/app/admin/page.tsx", "utf8");
   const listSource = await readFile("src/components/admin-household-list.tsx", "utf8");
   const paginationSource = await readFile("src/components/pagination.tsx", "utf8");
 
   assert.match(pageSource, /getRequiredAppAdminUser\(\)/);
   assert.match(pageSource, /getAdminHouseholdPage\(normalizeAdminPage\(params\.page\)\)/);
   assert.match(pageSource, /管理トップへ戻る/);
+  assert.match(overviewSource, /household\.count\(\{\s*where:\s*\{\s*isDemo:\s*false/);
+  assert.match(overviewSource, /household\.findMany\(\{\s*where:\s*\{\s*isDemo:\s*false/);
   assert.match(listSource, /household\._count\.members/);
   assert.match(listSource, /household\._count\.hamsters/);
   assert.match(listSource, /household\._count\.invitations/);

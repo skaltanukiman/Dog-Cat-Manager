@@ -7,6 +7,7 @@ type HamsterThumbnailProps = {
   hamsterId: string;
   hamsterName: string;
   profileImageFileName: string | null;
+  staticImagePath?: string | null;
   size?: "dashboard" | "management";
 };
 
@@ -14,14 +15,18 @@ export function HamsterThumbnail({
   hamsterId,
   hamsterName,
   profileImageFileName,
+  staticImagePath = null,
   size = "dashboard"
 }: HamsterThumbnailProps) {
   const dialogTitleId = useId();
   const [failedVersion, setFailedVersion] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const showImage = Boolean(profileImageFileName && failedVersion !== profileImageFileName);
+  const imageVersion = staticImagePath ?? profileImageFileName;
+  const showImage = Boolean(imageVersion && failedVersion !== imageVersion);
   const sizeClass = size === "dashboard" ? "h-24 w-24 md:h-28 md:w-28" : "h-24 w-24";
-  const imageUrl = `/api/hamsters/${encodeURIComponent(hamsterId)}/image?v=${encodeURIComponent(profileImageFileName ?? "")}`;
+  const imageUrl =
+    staticImagePath ??
+    `/api/hamsters/${encodeURIComponent(hamsterId)}/image?v=${encodeURIComponent(profileImageFileName ?? "")}`;
 
   useEffect(() => {
     if (!isOpen) {
@@ -39,7 +44,7 @@ export function HamsterThumbnail({
   }, [isOpen]);
 
   function handleImageError() {
-    setFailedVersion(profileImageFileName);
+    setFailedVersion(imageVersion);
     setIsOpen(false);
   }
 
@@ -54,7 +59,7 @@ export function HamsterThumbnail({
           onClick={() => setIsOpen(true)}
           className={`${sizeClass} flex shrink-0 cursor-zoom-in items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 shadow-sm transition hover:border-moss focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss`}
         >
-          {/* 認証CookieをそのままRoute Handlerへ送るため、画像最適化プロキシは使わない。 */}
+          {/* 通常画像は認証Cookie付きAPI、デモ画像はpublic配下の固定パスを直接参照する。 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}

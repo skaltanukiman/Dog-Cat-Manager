@@ -26,7 +26,7 @@ const prisma = databaseUrl
 
 async function main() {
   const household = await prisma.household.findFirst({
-    where: { name: TARGET_HOUSEHOLD_NAME },
+    where: { name: TARGET_HOUSEHOLD_NAME, isDemo: false },
     select: { id: true }
   });
 

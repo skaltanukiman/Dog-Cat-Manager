@@ -249,6 +249,8 @@ test("共有画面はOWNER向け編集フォームとOWNER以外向け理由付�
 test("Household.nameにグローバル一意制約やmigrationを追加しない", () => {
   const prismaSchema = source("prisma/schema.prisma");
   const householdModel = prismaSchema.match(/model Household \{[\s\S]*?\n\}/)?.[0] ?? "";
-  assert.match(householdModel, /name\s+String/);
-  assert.doesNotMatch(householdModel, /@unique|@@unique/);
+  const nameLine = householdModel.match(/^\s*name\s+String.*$/m)?.[0] ?? "";
+  assert.match(nameLine, /name\s+String/);
+  assert.doesNotMatch(nameLine, /@unique/);
+  assert.doesNotMatch(householdModel, /@@unique\(\[name\]\)/);
 });

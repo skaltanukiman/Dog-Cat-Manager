@@ -197,6 +197,8 @@ model VerificationToken {
 model Household {
   id                    String                @id @default(cuid())
   name                  String
+  isDemo                Boolean               @default(false) @map("is_demo")
+  demoSlug              String?               @unique @map("demo_slug")
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
   realtimeRevision      BigInt                @default(0) @map("realtime_revision")

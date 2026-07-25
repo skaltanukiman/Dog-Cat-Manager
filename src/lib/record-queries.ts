@@ -125,6 +125,7 @@ export async function getRecordsPageData(filters: RecordPageFilters) {
       updatedAt: record.updatedAt.toISOString(),
       hamster: record.hamster,
       createdByLabel: record.createdBy?.name || record.createdBy?.email || "退会済みユーザー",
+      staticImagePath: null as string | null,
       healthDetail: record.healthDetail,
       medicalDetail: record.medicalDetail
         ? {
@@ -139,7 +140,7 @@ export async function getRecordsPageData(filters: RecordPageFilters) {
         ? {
             tags: record.memoryDetail.tags,
             isFavorite: record.memoryDetail.isFavorite,
-            imageFileName: record.memoryDetail.images[0]?.fileName ?? null
+            imageFileName: (record.memoryDetail.images[0]?.fileName ?? null) as string | null
           }
         : null
     })),

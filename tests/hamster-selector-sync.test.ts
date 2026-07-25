@@ -77,7 +77,7 @@ test("記録カードのハムスターリンク後はURL・選択UI・登録先
 
   assert.match(
     timeline,
-    /recordsUrl\(\{ scope: "hamster", includeScope: true, hamsterId: record\.hamster\.id \}\)/
+    /recordsUrl\(\{ basePath, scope: "hamster", includeScope: true, hamsterId: record\.hamster\.id \}\)/
   );
   assert.match(timeline, /\{record\.hamster\.name\}<\/Link>/);
   assert.match(

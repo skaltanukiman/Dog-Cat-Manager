@@ -71,7 +71,7 @@ export async function getRequiredSessionUser(): Promise<SessionUser> {
 
 async function findMembership(userId: string, preferredHouseholdId?: string) {
   const memberships = await prisma.householdMember.findMany({
-    where: { userId },
+    where: { userId, household: { isDemo: false } },
     include: {
       household: {
         include: {
@@ -109,7 +109,7 @@ async function createInitialHousehold(user: SessionUser) {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${user.id}, 0))`;
 
     const existingMembership = await tx.householdMember.findFirst({
-      where: { userId: user.id },
+      where: { userId: user.id, household: { isDemo: false } },
       include: { household: true },
       orderBy: { createdAt: "asc" }
     });
@@ -222,7 +222,7 @@ export async function getHouseholdContextForRoute(): Promise<CurrentHouseholdCon
 export async function getCurrentHouseholdSwitcherData() {
   const context = await getRequiredHouseholdContext();
   const memberships = await prisma.householdMember.findMany({
-    where: { userId: context.user.id },
+    where: { userId: context.user.id, household: { isDemo: false } },
     include: {
       household: {
         include: {

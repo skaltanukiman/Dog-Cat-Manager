@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">こむぎのサンプル画像</title>
+  <desc id="desc">小麦色の架空のハムスターを描いたイラスト</desc>
+  <rect width="512" height="512" rx="64" fill="#eef3e7"/>
+  <circle cx="166" cy="162" r="68" fill="#b89a69"/>
+  <circle cx="346" cy="162" r="68" fill="#b89a69"/>
+  <ellipse cx="256" cy="288" rx="180" ry="168" fill="#cdb27e"/>
+  <path d="M256 128c-45 41-61 108-43 178 11 41 30 76 43 98 13-22 32-57 43-98 18-70 2-137-43-178z" fill="#f6e7c8"/>
+  <circle cx="201" cy="258" r="17" fill="#292c28"/>
+  <circle cx="311" cy="258" r="17" fill="#292c28"/>
+  <path d="M246 304h20l-10 14z" fill="#ad6661"/>
+  <path d="M216 331c21 17 59 17 80 0" fill="none" stroke="#705c43" stroke-width="9" stroke-linecap="round"/>
+  <path d="M149 307H76m78 24-70 20m279-44h73m-78 24 70 20" stroke="#705c43" stroke-width="7" stroke-linecap="round"/>
+</svg>

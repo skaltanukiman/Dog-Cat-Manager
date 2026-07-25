@@ -14,6 +14,7 @@ type WeightChartFilterFormProps = {
   defaultFrom?: string;
   defaultTo?: string;
   maxDate: string;
+  action?: string;
 };
 
 export function WeightChartFilterForm({
@@ -23,7 +24,8 @@ export function WeightChartFilterForm({
   includeInactive,
   defaultFrom = "",
   defaultTo = "",
-  maxDate
+  maxDate,
+  action
 }: WeightChartFilterFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const fromInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +60,7 @@ export function WeightChartFilterForm({
   }
 
   return (
-    <form ref={formRef} method="get" className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+    <form ref={formRef} method="get" action={action} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
       <input type="hidden" name="hamsterId" value={hamsterId} />
       <input type="hidden" name="filter" value="all" />
       <input type="hidden" name="sort" value={sortTarget} />

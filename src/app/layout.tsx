@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { LogOut } from "lucide-react";
 
 import { switchCurrentHousehold } from "@/app/actions/households";
@@ -7,6 +8,7 @@ import { AppNav } from "@/components/app-nav";
 import { HouseholdSwitcher } from "@/components/household-switcher";
 import { RealtimeRefreshListener } from "@/components/realtime-refresh-listener";
 import { getCurrentHouseholdSwitcherData } from "@/lib/auth-context";
+import { isPublicDemoPath, REQUEST_PATHNAME_HEADER } from "@/lib/public-demo";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -37,7 +39,10 @@ async function signOutAction() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const pathname = (await headers()).get(REQUEST_PATHNAME_HEADER) ?? "";
+  const isDemoRequest = isPublicDemoPath(pathname);
+  // デモ表示ではログイン状態・選択中Household Cookieを表示データへ一切使用しない。
+  const session = isDemoRequest ? null : await auth();
   const currentUserLabel = session?.user?.name || session?.user?.email;
   const householdSwitcherData = session?.user ? await getCurrentHouseholdSwitcherData() : null;
   const isAppAdmin = session?.user?.appRole === "ADMIN" || session?.user?.appRole === "SUPER_ADMIN";
@@ -87,7 +92,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </header>
             </>
           ) : null}
-          <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">{children}</main>
+          {isDemoRequest ? children : <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">{children}</main>}
         </div>
       </body>
     </html>

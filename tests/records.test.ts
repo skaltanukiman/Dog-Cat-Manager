@@ -571,7 +571,7 @@ test("記録画面は表示範囲を明示し、フィルター・種類・ペ�
 
 test("グループタイムラインは記録自身のハムスター情報を表示・編集・削除・管理外判定へ使う", () => {
   const timeline = source("src/components/record-timeline.tsx");
-  assert.match(timeline, /scope === "household" \? <Link href=\{recordsUrl\(\{ scope: "hamster", includeScope: true, hamsterId: record\.hamster\.id \}\)\}/);
+  assert.match(timeline, /scope === "household" \? <Link href=\{recordsUrl\(\{ basePath, scope: "hamster", includeScope: true, hamsterId: record\.hamster\.id \}\)\}/);
   assert.match(timeline, /\{record\.hamster\.name\}<\/Link>/);
   assert.ok((timeline.match(/name="hamsterId" value=\{record\.hamster\.id\}/g)?.length ?? 0) >= 4);
   assert.ok((timeline.match(/name="viewScope"/g)?.length ?? 0) >= 4);

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">トンネル遊びのサンプル</title>
+  <desc id="desc">紙筒から顔を出すハムスターのサンプルイラスト</desc>
+  <rect width="960" height="540" rx="32" fill="#eaf1e6"/>
+  <rect x="170" y="195" width="620" height="235" rx="110" fill="#b88255"/>
+  <ellipse cx="720" cy="312" rx="116" ry="117" fill="#8a5e3f"/>
+  <circle cx="710" cy="300" r="88" fill="#ccb17d"/>
+  <circle cx="675" cy="285" r="12" fill="#28231f"/>
+  <circle cx="745" cy="285" r="12" fill="#28231f"/>
+  <path d="M702 320h16l-8 11z" fill="#b65e62"/>
+  <path d="M662 332h-78m174 0h78" stroke="#6c5140" stroke-width="7" stroke-linecap="round"/>
+  <text x="48" y="492" font-family="sans-serif" font-size="30" fill="#5d6958">架空のサンプル画像</text>
+</svg>

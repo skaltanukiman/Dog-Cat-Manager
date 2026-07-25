@@ -28,6 +28,7 @@ type HamsterListItem = {
   adoptionDate: string;
   isActive: boolean;
   profileImageFileName: string | null;
+  staticImagePath?: string | null;
   cleaningRecordCount: number;
   weightRecordCount: number;
 };
@@ -272,6 +273,7 @@ export function HamsterList({
                             hamsterId={hamster.id}
                             hamsterName={hamster.name}
                             profileImageFileName={hamster.profileImageFileName}
+                            staticImagePath={hamster.staticImagePath}
                             size="management"
                           />
                         </fieldset>
