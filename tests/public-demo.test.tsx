@@ -437,6 +437,17 @@ test("ログイン画面とデモ共通レイアウトは通常版との差異�
   assert.match(login, /サンプルを見てみる/);
   assert.match(login, /架空のサンプルデータ/);
   assert.match(login, /登録・編集・削除はできません/);
+  const noticeContainer = login.match(
+    /<div className="([^"]*)">\s*<p>デモでは架空のサンプルデータを閲覧できます。登録・編集・削除はできません。<\/p>\s*<p>\{PUBLIC_DEMO_DIFFERENCE_NOTICE\}<\/p>/
+  );
+  assert.ok(noticeContainer);
+  assert.match(noticeContainer[1], /\btext-left\b/);
+  assert.doesNotMatch(noticeContainer[1], /\btext-center\b/);
+  assert.match(noticeContainer[1], /\bmx-auto\b/);
+  assert.match(noticeContainer[1], /\bmax-w-sm\b/);
+  assert.match(noticeContainer[1], /\bpx-2\b/);
+  assert.match(login, /action=\{signInWithGoogle\}/);
+  assert.match(login, /name="callbackUrl" value=\{callbackUrl\}/);
   assert.match(login, /accountDeleted/);
   assert.match(login, /accountSuspended/);
   assert.match(demoLayout, /この画面のデータはサンプルです/);

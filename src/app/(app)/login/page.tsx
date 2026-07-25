@@ -100,7 +100,7 @@ export default async function LoginPage({
           <Eye className="h-4 w-4" aria-hidden />
           サンプルを見てみる
         </Link>
-        <div className="mt-3 space-y-1 text-center text-xs leading-5 text-slate-500">
+        <div className="mx-auto mt-3 max-w-sm space-y-1 px-2 text-left text-xs leading-5 text-slate-500">
           <p>デモでは架空のサンプルデータを閲覧できます。登録・編集・削除はできません。</p>
           <p>{PUBLIC_DEMO_DIFFERENCE_NOTICE}</p>
         </div>
