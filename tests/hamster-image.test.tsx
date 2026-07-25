@@ -222,3 +222,50 @@ test("管理外ハムスターは画像編集不可だが登録済み画像を�
   assert.match(html, /きなこのプロフィール画像を拡大表示/);
   assert.match(html, /元画像10MB以内/);
 });
+
+test("デモ用画像管理プレビューは静的画像と操作不可UIだけを表示する", () => {
+  const html = renderToStaticMarkup(
+    <HamsterImageField
+      hamsterId="public-demo-hamster-kinako"
+      hamsterName="きなこ"
+      currentFileName={null}
+      staticImagePath="/demo/hamsters/kinako.svg"
+      mode="preview"
+    />
+  );
+
+  assert.match(html, /src="\/demo\/hamsters\/kinako\.svg"/);
+  assert.doesNotMatch(html, /\/api\/hamsters\//);
+  assert.match(html, /type="file"(?=[^>]*disabled="")(?=[^>]*aria-disabled="true")[^>]*>/);
+  assert.doesNotMatch(html, /type="file"[^>]*name="profileImage"/);
+  assert.match(html, /JPEG、PNG、WebP \/ 元画像10MB以内/);
+  assert.match(html, /<button(?=[^>]*disabled="")(?=[^>]*aria-disabled="true")[^>]*>[\s\S]*登録済み画像を削除/);
+  assert.doesNotMatch(html, /name="removeProfileImage"/);
+  assert.match(html, /この画像管理画面は機能紹介用のプレビューです/);
+  assert.doesNotMatch(html, /<form|type="submit"/);
+});
+
+test("通常画像フィールドはファイル選択・即時プレビュー・削除指定を維持する", async () => {
+  const currentFileName = createHamsterImageFileName();
+  const html = renderToStaticMarkup(
+    <HamsterImageField
+      hamsterId="hamster-1"
+      hamsterName="きなこ"
+      currentFileName={currentFileName}
+    />
+  );
+  const source = await readFile("src/components/hamster-image-field.tsx", "utf8");
+  const previewStart = source.indexOf("function HamsterImageFieldPreview");
+  const interactiveStart = source.indexOf("function InteractiveHamsterImageField");
+  const previewSource = source.slice(previewStart, interactiveStart);
+  const interactiveSource = source.slice(interactiveStart);
+
+  assert.match(html, /type="file"[^>]*name="profileImage"/);
+  assert.doesNotMatch(html, /type="file"[^>]*disabled=""/);
+  assert.match(html, /name="removeProfileImage"/);
+  assert.doesNotMatch(html, /name="removeProfileImage"[^>]*disabled=""/);
+  assert.match(interactiveSource, /onChange=\{\(event\) =>/);
+  assert.match(interactiveSource, /URL\.createObjectURL\(file\)/);
+  assert.match(interactiveSource, /setRemoveCurrent\(event\.currentTarget\.checked\)/);
+  assert.doesNotMatch(previewSource, /onChange=|URL\.createObjectURL|removeProfileImage/);
+});

@@ -15,7 +15,6 @@ import { ClientPagination } from "@/components/client-pagination";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import { HamsterActiveStatusForm } from "@/components/hamster-active-status-form";
 import { HamsterImageField } from "@/components/hamster-image-field";
-import { HamsterThumbnail } from "@/components/hamster-thumbnail";
 import { SelectionActionBar } from "@/components/selection-action-bar";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { normalizeSearchText } from "@/lib/search";
@@ -266,31 +265,35 @@ export function HamsterList({
                       <input name="memo" maxLength={2000} defaultValue={hamster.memo ?? ""} disabled={isLocked} readOnly={readOnly} />
                     </label>
                     <div className="min-w-0 lg:col-span-5 lg:row-start-2">
-                      {readOnly ? (
-                        <fieldset className="min-w-0 rounded-md border border-slate-200 bg-slate-50 p-3">
-                          <legend className="px-1 text-sm font-semibold text-slate-700">プロフィール画像</legend>
-                          <HamsterThumbnail
-                            hamsterId={hamster.id}
-                            hamsterName={hamster.name}
-                            profileImageFileName={hamster.profileImageFileName}
-                            staticImagePath={hamster.staticImagePath}
-                            size="management"
-                          />
-                        </fieldset>
-                      ) : <HamsterImageField
+                      <HamsterImageField
                         hamsterId={hamster.id}
                         hamsterName={hamster.name}
                         currentFileName={hamster.profileImageFileName}
+                        staticImagePath={readOnly ? hamster.staticImagePath : null}
+                        mode={readOnly ? "preview" : "interactive"}
                         disabled={isLocked}
-                      />}
+                      />
                     </div>
-                    {!readOnly ? <DirtySubmitButton
-                      disabled={isLocked}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 self-end rounded-md border border-moss px-4 text-sm font-semibold text-moss hover:bg-moss hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 lg:col-start-5 lg:row-start-1 lg:w-auto"
-                    >
-                      <Save className="h-4 w-4" aria-hidden />
-                      保存
-                    </DirtySubmitButton> : null}
+                    {readOnly ? (
+                      <button
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        title="サンプル閲覧モードでは保存できません"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 self-end rounded-md border border-slate-300 bg-slate-100 px-4 text-sm font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-100 lg:col-start-5 lg:row-start-1 lg:w-auto"
+                      >
+                        <Save className="h-4 w-4" aria-hidden />
+                        保存
+                      </button>
+                    ) : (
+                      <DirtySubmitButton
+                        disabled={isLocked}
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 self-end rounded-md border border-moss px-4 text-sm font-semibold text-moss hover:bg-moss hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 lg:col-start-5 lg:row-start-1 lg:w-auto"
+                      >
+                        <Save className="h-4 w-4" aria-hidden />
+                        保存
+                      </DirtySubmitButton>
+                    )}
                   </form>
                   {!readOnly ? <div className="flex w-full flex-wrap items-end gap-2 lg:hidden">
                     <HamsterActiveStatusForm hamsterId={hamster.id} isActive={hamster.isActive} />

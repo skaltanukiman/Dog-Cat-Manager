@@ -193,6 +193,17 @@ test("デモ用プロフィール画像は公開静的パスを直接使用し�
   assert.doesNotMatch(markup, /\/api\/hamsters\//);
 });
 
+test("デモ版ハムスター一覧は各カードで画像管理プレビューを選び、更新Actionを設定しない", async () => {
+  const source = await readFile("src/components/hamster-list.tsx", "utf8");
+
+  assert.match(source, /action=\{readOnly \? undefined : updateHamster\}/);
+  assert.match(source, /staticImagePath=\{readOnly \? hamster\.staticImagePath : null\}/);
+  assert.match(source, /mode=\{readOnly \? "preview" : "interactive"\}/);
+  assert.match(source, /title="サンプル閲覧モードでは保存できません"/);
+  assert.match(source, /type="button"\s+disabled\s+aria-disabled="true"/);
+  assert.doesNotMatch(source, /readOnly \? updateHamster/);
+});
+
 test("デモ画面は操作不可の登録UIプレビュー、noindex、準備中表示を備える", async () => {
   const [
     layout,

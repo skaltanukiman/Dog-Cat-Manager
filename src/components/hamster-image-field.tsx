@@ -10,15 +10,85 @@ type HamsterImageFieldProps = {
   hamsterId?: string;
   hamsterName?: string;
   currentFileName?: string | null;
+  staticImagePath?: string | null;
   disabled?: boolean;
+  mode?: "interactive" | "preview";
 };
 
-export function HamsterImageField({
+const PREVIEW_DISABLED_TITLE = "サンプル閲覧モードでは利用できません";
+
+function HamsterImageFieldPreview({
+  hamsterId,
+  hamsterName,
+  currentFileName,
+  staticImagePath
+}: {
+  hamsterId?: string;
+  hamsterName: string;
+  currentFileName: string | null;
+  staticImagePath: string | null;
+}) {
+  const hasCurrentImage = Boolean(staticImagePath || currentFileName);
+
+  return (
+    <fieldset
+      aria-disabled="true"
+      className="min-w-0 rounded-md border border-slate-200 bg-slate-50 p-3"
+    >
+      <legend className="px-1 text-sm font-semibold text-slate-700">プロフィール画像（任意）</legend>
+      <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center">
+        {hamsterId ? (
+          <HamsterThumbnail
+            hamsterId={hamsterId}
+            hamsterName={hamsterName}
+            profileImageFileName={currentFileName}
+            staticImagePath={staticImagePath}
+            size="management"
+          />
+        ) : (
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-400">
+            <ImagePlus className="h-7 w-7" aria-hidden />
+          </div>
+        )}
+        <div className="min-w-0 flex-1 space-y-2">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled
+            aria-disabled="true"
+            title={PREVIEW_DISABLED_TITLE}
+            className="block w-full min-w-0 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-300 file:px-3 file:py-2 file:font-semibold file:text-slate-700 disabled:cursor-not-allowed disabled:opacity-100"
+          />
+          <p className="text-xs leading-5 text-slate-500">
+            JPEG、PNG、WebP / 元画像10MB以内。保存時に正方形のWebPへ変換し、2MB以下に圧縮します。
+          </p>
+          {hasCurrentImage ? (
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title={PREVIEW_DISABLED_TITLE}
+              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              登録済み画像を削除
+            </button>
+          ) : null}
+          <p className="text-xs leading-5 text-sky-800">
+            この画像管理画面は機能紹介用のプレビューです。サンプル閲覧モードでは画像を変更・削除できません。
+          </p>
+        </div>
+      </div>
+    </fieldset>
+  );
+}
+
+function InteractiveHamsterImageField({
   hamsterId,
   hamsterName = "ハムスター",
   currentFileName = null,
   disabled = false
-}: HamsterImageFieldProps) {
+}: Omit<HamsterImageFieldProps, "mode" | "staticImagePath">) {
   const inputId = useId();
   const errorId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -129,5 +199,34 @@ export function HamsterImageField({
         </div>
       </div>
     </fieldset>
+  );
+}
+
+export function HamsterImageField({
+  hamsterId,
+  hamsterName = "ハムスター",
+  currentFileName = null,
+  staticImagePath = null,
+  disabled = false,
+  mode = "interactive"
+}: HamsterImageFieldProps) {
+  if (mode === "preview") {
+    return (
+      <HamsterImageFieldPreview
+        hamsterId={hamsterId}
+        hamsterName={hamsterName}
+        currentFileName={currentFileName}
+        staticImagePath={staticImagePath}
+      />
+    );
+  }
+
+  return (
+    <InteractiveHamsterImageField
+      hamsterId={hamsterId}
+      hamsterName={hamsterName}
+      currentFileName={currentFileName}
+      disabled={disabled}
+    />
   );
 }
