@@ -6,14 +6,17 @@ import {
   CONTACT_REPLY_MAX_LENGTH,
   CONTACT_STATUSES,
   contactReplySchema,
-  createContactInquirySchema
+  createContactInquirySchema,
+  isPublicContactId
 } from "@/lib/contact-inquiry-core";
 import {
   addUserContactReply,
   createContactInquiry,
   updateContactInquiryByAdmin
 } from "@/lib/contact-inquiry-mutations";
+import { publishContactInquiryChangeSafely } from "@/lib/contact-realtime";
 import { getRequiredAppAdminUser, getRequiredSessionUser } from "@/lib/auth-context";
+import { getRealtimeActorId } from "@/lib/realtime";
 import { revalidatePathsSafely } from "@/lib/safe-side-effects";
 import { handleServerActionError, isPrismaUniqueConstraintError } from "@/lib/server-errors";
 
@@ -117,10 +120,6 @@ export type ContactReplyState = {
   error: string | null;
 };
 
-function isPublicContactId(value: unknown): value is string {
-  return typeof value === "string" && /^HMB-\d{8}-[A-F0-9]{10}$/.test(value);
-}
-
 export async function replyToContactInquiry(
   _previousState: ContactReplyState,
   formData: FormData
@@ -135,10 +134,12 @@ export async function replyToContactInquiry(
     }
     const result = await addUserContactReply({
       actorUserId: user.id,
+      actorClientId: getRealtimeActorId(formData),
       publicId,
       body: parsed.data
     });
     if (result.status === "replied") {
+      publishContactInquiryChangeSafely(result.change);
       revalidatePathsSafely(
         [
           { path: `/contact/${publicId}` },
@@ -206,12 +207,14 @@ export async function updateContactInquiryAdmin(
 
     const result = await updateContactInquiryByAdmin({
       actorUserId: admin.id,
+      actorClientId: getRealtimeActorId(formData),
       publicId,
       body,
       nextStatus: rawStatus as ContactInquiryStatus,
       assignedAdminUserId: rawAssignee || null
     });
     if (result.status === "updated") {
+      publishContactInquiryChangeSafely(result.change);
       revalidatePathsSafely(
         [
           { path: `/admin/inquiries/${publicId}` },

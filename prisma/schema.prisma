@@ -347,6 +347,9 @@ model ContactInquiry {
   updatedAt                 DateTime                  @updatedAt @map("updated_at")
   resolvedAt                DateTime?                 @map("resolved_at")
   closedAt                  DateTime?                 @map("closed_at")
+  realtimeRevision          BigInt                    @default(0) @map("realtime_revision")
+  realtimeActorClientId     String?                   @map("realtime_actor_client_id") @db.VarChar(128)
+  realtimeActorUserId       String?                   @map("realtime_actor_user_id")
   user                      User?                     @relation("ContactInquiryUser", fields: [userId], references: [id], onDelete: SetNull)
   assignedAdmin             User?                     @relation("ContactInquiryAssignedAdmin", fields: [assignedAdminUserId], references: [id], onDelete: SetNull)
   messages                  ContactInquiryMessage[]

@@ -17,6 +17,10 @@ import {
   statusAfterUserReply,
   type ContactCreationLimitCode
 } from "@/lib/contact-inquiry-core";
+import type {
+  CommittedContactInquiryChange,
+  ContactInquiryChangeSource
+} from "@/lib/contact-realtime";
 import { prisma } from "@/lib/prisma";
 
 type ContactActor = {
@@ -79,6 +83,13 @@ export type ContactInquiryMutationRepository = {
     assignedAdminNameSnapshot: string | null;
     now: Date;
   }): Promise<boolean>;
+  updateRealtimeRevision(input: {
+    inquiry: MutableInquiry;
+    source: ContactInquiryChangeSource;
+    actorClientId: string | null;
+    actorUserId: string;
+    now: Date;
+  }): Promise<CommittedContactInquiryChange>;
 };
 
 export type ContactInquiryMutationExecutor = <T>(
@@ -219,6 +230,31 @@ const executePrismaContactMutation: ContactInquiryMutationExecutor = (operation)
           }
         });
         return updated.count === 1;
+      },
+      updateRealtimeRevision: async ({
+        inquiry,
+        source,
+        actorClientId,
+        actorUserId,
+        now
+      }) => {
+        const updated = await tx.contactInquiry.update({
+          where: { id: inquiry.id },
+          data: {
+            realtimeRevision: { increment: 1 },
+            realtimeActorClientId: actorClientId,
+            realtimeActorUserId: actorUserId,
+            updatedAt: now
+          },
+          select: { realtimeRevision: true }
+        });
+        return {
+          publicId: inquiry.publicId,
+          source,
+          actorClientId,
+          actorUserId,
+          revision: updated.realtimeRevision.toString()
+        };
       }
     })
   );
@@ -289,12 +325,22 @@ export async function createContactInquiry(
 }
 
 export type UserContactReplyResult =
-  | { status: "replied"; nextStatus: ContactInquiryStatus }
+  | {
+      status: "replied";
+      nextStatus: ContactInquiryStatus;
+      change: CommittedContactInquiryChange;
+    }
   | { status: "forbidden" | "notFound" | "closed" | "stateChanged" }
   | { status: "limited"; retryAt: Date };
 
 export async function addUserContactReply(
-  input: { actorUserId: string; publicId: string; body: string; now?: Date },
+  input: {
+    actorUserId: string;
+    actorClientId?: string | null;
+    publicId: string;
+    body: string;
+    now?: Date;
+  },
   execute: ContactInquiryMutationExecutor = executePrismaContactMutation
 ): Promise<UserContactReplyResult> {
   const now = input.now ?? new Date();
@@ -333,12 +379,23 @@ export async function addUserContactReply(
       body: input.body,
       now
     });
-    return { status: "replied", nextStatus };
+    const change = await repository.updateRealtimeRevision({
+      inquiry,
+      source: "user-reply",
+      actorClientId: input.actorClientId ?? null,
+      actorUserId: actor.id,
+      now
+    });
+    return { status: "replied", nextStatus, change };
   });
 }
 
 export type AdminContactMutationResult =
-  | { status: "updated"; nextStatus: ContactInquiryStatus }
+  | {
+      status: "updated";
+      nextStatus: ContactInquiryStatus;
+      change: CommittedContactInquiryChange;
+    }
   | {
       status:
         | "forbidden"
@@ -353,6 +410,7 @@ export type AdminContactMutationResult =
 export async function updateContactInquiryByAdmin(
   input: {
     actorUserId: string;
+    actorClientId?: string | null;
     publicId: string;
     body: string | null;
     nextStatus: ContactInquiryStatus;
@@ -422,6 +480,17 @@ export async function updateContactInquiryByAdmin(
         now
       });
     }
-    return { status: "updated", nextStatus: input.nextStatus };
+    const change = await repository.updateRealtimeRevision({
+      inquiry,
+      source: input.body
+        ? "admin-reply"
+        : input.nextStatus !== inquiry.status
+          ? "status"
+          : "assignee",
+      actorClientId: input.actorClientId ?? null,
+      actorUserId: actor.id,
+      now
+    });
+    return { status: "updated", nextStatus: input.nextStatus, change };
   });
 }

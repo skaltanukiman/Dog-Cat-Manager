@@ -7,6 +7,10 @@ import { useEffect, useRef, useState } from "react";
 import { hasDirtyForms } from "@/components/form-dirty-state";
 import { REALTIME_ACTOR_FIELD, REALTIME_LOCAL_SUBMIT_EVENT } from "@/lib/realtime-constants";
 import {
+  createRealtimeClientId,
+  ensureRealtimeClientId
+} from "@/lib/realtime-client-id";
+import {
   createRealtimeHealthState,
   getRealtimeRetryDelay,
   recordRealtimeFailure,
@@ -34,44 +38,6 @@ type HouseholdRevisionPayload = {
 };
 
 const REMOTE_REFRESH_DEBOUNCE_MS = 150;
-const CLIENT_STORAGE_KEY = "hamster-manager-realtime-client-id";
-
-function createClientId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-}
-
-function readSessionStorage(key: string) {
-  try {
-    return window.sessionStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function writeSessionStorage(key: string, value: string) {
-  try {
-    window.sessionStorage.setItem(key, value);
-  } catch {
-    // Storage access can fail in restricted browser modes. In that case the in-memory id still works.
-  }
-}
-
-function ensureClientId() {
-  // 同一タブのServer Actionへ安定した識別子を渡し、自分の更新による再refreshを抑止する。
-  const existingClientId = readSessionStorage(CLIENT_STORAGE_KEY);
-
-  if (existingClientId) {
-    return existingClientId;
-  }
-
-  const clientId = createClientId();
-  writeSessionStorage(CLIENT_STORAGE_KEY, clientId);
-  return clientId;
-}
 
 function isGetForm(form: HTMLFormElement) {
   return form.method.toLowerCase() === "get" && !form.hasAttribute("data-dirty-watch");
@@ -79,13 +45,13 @@ function isGetForm(form: HTMLFormElement) {
 
 export function RealtimeRefreshListener({ currentUserId, householdId }: RealtimeRefreshListenerProps) {
   const router = useRouter();
-  const clientIdRef = useRef<string>(createClientId());
+  const clientIdRef = useRef<string>(createRealtimeClientId());
   const lastRevisionRef = useRef<string | null>(null);
   const [hasPendingChange, setHasPendingChange] = useState(false);
   const [hasSyncWarning, setHasSyncWarning] = useState(false);
 
   useEffect(() => {
-    const clientId = ensureClientId();
+    const clientId = ensureRealtimeClientId();
     clientIdRef.current = clientId;
     lastRevisionRef.current = null;
     let isMounted = true;

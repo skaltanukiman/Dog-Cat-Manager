@@ -22,6 +22,7 @@ import {
   parseAdminInquiryQuery,
   parseInitialErrorId,
   parseInitialSourcePath,
+  isPublicContactId,
   statusAfterUserReply
 } from "../src/lib/contact-inquiry-core";
 import {
@@ -36,6 +37,12 @@ import {
   getAdminContactInquiryPage,
   getUserContactInquiryPage
 } from "../src/lib/contact-inquiry-queries";
+import {
+  canViewContactInquiryRealtime,
+  getContactRealtimeLookup
+} from "../src/lib/contact-realtime-access";
+import { decideContactRealtimeChange } from "../src/lib/contact-realtime-client";
+import { publishContactInquiryChangeSafely } from "../src/lib/contact-realtime";
 
 type FakeUser = {
   id: string;
@@ -65,6 +72,9 @@ type FakeInquiry = {
   status: ContactInquiryStatus;
   assignedAdminUserId: string | null;
   assignedAdminNameSnapshot: string | null;
+  realtimeRevision: number;
+  realtimeActorClientId: string | null;
+  realtimeActorUserId: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -75,6 +85,8 @@ type FakeDatabase = {
   lockTails: Map<string, Promise<void>>;
   nextId: number;
   failNextUpdate: boolean;
+  failNextMessage: boolean;
+  failNextRevision: boolean;
 };
 
 function createDatabase(): FakeDatabase {
@@ -89,12 +101,17 @@ function createDatabase(): FakeDatabase {
     messages: [],
     lockTails: new Map(),
     nextId: 1,
-    failNextUpdate: false
+    failNextUpdate: false,
+    failNextMessage: false,
+    failNextRevision: false
   };
 }
 
 function createExecutor(database: FakeDatabase): ContactInquiryMutationExecutor {
   return async (operation) => {
+    const inquirySnapshot = database.inquiries.map((inquiry) => ({ ...inquiry }));
+    const messageSnapshot = database.messages.map((message) => ({ ...message }));
+    const nextIdSnapshot = database.nextId;
     const releases: Array<() => void> = [];
     const repository: ContactInquiryMutationRepository = {
       lock: async (key) => {
@@ -135,6 +152,9 @@ function createExecutor(database: FakeDatabase): ContactInquiryMutationExecutor 
           status: "OPEN",
           assignedAdminUserId: null,
           assignedAdminNameSnapshot: null,
+          realtimeRevision: 0,
+          realtimeActorClientId: null,
+          realtimeActorUserId: null,
           createdAt: input.now,
           updatedAt: input.now
         };
@@ -187,6 +207,10 @@ function createExecutor(database: FakeDatabase): ContactInquiryMutationExecutor 
           .filter((message) => message.inquiryId === inquiryId && message.senderType === senderType)
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]?.createdAt ?? null,
       createMessage: async ({ inquiryId, senderType, actor, body, now }) => {
+        if (database.failNextMessage) {
+          database.failNextMessage = false;
+          throw new Error("message create failed");
+        }
         database.messages.push({
           id: `message-${database.nextId++}`,
           inquiryId,
@@ -209,10 +233,48 @@ function createExecutor(database: FakeDatabase): ContactInquiryMutationExecutor 
         stored.assignedAdminNameSnapshot = assignedAdminNameSnapshot;
         stored.updatedAt = now;
         return true;
+      },
+      updateRealtimeRevision: async ({
+        inquiry,
+        source,
+        actorClientId,
+        actorUserId,
+        now
+      }) => {
+        if (database.failNextRevision) {
+          database.failNextRevision = false;
+          throw new Error("revision update failed");
+        }
+        const stored = database.inquiries.find((item) => item.id === inquiry.id);
+        if (!stored) throw new Error("inquiry not found");
+        stored.realtimeRevision += 1;
+        stored.realtimeActorClientId = actorClientId;
+        stored.realtimeActorUserId = actorUserId;
+        stored.updatedAt = now;
+        return {
+          publicId: stored.publicId,
+          source,
+          actorClientId,
+          actorUserId,
+          revision: String(stored.realtimeRevision)
+        };
       }
     };
     try {
       return await operation(repository);
+    } catch (error) {
+      database.inquiries.splice(
+        0,
+        database.inquiries.length,
+        ...inquirySnapshot.map((inquiry) => ({ ...inquiry }))
+      );
+      database.messages.splice(
+        0,
+        database.messages.length,
+        ...messageSnapshot.map((message) => ({ ...message }))
+      );
+      database.nextId = nextIdSnapshot;
+      throw error;
     } finally {
       for (const release of releases.reverse()) release();
     }
@@ -347,11 +409,24 @@ test("利用者は自分の問い合わせだけへ返信し、回答待ち・�
   const inquiry = await seedInquiry(database);
   inquiry.status = "WAITING_FOR_USER";
   const result = await addUserContactReply(
-    { actorUserId: "user-1", publicId: inquiry.publicId, body: "追加情報を返信します。", now: new Date("2026-07-24T00:00:11Z") },
+    {
+      actorUserId: "user-1",
+      actorClientId: "client-user-tab-1",
+      publicId: inquiry.publicId,
+      body: "追加情報を返信します。",
+      now: new Date("2026-07-24T00:00:11Z")
+    },
     createExecutor(database)
   );
-  assert.deepEqual(result, { status: "replied", nextStatus: "IN_PROGRESS" });
+  assert.equal(result.status, "replied");
+  if (result.status !== "replied") throw new Error("reply failed");
+  assert.equal(result.nextStatus, "IN_PROGRESS");
+  assert.equal(result.change.revision, "1");
+  assert.equal(result.change.actorClientId, "client-user-tab-1");
   assert.equal(inquiry.status, "IN_PROGRESS");
+  assert.equal(inquiry.realtimeRevision, 1);
+  assert.equal(inquiry.realtimeActorClientId, "client-user-tab-1");
+  assert.equal(inquiry.realtimeActorUserId, "user-1");
   assert.equal(database.messages.at(-1)?.senderType, "USER");
 
   const other = await addUserContactReply(
@@ -396,6 +471,7 @@ test("管理者とスーパー管理者は返信・状態・担当者を同時�
   const updated = await updateContactInquiryByAdmin(
     {
       actorUserId: "admin-1",
+      actorClientId: "client-admin-tab-1",
       publicId: inquiry.publicId,
       body: "サポート担当からの返信です。",
       nextStatus: "WAITING_FOR_USER",
@@ -404,9 +480,14 @@ test("管理者とスーパー管理者は返信・状態・担当者を同時�
     },
     createExecutor(database)
   );
-  assert.deepEqual(updated, { status: "updated", nextStatus: "WAITING_FOR_USER" });
+  assert.equal(updated.status, "updated");
+  if (updated.status !== "updated") throw new Error("admin update failed");
+  assert.equal(updated.nextStatus, "WAITING_FOR_USER");
+  assert.equal(updated.change.revision, "1");
+  assert.equal(updated.change.actorClientId, "client-admin-tab-1");
   assert.equal(inquiry.assignedAdminUserId, "admin-1");
   assert.equal(inquiry.assignedAdminNameSnapshot, "管理者");
+  assert.equal(inquiry.realtimeRevision, 1);
   assert.equal(database.messages.at(-1)?.senderType, "ADMIN");
 
   const forbidden = await updateContactInquiryByAdmin(
@@ -441,6 +522,176 @@ test("通常ユーザー・停止管理者を担当者にできず、不正な�
       createExecutor(database)
     )).status,
     "closed"
+  );
+});
+
+test("管理者の状態だけ・担当者だけの変更でも問い合わせrevisionを増加する", async () => {
+  const statusDatabase = createDatabase();
+  const statusInquiry = await seedInquiry(statusDatabase);
+  const statusResult = await updateContactInquiryByAdmin(
+    {
+      actorUserId: "admin-1",
+      actorClientId: "client-admin-status",
+      publicId: statusInquiry.publicId,
+      body: null,
+      nextStatus: "IN_PROGRESS",
+      assignedAdminUserId: null,
+      now: new Date("2026-07-24T00:01:00Z")
+    },
+    createExecutor(statusDatabase)
+  );
+  assert.equal(statusResult.status, "updated");
+  if (statusResult.status !== "updated") throw new Error("status update failed");
+  assert.equal(statusResult.change.source, "status");
+  assert.equal(statusResult.change.revision, "1");
+  assert.equal(statusDatabase.inquiries[0].realtimeRevision, 1);
+
+  const assigneeDatabase = createDatabase();
+  const assigneeInquiry = await seedInquiry(assigneeDatabase);
+  assigneeInquiry.status = "IN_PROGRESS";
+  const assigneeResult = await updateContactInquiryByAdmin(
+    {
+      actorUserId: "admin-1",
+      actorClientId: "client-admin-assignee",
+      publicId: assigneeInquiry.publicId,
+      body: null,
+      nextStatus: "IN_PROGRESS",
+      assignedAdminUserId: "super-1",
+      now: new Date("2026-07-24T00:01:00Z")
+    },
+    createExecutor(assigneeDatabase)
+  );
+  assert.equal(assigneeResult.status, "updated");
+  if (assigneeResult.status !== "updated") throw new Error("assignee update failed");
+  assert.equal(assigneeResult.change.source, "assignee");
+  assert.equal(assigneeResult.change.revision, "1");
+  assert.equal(assigneeDatabase.inquiries[0].assignedAdminUserId, "super-1");
+  assert.equal(assigneeDatabase.inquiries[0].realtimeRevision, 1);
+});
+
+test("メッセージ保存またはrevision更新失敗時は同一transactionの変更を残さない", async () => {
+  const messageDatabase = createDatabase();
+  const messageInquiry = await seedInquiry(messageDatabase);
+  const messageCount = messageDatabase.messages.length;
+  messageDatabase.failNextMessage = true;
+  await assert.rejects(
+    addUserContactReply(
+      {
+        actorUserId: "user-1",
+        actorClientId: "client-user-failure",
+        publicId: messageInquiry.publicId,
+        body: "保存失敗を確認する返信です。",
+        now: new Date("2026-07-24T00:00:11Z")
+      },
+      createExecutor(messageDatabase)
+    ),
+    /message create failed/
+  );
+  assert.equal(messageDatabase.messages.length, messageCount);
+  assert.equal(messageDatabase.inquiries[0].realtimeRevision, 0);
+  assert.equal(messageDatabase.inquiries[0].status, "OPEN");
+
+  const revisionDatabase = createDatabase();
+  const revisionInquiry = await seedInquiry(revisionDatabase);
+  const revisionMessageCount = revisionDatabase.messages.length;
+  revisionDatabase.failNextRevision = true;
+  await assert.rejects(
+    addUserContactReply(
+      {
+        actorUserId: "user-1",
+        actorClientId: "client-user-revision-failure",
+        publicId: revisionInquiry.publicId,
+        body: "revision失敗を確認する返信です。",
+        now: new Date("2026-07-24T00:00:11Z")
+      },
+      createExecutor(revisionDatabase)
+    ),
+    /revision update failed/
+  );
+  assert.equal(revisionDatabase.messages.length, revisionMessageCount);
+  assert.equal(revisionDatabase.inquiries[0].realtimeRevision, 0);
+  assert.equal(revisionDatabase.inquiries[0].status, "OPEN");
+});
+
+test("問い合わせSSE通知失敗はcommit済みの業務結果を失敗扱いにしない", () => {
+  const result = publishContactInquiryChangeSafely(
+    {
+      publicId: "HMB-20260724-A000000001",
+      source: "user-reply",
+      actorClientId: "client-user-1",
+      actorUserId: "user-1",
+      revision: "1"
+    },
+    () => {
+      throw new Error("SSE failed");
+    },
+    () => "00000000-0000-4000-8000-000000000000"
+  );
+  assert.equal(result, false);
+});
+
+test("問い合わせリアルタイム認可は所有者と管理者だけを許可し不正な公開番号を拒否する", () => {
+  const publicId = "HMB-20260724-A000000001";
+  const user = { id: "user-1", appRole: "USER", accessStatus: "ACTIVE" } as const;
+  const otherUser = { id: "user-2", appRole: "USER", accessStatus: "ACTIVE" } as const;
+  const admin = { id: "admin-1", appRole: "ADMIN", accessStatus: "ACTIVE" } as const;
+  const suspendedAdmin = {
+    id: "admin-1",
+    appRole: "ADMIN",
+    accessStatus: "SUSPENDED"
+  } as const;
+
+  assert.equal(isPublicContactId(publicId), true);
+  assert.equal(isPublicContactId("HMB-invalid"), false);
+  assert.equal(canViewContactInquiryRealtime(user, { userId: "user-1" }), true);
+  assert.equal(canViewContactInquiryRealtime(otherUser, { userId: "user-1" }), false);
+  assert.equal(canViewContactInquiryRealtime(admin, { userId: "user-1" }), true);
+  assert.equal(canViewContactInquiryRealtime(suspendedAdmin, { userId: "user-1" }), false);
+  assert.deepEqual(getContactRealtimeLookup(publicId, user), {
+    publicId,
+    userId: "user-1"
+  });
+  assert.deepEqual(getContactRealtimeLookup(publicId, admin), { publicId });
+  assert.equal(getContactRealtimeLookup("invalid", admin), null);
+  assert.equal(getContactRealtimeLookup(publicId, suspendedAdmin), null);
+});
+
+test("問い合わせ更新はクライアントIDで自己更新と別タブ更新を区別する", () => {
+  assert.equal(
+    decideContactRealtimeChange({
+      currentRevision: "1",
+      nextRevision: "2",
+      actorClientId: "tab-1",
+      currentClientId: "tab-1"
+    }),
+    "self"
+  );
+  assert.equal(
+    decideContactRealtimeChange({
+      currentRevision: "1",
+      nextRevision: "2",
+      actorClientId: "tab-1",
+      currentClientId: "tab-2"
+    }),
+    "remote"
+  );
+  assert.equal(
+    decideContactRealtimeChange({
+      currentRevision: "2",
+      nextRevision: "2",
+      actorClientId: "tab-1",
+      currentClientId: "tab-2"
+    }),
+    "stale"
+  );
+  assert.equal(
+    decideContactRealtimeChange({
+      currentRevision: "2",
+      nextRevision: "not-a-number",
+      actorClientId: null,
+      currentClientId: "tab-2"
+    }),
+    "invalid"
   );
 });
 
@@ -514,9 +765,13 @@ test("ページ番号・フィルターの不正値を安全に補正する", ()
 });
 
 test("PrismaとmigrationはUser削除SetNull、message Cascade、snapshot、indexを保持する", async () => {
-  const [schema, migration] = await Promise.all([
+  const [schema, migration, realtimeMigration] = await Promise.all([
     readFile("prisma/schema.prisma", "utf8"),
-    readFile("prisma/migrations/20260724190000_add_contact_inquiries/migration.sql", "utf8")
+    readFile("prisma/migrations/20260724190000_add_contact_inquiries/migration.sql", "utf8"),
+    readFile(
+      "prisma/migrations/20260726030000_add_contact_realtime_revision/migration.sql",
+      "utf8"
+    )
   ]);
   assert.match(schema, /model ContactInquiry \{/);
   assert.match(schema, /user\s+User\?\s+@relation\("ContactInquiryUser"[^\n]+onDelete: SetNull\)/);
@@ -529,10 +784,30 @@ test("PrismaとmigrationはUser削除SetNull、message Cascade、snapshot、inde
   assert.match(migration, /ON DELETE SET NULL/);
   assert.match(migration, /ON DELETE CASCADE/);
   assert.match(migration, /contact_inquiries_user_id_updated_at_id_idx/);
+  assert.match(schema, /realtimeRevision\s+BigInt\s+@default\(0\)/);
+  assert.match(schema, /realtimeActorClientId\s+String\?/);
+  assert.match(schema, /realtimeActorUserId\s+String\?/);
+  assert.match(realtimeMigration, /"realtime_revision" BIGINT NOT NULL DEFAULT 0/);
+  assert.match(realtimeMigration, /"realtime_actor_client_id" VARCHAR\(128\)/);
+  assert.match(realtimeMigration, /"realtime_actor_user_id" TEXT/);
 });
 
 test("ページとActionは認可、所有者条件、二重送信防止、終了時フォーム非表示を備える", async () => {
-  const [contactPage, detailPage, adminPage, adminDetail, action, form, replyForm, list, errorPanel, settings] =
+  const [
+    contactPage,
+    detailPage,
+    adminPage,
+    adminDetail,
+    action,
+    form,
+    replyForm,
+    list,
+    errorPanel,
+    settings,
+    realtimeListener,
+    realtimeSseRoute,
+    realtimeRevisionRoute
+  ] =
     await Promise.all([
       readFile("src/app/(app)/contact/page.tsx", "utf8"),
       readFile("src/app/(app)/contact/[publicId]/page.tsx", "utf8"),
@@ -543,7 +818,10 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
       readFile("src/components/contact-reply-form.tsx", "utf8"),
       readFile("src/components/contact-inquiry-list.tsx", "utf8"),
       readFile("src/components/unexpected-error-panel.tsx", "utf8"),
-      readFile("src/app/(app)/settings/page.tsx", "utf8")
+      readFile("src/app/(app)/settings/page.tsx", "utf8"),
+      readFile("src/components/contact-realtime-refresh-listener.tsx", "utf8"),
+      readFile("src/app/api/realtime/contact/route.ts", "utf8"),
+      readFile("src/app/api/realtime/contact/revision/route.ts", "utf8")
     ]);
   assert.match(contactPage, /getRequiredSessionUser\(\)/);
   assert.match(detailPage, /getUserContactInquiryDetail\(user\.id, publicId\)/);
@@ -557,8 +835,28 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
   assert.match(form, /disabled=\{pending\}/);
   assert.match(form, /送信中\.\.\./);
   assert.match(replyForm, /disabled=\{pending\}/);
+  assert.match(replyForm, /if \(!state\.success\) return;[\s\S]*?router\.refresh\(\)/);
+  assert.match(replyForm, /data-dirty-watch/);
+  assert.equal((replyForm.match(/useFormDirtyById\(formId\)/g) ?? []).length, 2);
+  assert.match(action, /actorClientId: getRealtimeActorId\(formData\)/);
+  assert.equal(
+    (action.match(/publishContactInquiryChangeSafely\(result\.change\)/g) ?? []).length,
+    2
+  );
   assert.match(detailPage, /inquiry\.status === "CLOSED"/);
   assert.match(adminDetail, /inquiry\.status === "CLOSED"/);
+  assert.match(detailPage, /<ContactRealtimeRefreshListener/);
+  assert.match(adminDetail, /<ContactRealtimeRefreshListener/);
+  assert.match(realtimeListener, /\/api\/realtime\/contact\?/);
+  assert.match(realtimeListener, /\/api\/realtime\/contact\/revision\?/);
+  assert.match(realtimeListener, /hasDirtyForms\(\)/);
+  assert.match(realtimeListener, /setHasPendingChange\(true\)/);
+  assert.match(realtimeListener, /decideContactRealtimeChange/);
+  assert.match(realtimeListener, /window\.addEventListener\("focus"/);
+  assert.match(realtimeSseRoute, /await auth\(\)/);
+  assert.match(realtimeSseRoute, /getContactRealtimeLookup\(publicId, viewer\)/);
+  assert.match(realtimeRevisionRoute, /await auth\(\)/);
+  assert.match(realtimeRevisionRoute, /realtimeRevision: true/);
   assert.match(list, /hidden overflow-x-auto[\s\S]*?lg:block/);
   assert.match(list, /className="grid gap-3 lg:hidden"/);
   assert.match(errorPanel, /このエラーについて問い合わせる/);

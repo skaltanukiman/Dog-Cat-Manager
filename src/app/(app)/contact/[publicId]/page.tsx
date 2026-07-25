@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { ContactMessageThread } from "@/components/contact-message-thread";
+import { ContactRealtimeRefreshListener } from "@/components/contact-realtime-refresh-listener";
 import { UserContactReplyForm } from "@/components/contact-reply-form";
 import { ContactCategoryBadge, ContactStatusBadge } from "@/components/contact-status-badge";
 import { StatusMessage } from "@/components/status-message";
@@ -30,6 +31,10 @@ export default async function ContactDetailPage({
 
   return (
     <div className="space-y-6">
+      <ContactRealtimeRefreshListener
+        publicId={inquiry.publicId}
+        initialRevision={inquiry.realtimeRevision.toString()}
+      />
       <div>
         <Link href="/contact" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -88,7 +93,10 @@ export default async function ContactDetailPage({
           この問い合わせは終了しています。追加の返信はできません。別の内容は新しい問い合わせとして送信してください。
         </div>
       ) : (
-        <UserContactReplyForm publicId={inquiry.publicId} />
+        <UserContactReplyForm
+          key={inquiry.realtimeRevision.toString()}
+          publicId={inquiry.publicId}
+        />
       )}
     </div>
   );

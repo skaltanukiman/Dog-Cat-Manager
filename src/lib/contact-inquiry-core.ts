@@ -134,6 +134,10 @@ export function createContactPublicId(
   return `HMB-${jstDateParts(now)}-${suffix}`;
 }
 
+export function isPublicContactId(value: unknown): value is string {
+  return typeof value === "string" && /^HMB-\d{8}-[A-F0-9]{10}$/.test(value);
+}
+
 export function createContactSearchText(input: {
   publicId: string;
   subject: string;

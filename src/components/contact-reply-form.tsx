@@ -2,12 +2,14 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 
 import {
   replyToContactInquiry,
   updateContactInquiryAdmin,
   type ContactReplyState
 } from "@/app/actions/contact";
+import { useFormDirtyById } from "@/components/form-dirty-state";
 import { CONTACT_REPLY_MAX_LENGTH, type ContactStatus } from "@/lib/contact-inquiry-core";
 
 const INITIAL_CONTACT_REPLY_STATE: ContactReplyState = { success: false, error: null };
@@ -41,16 +43,27 @@ function ActionMessage({ success, error }: { success: boolean; error: string | n
 }
 
 export function UserContactReplyForm({ publicId }: { publicId: string }) {
+  const router = useRouter();
+  const formId = `contact-user-reply-${publicId}`;
+  useFormDirtyById(formId);
   const [state, action] = useActionState(replyToContactInquiry, INITIAL_CONTACT_REPLY_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
-    if (state.success) formRef.current?.reset();
-  }, [state.success]);
+    if (!state.success) return;
+    formRef.current?.reset();
+    router.refresh();
+  }, [router, state]);
 
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
       <h3 className="text-base font-bold text-ink">追加で返信する</h3>
-      <form ref={formRef} action={action} className="mt-4 grid gap-4">
+      <form
+        id={formId}
+        ref={formRef}
+        action={action}
+        className="mt-4 grid gap-4"
+        data-dirty-watch
+      >
         <input type="hidden" name="publicId" value={publicId} />
         <ActionMessage success={state.success} error={state.error} />
         <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
@@ -83,6 +96,9 @@ export function AdminContactReplyForm({
   assignedAdminUserId: string | null;
   admins: Array<{ id: string; name: string | null; email: string | null; appRole: string }>;
 }) {
+  const router = useRouter();
+  const formId = `contact-admin-reply-${publicId}`;
+  useFormDirtyById(formId);
   const [state, action] = useActionState(updateContactInquiryAdmin, INITIAL_CONTACT_REPLY_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   const defaultStatus = currentStatus === "OPEN" ? "IN_PROGRESS" : currentStatus;
@@ -90,8 +106,9 @@ export function AdminContactReplyForm({
     if (state.success) {
       const body = formRef.current?.elements.namedItem("body");
       if (body instanceof HTMLTextAreaElement) body.value = "";
+      router.refresh();
     }
-  }, [state.success]);
+  }, [router, state]);
 
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
@@ -99,7 +116,13 @@ export function AdminContactReplyForm({
       <p className="mt-1 text-sm text-slate-600">
         返信せず、状態または担当者だけを変更することもできます。
       </p>
-      <form ref={formRef} action={action} className="mt-4 grid gap-4">
+      <form
+        id={formId}
+        ref={formRef}
+        action={action}
+        className="mt-4 grid gap-4"
+        data-dirty-watch
+      >
         <input type="hidden" name="publicId" value={publicId} />
         <ActionMessage success={state.success} error={state.error} />
         <label className="grid gap-1.5 text-sm font-semibold text-slate-700">

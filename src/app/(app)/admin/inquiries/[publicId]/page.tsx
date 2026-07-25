@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { ContactMessageThread } from "@/components/contact-message-thread";
+import { ContactRealtimeRefreshListener } from "@/components/contact-realtime-refresh-listener";
 import { AdminContactReplyForm } from "@/components/contact-reply-form";
 import { ContactCategoryBadge, ContactStatusBadge } from "@/components/contact-status-badge";
 import { StatusMessage } from "@/components/status-message";
@@ -37,6 +38,10 @@ export default async function AdminInquiryDetailPage({
 
   return (
     <div className="space-y-6">
+      <ContactRealtimeRefreshListener
+        publicId={inquiry.publicId}
+        initialRevision={inquiry.realtimeRevision.toString()}
+      />
       <div>
         <Link href="/admin/inquiries" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -110,6 +115,7 @@ export default async function AdminInquiryDetailPage({
         </div>
       ) : (
         <AdminContactReplyForm
+          key={inquiry.realtimeRevision.toString()}
           publicId={inquiry.publicId}
           currentStatus={inquiry.status}
           assignedAdminUserId={inquiry.assignedAdminUserId}

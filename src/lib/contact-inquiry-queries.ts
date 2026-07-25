@@ -41,6 +41,7 @@ const inquiryDetailSelect = {
   updatedAt: true,
   resolvedAt: true,
   closedAt: true,
+  realtimeRevision: true,
   messages: {
     orderBy: [{ createdAt: "asc" as const }, { id: "asc" as const }],
     select: {
