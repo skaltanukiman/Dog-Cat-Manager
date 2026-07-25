@@ -3,6 +3,8 @@ import type { Household } from "@prisma/client";
 export const PUBLIC_DEMO_SLUG = "public-sample";
 export const PUBLIC_DEMO_HOUSEHOLD_ID = "public-demo-household";
 export const PUBLIC_DEMO_HOUSEHOLD_NAME = "サンプル飼育グループ";
+export const PUBLIC_DEMO_DIFFERENCE_NOTICE =
+  "機能紹介用のため、通常版とは一部の画面構成・表示内容・操作UIが異なる場合があります。";
 
 export const PUBLIC_DEMO_HAMSTER_IDS = {
   kinako: "public-demo-hamster-kinako",

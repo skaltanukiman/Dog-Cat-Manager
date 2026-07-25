@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Eye, LogIn } from "lucide-react";
 
 import { signIn } from "@/auth";
+import { PUBLIC_DEMO_DIFFERENCE_NOTICE } from "@/lib/public-demo";
 
 export const dynamic = "force-dynamic";
 
@@ -99,9 +100,10 @@ export default async function LoginPage({
           <Eye className="h-4 w-4" aria-hidden />
           サンプルを見てみる
         </Link>
-        <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-          デモでは架空のサンプルデータを閲覧できます。登録・編集・削除はできません。
-        </p>
+        <div className="mt-3 space-y-1 text-center text-xs leading-5 text-slate-500">
+          <p>デモでは架空のサンプルデータを閲覧できます。登録・編集・削除はできません。</p>
+          <p>{PUBLIC_DEMO_DIFFERENCE_NOTICE}</p>
+        </div>
       </section>
     </div>
   );

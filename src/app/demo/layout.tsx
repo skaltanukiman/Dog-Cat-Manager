@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LogIn } from "lucide-react";
 
 import { DemoNav } from "@/components/demo-nav";
+import { PUBLIC_DEMO_DIFFERENCE_NOTICE } from "@/lib/public-demo";
 
 export const metadata: Metadata = {
   title: "サンプル閲覧 | Hamster Manager",
@@ -24,6 +25,7 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
               <div className="mt-2 text-xs leading-5 text-slate-600 sm:text-sm">
                 <p>この画面のデータはサンプルです。</p>
                 <p>登録・編集・削除はできません。</p>
+                <p>{PUBLIC_DEMO_DIFFERENCE_NOTICE}</p>
               </div>
             </div>
             <Link

@@ -289,6 +289,7 @@ test("デモ画面は操作不可の登録UIプレビュー、noindex、準備�
   assert.match(layout, /index:\s*false/);
   assert.match(layout, /follow:\s*false/);
   assert.match(layout, /登録・編集・削除はできません/);
+  assert.match(layout, /PUBLIC_DEMO_DIFFERENCE_NOTICE/);
   assert.match(layout, /ログインして利用する/);
   assert.match(unavailable, /現在、サンプルデータを準備中です。/);
 
@@ -414,13 +415,36 @@ test("通常画面の登録UIと更新Action接続は維持する", async () => 
   assert.match(weights, /lg:grid-cols-\[minmax\(280px,360px\)_1fr\]/);
 });
 
-test("ログイン画面にデモ導線と読み取り専用説明を表示する", async () => {
-  const source = await readFile("src/app/(app)/login/page.tsx", "utf8");
-  assert.match(source, /href="\/demo"/);
-  assert.match(source, /サンプルを見てみる/);
-  assert.match(source, /登録・編集・削除はできません/);
-  assert.match(source, /accountDeleted/);
-  assert.match(source, /accountSuspended/);
+test("ログイン画面とデモ共通レイアウトは通常版との差異を共通の補足として表示する", async () => {
+  const [login, demoLayout, notice, ...demoPages] = await Promise.all([
+    readFile("src/app/(app)/login/page.tsx", "utf8"),
+    readFile("src/app/demo/layout.tsx", "utf8"),
+    readFile("src/lib/public-demo.ts", "utf8"),
+    readFile("src/app/demo/page.tsx", "utf8"),
+    readFile("src/app/demo/hamsters/page.tsx", "utf8"),
+    readFile("src/app/demo/records/page.tsx", "utf8"),
+    readFile("src/app/demo/cleaning/page.tsx", "utf8"),
+    readFile("src/app/demo/weights/page.tsx", "utf8")
+  ]);
+
+  for (const source of [login, demoLayout]) {
+    assert.match(source, /PUBLIC_DEMO_DIFFERENCE_NOTICE/);
+  }
+  for (const keyword of ["機能紹介用", "通常版", "画面構成", "表示内容", "操作UI", "異なる場合があります"]) {
+    assert.match(notice, new RegExp(keyword));
+  }
+  assert.match(login, /href="\/demo"/);
+  assert.match(login, /サンプルを見てみる/);
+  assert.match(login, /架空のサンプルデータ/);
+  assert.match(login, /登録・編集・削除はできません/);
+  assert.match(login, /accountDeleted/);
+  assert.match(login, /accountSuspended/);
+  assert.match(demoLayout, /この画面のデータはサンプルです/);
+  assert.match(demoLayout, /登録・編集・削除はできません/);
+  assert.match(demoLayout, /ログインして利用する/);
+  for (const page of demoPages) {
+    assert.doesNotMatch(page, /PUBLIC_DEMO_DIFFERENCE_NOTICE|通常版とは一部の画面構成/);
+  }
 });
 
 test("永続RootLayoutは経路に依存せず、通常画面とデモ画面を別Route Groupレイアウトで分離する", async () => {
