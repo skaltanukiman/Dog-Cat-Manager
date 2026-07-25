@@ -290,6 +290,17 @@ test("デモ画面は操作不可の登録UIプレビュー、noindex、準備�
   assert.match(layout, /follow:\s*false/);
   assert.match(layout, /登録・編集・削除はできません/);
   assert.match(layout, /PUBLIC_DEMO_DIFFERENCE_NOTICE/);
+  assert.match(layout, /import \{ Info, LogIn \} from "lucide-react"/);
+  assert.match(layout, /デモ表示について：/);
+  assert.match(layout, /\bbg-moss\b/);
+  assert.match(layout, /\bborder-l-4\b/);
+  assert.match(layout, /\bborder-moss\b/);
+  assert.match(layout, /\bmax-w-3xl\b/);
+  assert.match(layout, /<Info[^>]*aria-hidden/);
+  assert.match(
+    layout,
+    /<p>\s*<span className="font-semibold text-slate-700">デモ表示について：<\/span>\s*\{PUBLIC_DEMO_DIFFERENCE_NOTICE\}\s*<\/p>/
+  );
   assert.match(layout, /ログインして利用する/);
   assert.match(unavailable, /現在、サンプルデータを準備中です。/);
 

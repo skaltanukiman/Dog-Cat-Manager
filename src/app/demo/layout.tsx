@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { Info, LogIn } from "lucide-react";
 
 import { DemoNav } from "@/components/demo-nav";
 import { PUBLIC_DEMO_DIFFERENCE_NOTICE } from "@/lib/public-demo";
@@ -25,7 +25,13 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
               <div className="mt-2 text-xs leading-5 text-slate-600 sm:text-sm">
                 <p>この画面のデータはサンプルです。</p>
                 <p>登録・編集・削除はできません。</p>
-                <p>{PUBLIC_DEMO_DIFFERENCE_NOTICE}</p>
+                <div className="mt-2 flex max-w-3xl gap-2 rounded-md border-l-4 border-moss bg-moss/5 px-3 py-2">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-moss" aria-hidden />
+                  <p>
+                    <span className="font-semibold text-slate-700">デモ表示について：</span>
+                    {PUBLIC_DEMO_DIFFERENCE_NOTICE}
+                  </p>
+                </div>
               </div>
             </div>
             <Link
