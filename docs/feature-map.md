@@ -28,15 +28,15 @@
 ## 匿名・読み取り専用デモ
 
 - **画面または URL:** `/demo`、`/demo/hamsters`、`/demo/records`、`/demo/cleaning`、`/demo/weights`。`/demonstration`などは公開対象外。
-- **主なコンポーネント:** `src/app/demo/layout.tsx`、`DemoNav`、`DemoUnavailable`と、通常画面でも使用する`HamsterList`、`HamsterThumbnail`、`RecordTimeline`、`CleaningMobileForm`、`WeightChart`、`WeightHistoryList`。
+- **主なコンポーネント:** `src/app/demo/layout.tsx`、`DemoNav`、`DemoUnavailable`、更新処理を持たない`DemoHamsterCreatePreview`、`DemoRecordCreateFormsPreview`、`DemoWeightCreatePreview`と、通常画面でも使用する`HamsterList`、`HamsterThumbnail`、`RecordTimeline`、`CleaningMobileForm`、`WeightChart`、`WeightHistoryList`。記録プレビューは体調・通院・思い出のタブだけを操作可能とし、各入力・画像選択・保存ボタンは無効化する。
 - **データアクセス:** `src/lib/public-demo-queries.ts`の`getPublicDemo...`関数だけを使用する。`Household.isDemo = true`かつ固定`demoSlug = "public-sample"`の両方を満たすHouseholdを最初に取得し、見つからなければ専用準備中表示へ進む。任意Household ID、セッション、選択中Household Cookie、`getRequiredHouseholdContext()`、通常Householdへのフォールバックは使用しない。
-- **読み取り専用:** デモpageは更新Actionをimportせず、登録・編集・削除・保存・画像アップロード・CSV・設定・共有・管理導線を描画しない。既存Action/APIの認証・Household更新ガードは変更しない。
+- **読み取り専用:** デモpageと登録UIプレビューは更新Actionをimportせず、更新用`form action`、`onSubmit`、更新APIへの`fetch`を持たない。主要な登録項目と無効状態の保存ボタンは機能紹介用に描画するが、入力・ファイル選択・保存はHTML属性でも操作不可にする。CSV・設定・共有・管理導線は描画せず、既存Action/APIの認証・Household更新ガードは変更しない。
 - **画像:** `public/demo/hamsters/*.svg`と`public/demo/records/*.svg`を固定配信し、ViewModelの`staticImagePath`で通常の認証付き画像APIと切り替える。`profileImageFileName`と`MemoryRecordImage.fileName`には公開パスを保存しない。
 - **データ投入:** `prisma/seed-demo.ts` / `npm run seed:demo`。固定slugと`isDemo`をtransaction内で再検証し、ユーザー所属がないデモHouseholdだけを削除・再構築する。JSTの実行日を基準に相対日付を生成する。静的画像はseed対象外でリポジトリに同梱する。
 - **親レイアウト:** 永続する`src/app/layout.tsx`はpathname・認証に依存しない。通常画面は`src/app/(app)/layout.tsx`、デモ画面は`src/app/demo/layout.tsx`という別のlayout枝に属する。デモ枝は`auth()`、Household切替データ、リアルタイム監視、通常ナビをimportしないため、ログイン中でも現在Household情報をデモへ混在させない。通常・デモ間のクライアント遷移と戻る操作ではlayout枝自体が切り替わる。
 - **SEO:** `src/app/demo/layout.tsx`で`noindex, nofollow`、`src/app/robots.ts`で`/demo`をDisallowする。アクセス制御は`proxy.ts`と固定デモquery条件が担う。
 - **通常データからの分離:** 通常membership取得・Household切替と、管理者向け共有一覧・件数・招待検索用共有候補は`isDemo: false`でデモHouseholdを除外する。
-- **関連テスト:** `tests/public-demo.test.tsx`（公開パス境界、通常画面認証、固定query、フォールバック禁止、seed再実行・通常Household保護、読み取り専用UI、ナビ、静的画像、noindex、ログイン導線、永続RootLayoutのpathname非依存、Route Group layout境界での通常・デモ分離）。
+- **関連テスト:** `tests/public-demo.test.tsx`（公開パス境界、通常画面認証、固定query、フォールバック禁止、seed再実行・通常Household保護、登録UIプレビューの項目・無効属性・更新処理非参照、通常登録UI維持、ナビ、静的画像、noindex、ログイン導線、永続RootLayoutのpathname非依存、Route Group layout境界での通常・デモ分離）。
 
 ## Household 共有・メンバー管理
 

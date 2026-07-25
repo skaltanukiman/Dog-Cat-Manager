@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AutoSubmitFilterForm, FilterClearButton } from "@/components/auto-submit-filter-form";
 import { DemoUnavailable } from "@/components/demo-unavailable";
+import { DemoRecordCreateFormsPreview } from "@/components/demo-record-create-forms-preview";
 import { HamsterSelectorInput } from "@/components/hamster-selector-input";
 import { PaginationLayout } from "@/components/pagination";
 import { RecordKeywordInput } from "@/components/record-keyword-input";
@@ -180,8 +181,10 @@ export default async function DemoRecordsPage({
           </section>
 
           <p className="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800">
-            サンプル閲覧モードでは、記録の登録・編集・削除や画像アップロードはできません。
+            サンプル閲覧モードではデータを変更できません。
           </p>
+
+          <DemoRecordCreateFormsPreview today={today} />
 
           <section className="grid gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

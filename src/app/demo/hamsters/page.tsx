@@ -1,4 +1,5 @@
 import { DemoUnavailable } from "@/components/demo-unavailable";
+import { DemoHamsterCreatePreview } from "@/components/demo-hamster-create-preview";
 import { HamsterList } from "@/components/hamster-list";
 import { toDateInputValue, todayInputJst } from "@/lib/date";
 import { getPublicDemoHamsterManagementData } from "@/lib/public-demo-queries";
@@ -21,6 +22,7 @@ export default async function DemoHamstersPage() {
     cleaningRecordCount: hamster._count.cleaningRecords,
     weightRecordCount: hamster._count.weightRecords
   }));
+  const today = todayInputJst();
 
   return (
     <div className="space-y-6">
@@ -31,11 +33,12 @@ export default async function DemoHamstersPage() {
         </p>
       </div>
       <p className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-        サンプル閲覧モードでは、登録・編集・削除、画像変更、管理状態の変更はできません。
+        サンプル閲覧モードではデータを変更できません。
       </p>
+      <DemoHamsterCreatePreview today={today} />
       <section className="space-y-3">
         <h3 className="text-base font-bold text-ink">一覧</h3>
-        <HamsterList hamsters={hamsters} today={todayInputJst()} readOnly />
+        <HamsterList hamsters={hamsters} today={today} readOnly />
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 import { AutoSubmitInput } from "@/components/auto-submit-input";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { DemoUnavailable } from "@/components/demo-unavailable";
+import { DemoWeightCreatePreview } from "@/components/demo-weight-create-preview";
 import { HamsterSelectorInput } from "@/components/hamster-selector-input";
 import { PaginationLayout } from "@/components/pagination";
 import { WeightChart } from "@/components/weight-chart";
@@ -151,7 +152,7 @@ export default async function DemoWeightsPage({
         <p className="mt-1 text-sm text-slate-600">体重の推移と履歴を期間・月・並び順で閲覧できます。</p>
       </div>
       <p className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-        サンプル閲覧モードでは、体重の登録・編集・削除、CSV入出力はできません。
+        サンプル閲覧モードではデータを変更できません。CSV入出力も利用できません。
       </p>
 
       <form
@@ -189,16 +190,22 @@ export default async function DemoWeightsPage({
         </p>
       ) : (
         <div className="content-reveal space-y-6">
-          <section>
-            <h3 className="mb-3 text-base font-bold text-ink">{data.selectedHamster.name} の体重推移</h3>
-            <WeightChart
-              data={chartData}
-              emptyMessage={
-                filterMode === "all" && (chartRange.from || chartRange.to)
-                  ? "指定した期間の体重記録はありません。"
-                  : undefined
-              }
+          <section className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
+            <DemoWeightCreatePreview
+              today={today}
+              hamsterIsActive={data.selectedHamster.isActive}
             />
+            <section>
+              <h3 className="mb-3 text-base font-bold text-ink">{data.selectedHamster.name} の体重推移</h3>
+              <WeightChart
+                data={chartData}
+                emptyMessage={
+                  filterMode === "all" && (chartRange.from || chartRange.to)
+                    ? "指定した期間の体重記録はありません。"
+                    : undefined
+                }
+              />
+            </section>
           </section>
 
           {filterMode === "all" && hasWeightRecords ? (
