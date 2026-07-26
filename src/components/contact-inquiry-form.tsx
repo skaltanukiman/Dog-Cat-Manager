@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { Send } from "lucide-react";
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import {
+  startTransition,
+  useActionState,
+  useState,
+  type FormEvent
+} from "react";
 
 import {
   submitContactInquiry,
@@ -29,8 +33,15 @@ const INITIAL_CONTACT_FORM_STATE: ContactFormState = {
   created: null
 };
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
+type ContactFormValues = {
+  category: ContactCategory;
+  subject: string;
+  body: string;
+  errorId: string;
+  sourcePath: string;
+};
+
+function SubmitButton({ pending }: { pending: boolean }) {
   return (
     <button
       type="submit"
@@ -60,7 +71,44 @@ export function ContactInquiryForm({
   initialErrorId: string;
   initialSourcePath: string;
 }) {
-  const [state, formAction] = useActionState(submitContactInquiry, INITIAL_CONTACT_FORM_STATE);
+  const [values, setValues] = useState<ContactFormValues>(() => ({
+    category: "BUG",
+    subject: "",
+    body: "",
+    errorId: initialErrorId,
+    sourcePath: initialSourcePath
+  }));
+  const [state, action, pending] = useActionState(
+    async (previousState: ContactFormState, formData: FormData) => {
+      const nextState = await submitContactInquiry(previousState, formData);
+      if (nextState.created) {
+        setValues({
+          category: "BUG",
+          subject: "",
+          body: "",
+          errorId: initialErrorId,
+          sourcePath: initialSourcePath
+        });
+      }
+      return nextState;
+    },
+    INITIAL_CONTACT_FORM_STATE
+  );
+
+  function updateValue<Field extends keyof ContactFormValues>(
+    field: Field,
+    value: ContactFormValues[Field]
+  ) {
+    setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => {
+      action(formData);
+    });
+  }
 
   return (
     <section className="space-y-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
@@ -115,12 +163,13 @@ export function ContactInquiryForm({
         </div>
       ) : null}
 
-      <form action={formAction} className="grid gap-4">
+      <form onSubmit={handleSubmit} className="grid gap-4">
         <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
           問い合わせ種類
           <select
             name="category"
-            defaultValue="BUG"
+            value={values.category}
+            onChange={(event) => updateValue("category", event.target.value as ContactCategory)}
             aria-invalid={Boolean(state.fieldErrors.category)}
             aria-describedby={state.fieldErrors.category ? "contact-category-error" : undefined}
           >
@@ -137,6 +186,8 @@ export function ContactInquiryForm({
           件名
           <input
             name="subject"
+            value={values.subject}
+            onChange={(event) => updateValue("subject", event.target.value)}
             required
             maxLength={CONTACT_SUBJECT_MAX_LENGTH}
             aria-invalid={Boolean(state.fieldErrors.subject)}
@@ -150,6 +201,8 @@ export function ContactInquiryForm({
           問い合わせ内容
           <textarea
             name="body"
+            value={values.body}
+            onChange={(event) => updateValue("body", event.target.value)}
             required
             minLength={CONTACT_BODY_MIN_LENGTH}
             maxLength={CONTACT_BODY_MAX_LENGTH}
@@ -167,7 +220,8 @@ export function ContactInquiryForm({
             エラーID（任意）
             <input
               name="errorId"
-              defaultValue={initialErrorId}
+              value={values.errorId}
+              onChange={(event) => updateValue("errorId", event.target.value)}
               maxLength={CONTACT_ERROR_ID_MAX_LENGTH}
               className="h-11 min-w-0"
               aria-invalid={Boolean(state.fieldErrors.errorId)}
@@ -180,7 +234,8 @@ export function ContactInquiryForm({
             発生した画面（任意）
             <input
               name="sourcePath"
-              defaultValue={initialSourcePath}
+              value={values.sourcePath}
+              onChange={(event) => updateValue("sourcePath", event.target.value)}
               maxLength={CONTACT_SOURCE_PATH_MAX_LENGTH}
               placeholder="/settings"
               className="h-11 min-w-0"
@@ -206,7 +261,7 @@ export function ContactInquiryForm({
         </label>
 
         <div className="flex justify-end">
-          <SubmitButton />
+          <SubmitButton pending={pending} />
         </div>
       </form>
     </section>

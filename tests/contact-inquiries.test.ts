@@ -909,9 +909,36 @@ test("問い合わせ補助入力は同じ高さ・補足文・上揃えで表�
   assert.match(form, /エラー画面に表示されたIDがある場合に入力してください。/);
   assert.match(form, /<label className="grid min-w-0 content-start gap-1\.5 text-sm font-semibold text-slate-700">[\s\S]*?name="errorId"/);
   assert.match(form, /<label className="grid min-w-0 content-start gap-1\.5 text-sm font-semibold text-slate-700">[\s\S]*?name="sourcePath"/);
-  assert.match(form, /defaultValue=\{initialErrorId\}/);
-  assert.match(form, /defaultValue=\{initialSourcePath\}/);
+  assert.match(form, /errorId: initialErrorId/);
+  assert.match(form, /sourcePath: initialSourcePath/);
   assert.match(form, /placeholder="\/settings"/);
+});
+
+test("問い合わせ作成フォームは送信失敗時に全入力を保持し、成功時だけ初期値へ戻す", async () => {
+  const form = await readFile("src/components/contact-inquiry-form.tsx", "utf8");
+
+  assert.match(form, /const \[values, setValues\] = useState<ContactFormValues>/);
+  assert.match(
+    form,
+    /event\.preventDefault\(\);[\s\S]*?new FormData\(event\.currentTarget\)[\s\S]*?startTransition\(\(\) => \{[\s\S]*?action\(formData\)/
+  );
+  assert.match(
+    form,
+    /const nextState = await submitContactInquiry\(previousState, formData\);[\s\S]*?if \(nextState\.created\) \{[\s\S]*?setValues\(\{[\s\S]*?category: "BUG"[\s\S]*?subject: ""[\s\S]*?body: ""[\s\S]*?errorId: initialErrorId[\s\S]*?sourcePath: initialSourcePath/
+  );
+  assert.equal((form.match(/value=\{values\.(?:category|subject|body|errorId|sourcePath)\}/g) ?? []).length, 5);
+  assert.equal(
+    (
+      form.match(
+        /onChange=\{\(event\) => updateValue\("(?:category|subject|body|errorId|sourcePath)"/g
+      ) ?? []
+    ).length,
+    5
+  );
+  assert.doesNotMatch(form, /formRef\.current\?\.reset\(\)/);
+  assert.doesNotMatch(form, /defaultValue=/);
+  assert.match(form, /aria-invalid=\{Boolean\(state\.fieldErrors\.category\)\}/);
+  assert.match(form, /aria-describedby=\{state\.fieldErrors\.sourcePath/);
 });
 
 test("問い合わせ送信ボタンは補助入力欄と同じmd境界で幅を切り替える", async () => {
