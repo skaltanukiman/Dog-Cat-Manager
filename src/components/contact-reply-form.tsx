@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 
@@ -102,6 +102,8 @@ export function AdminContactReplyForm({
   const [state, action] = useActionState(updateContactInquiryAdmin, INITIAL_CONTACT_REPLY_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   const defaultStatus = currentStatus === "OPEN" ? "IN_PROGRESS" : currentStatus;
+  const [nextStatus, setNextStatus] = useState<ContactStatus>(defaultStatus);
+  const [confirmClosed, setConfirmClosed] = useState(false);
   useEffect(() => {
     if (state.success) {
       const body = formRef.current?.elements.namedItem("body");
@@ -139,7 +141,14 @@ export function AdminContactReplyForm({
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
             変更後の状態
-            <select name="nextStatus" defaultValue={defaultStatus}>
+            <select
+              name="nextStatus"
+              value={nextStatus}
+              onChange={(event) => {
+                setNextStatus(event.target.value as ContactStatus);
+                setConfirmClosed(false);
+              }}
+            >
               <option value="IN_PROGRESS">確認中</option>
               <option value="WAITING_FOR_USER">利用者からの回答待ち</option>
               <option value="RESOLVED">対応済み</option>
@@ -158,10 +167,21 @@ export function AdminContactReplyForm({
             </select>
           </label>
         </div>
-        <label className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          <input type="checkbox" name="confirmClosed" value="yes" className="mt-1 h-4 w-4 shrink-0" />
-          <span>状態を「終了」にする場合は、利用者が追加返信できなくなることを確認しました。</span>
-        </label>
+        {nextStatus === "CLOSED" ? (
+          <label className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <input
+              type="checkbox"
+              name="confirmClosed"
+              value="yes"
+              checked={confirmClosed}
+              onChange={(event) => setConfirmClosed(event.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            <span className="leading-5">
+              状態を「終了」にすると、利用者は追加返信できなくなります。内容を確認しました。
+            </span>
+          </label>
+        ) : null}
         <div className="flex justify-end">
           <ReplySubmitButton label="返信・変更を保存" />
         </div>

@@ -837,6 +837,20 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
   assert.match(replyForm, /disabled=\{pending\}/);
   assert.match(replyForm, /if \(!state\.success\) return;[\s\S]*?router\.refresh\(\)/);
   assert.match(replyForm, /data-dirty-watch/);
+  assert.match(replyForm, /useState<ContactStatus>\(defaultStatus\)/);
+  assert.match(replyForm, /setNextStatus\(event\.target\.value as ContactStatus\);[\s\S]*?setConfirmClosed\(false\)/);
+  assert.match(replyForm, /nextStatus === "CLOSED" \? \(/);
+  assert.match(replyForm, /checked=\{confirmClosed\}/);
+  assert.match(replyForm, /className="mt-0\.5 h-4 w-4 shrink-0"/);
+  assert.match(replyForm, /className="leading-5"/);
+  assert.match(
+    replyForm,
+    /状態を「終了」にすると、利用者は追加返信できなくなります。内容を確認しました。/
+  );
+  assert.match(
+    action,
+    /rawStatus === "CLOSED" && formData\.get\("confirmClosed"\) !== "yes"/
+  );
   assert.equal((replyForm.match(/useFormDirtyById\(formId\)/g) ?? []).length, 2);
   assert.match(action, /actorClientId: getRealtimeActorId\(formData\)/);
   assert.equal(
