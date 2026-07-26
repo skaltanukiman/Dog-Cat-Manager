@@ -834,13 +834,29 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
   assert.match(replyForm, /const INITIAL_CONTACT_REPLY_STATE: ContactReplyState/);
   assert.match(form, /disabled=\{pending\}/);
   assert.match(form, /送信中\.\.\./);
-  assert.match(replyForm, /disabled=\{pending\}/);
+  assert.match(replyForm, /disabled=\{isPending\}/);
   assert.match(replyForm, /if \(!state\.success\) return;[\s\S]*?router\.refresh\(\)/);
   assert.match(replyForm, /data-dirty-watch/);
+  assert.match(replyForm, /onSubmit=\{handleSubmit\}/);
+  assert.match(
+    replyForm,
+    /event\.preventDefault\(\);[\s\S]*?new FormData\(event\.currentTarget\)[\s\S]*?startTransition\(\(\) => \{[\s\S]*?action\(formData\)/
+  );
+  assert.match(replyForm, /const \[replyBody, setReplyBody\] = useState\(""\)/);
+  assert.match(replyForm, /value=\{replyBody\}[\s\S]*?onChange=\{\(event\) => setReplyBody\(event\.target\.value\)\}/);
   assert.match(replyForm, /useState<ContactStatus>\(defaultStatus\)/);
   assert.match(replyForm, /setNextStatus\(event\.target\.value as ContactStatus\);[\s\S]*?setConfirmClosed\(false\)/);
+  assert.match(
+    replyForm,
+    /value=\{selectedAdminUserId\}[\s\S]*?onChange=\{\(event\) => setSelectedAdminUserId\(event\.target\.value\)\}/
+  );
   assert.match(replyForm, /nextStatus === "CLOSED" \? \(/);
   assert.match(replyForm, /checked=\{confirmClosed\}/);
+  assert.match(
+    replyForm,
+    /if \(nextState\.success\) \{[\s\S]*?setReplyBody\(""\);[\s\S]*?setConfirmClosed\(false\);[\s\S]*?router\.refresh\(\)/
+  );
+  assert.match(replyForm, /<ReplySubmitButton label="返信・変更を保存" pending=\{pending\} \/>/);
   assert.match(replyForm, /className="mt-0\.5 h-4 w-4 shrink-0"/);
   assert.match(replyForm, /className="leading-5"/);
   assert.match(

@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent
+} from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 
@@ -14,15 +21,16 @@ import { CONTACT_REPLY_MAX_LENGTH, type ContactStatus } from "@/lib/contact-inqu
 
 const INITIAL_CONTACT_REPLY_STATE: ContactReplyState = { success: false, error: null };
 
-function ReplySubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
+function ReplySubmitButton({ label, pending }: { label: string; pending?: boolean }) {
+  const { pending: formPending } = useFormStatus();
+  const isPending = pending ?? formPending;
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={isPending}
       className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-moss px-5 py-2.5 text-sm font-bold text-white hover:bg-moss/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
     >
-      {pending ? "送信中..." : label}
+      {isPending ? "送信中..." : label}
     </button>
   );
 }
@@ -99,18 +107,31 @@ export function AdminContactReplyForm({
   const router = useRouter();
   const formId = `contact-admin-reply-${publicId}`;
   useFormDirtyById(formId);
-  const [state, action] = useActionState(updateContactInquiryAdmin, INITIAL_CONTACT_REPLY_STATE);
-  const formRef = useRef<HTMLFormElement>(null);
   const defaultStatus = currentStatus === "OPEN" ? "IN_PROGRESS" : currentStatus;
+  const [replyBody, setReplyBody] = useState("");
   const [nextStatus, setNextStatus] = useState<ContactStatus>(defaultStatus);
+  const [selectedAdminUserId, setSelectedAdminUserId] = useState(assignedAdminUserId ?? "");
   const [confirmClosed, setConfirmClosed] = useState(false);
-  useEffect(() => {
-    if (state.success) {
-      const body = formRef.current?.elements.namedItem("body");
-      if (body instanceof HTMLTextAreaElement) body.value = "";
-      router.refresh();
-    }
-  }, [router, state]);
+  const [state, action, pending] = useActionState(
+    async (previousState: ContactReplyState, formData: FormData) => {
+      const nextState = await updateContactInquiryAdmin(previousState, formData);
+      if (nextState.success) {
+        setReplyBody("");
+        setConfirmClosed(false);
+        router.refresh();
+      }
+      return nextState;
+    },
+    INITIAL_CONTACT_REPLY_STATE
+  );
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => {
+      action(formData);
+    });
+  }
 
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
@@ -120,8 +141,7 @@ export function AdminContactReplyForm({
       </p>
       <form
         id={formId}
-        ref={formRef}
-        action={action}
+        onSubmit={handleSubmit}
         className="mt-4 grid gap-4"
         data-dirty-watch
       >
@@ -131,6 +151,8 @@ export function AdminContactReplyForm({
           管理者返信（任意）
           <textarea
             name="body"
+            value={replyBody}
+            onChange={(event) => setReplyBody(event.target.value)}
             maxLength={CONTACT_REPLY_MAX_LENGTH}
             rows={7}
             className="min-h-36 resize-y"
@@ -157,7 +179,12 @@ export function AdminContactReplyForm({
           </label>
           <label className="grid min-w-0 gap-1.5 text-sm font-semibold text-slate-700">
             担当管理者
-            <select name="assignedAdminUserId" defaultValue={assignedAdminUserId ?? ""} className="min-w-0">
+            <select
+              name="assignedAdminUserId"
+              value={selectedAdminUserId}
+              onChange={(event) => setSelectedAdminUserId(event.target.value)}
+              className="min-w-0"
+            >
               <option value="">未設定（返信時は自分を自動設定）</option>
               {admins.map((admin) => (
                 <option key={admin.id} value={admin.id}>
@@ -183,7 +210,7 @@ export function AdminContactReplyForm({
           </label>
         ) : null}
         <div className="flex justify-end">
-          <ReplySubmitButton label="返信・変更を保存" />
+          <ReplySubmitButton label="返信・変更を保存" pending={pending} />
         </div>
       </form>
     </section>
