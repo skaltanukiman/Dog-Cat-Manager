@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import {
   DisplaySettingsSection,
-  getDisplaySettingsSummary
+  getDisplaySettingsSummaryLabels
 } from "../src/components/display-settings-section";
 
 function renderDisplaySettings(
@@ -25,12 +25,23 @@ function renderDisplaySettings(
   );
 }
 
-test("スマホ向け画面表示設定は現在値の日本語要約を持ち、初期状態で閉じている", () => {
+test("スマホ向け画面表示設定はカテゴリ情報と現在値のチップを持ち、初期状態で閉じている", () => {
   const markup = renderDisplaySettings();
 
   assert.match(markup, /<button[^>]*type="button"[^>]*aria-expanded="false"[^>]*aria-controls="[^"]+"/);
-  assert.match(markup, />画面表示の設定</);
-  assert.match(markup, /data-display-settings-summary="true">プルダウン式・選択中のハムスター・当日のみ</);
+  assert.match(markup, /data-display-settings-toggle="true"/);
+  assert.match(markup, />画面の表示設定</);
+  assert.match(markup, />各画面の初期表示や選択方法を変更します。</);
+  assert.match(
+    markup,
+    /data-display-settings-icon="true"[\s\S]*?<svg[^>]*aria-hidden="true"/
+  );
+  assert.equal(markup.match(/data-display-settings-summary-chip="true"/g)?.length, 3);
+  assert.match(markup, /data-display-settings-summary-chip="true">プルダウン</);
+  assert.match(markup, /data-display-settings-summary-chip="true">1匹表示</);
+  assert.match(markup, /data-display-settings-summary-chip="true">当日のみ</);
+  assert.match(markup, /data-display-settings-action="true">設定を変更</);
+  assert.doesNotMatch(markup, /aria-live=/);
   assert.match(markup, /data-display-settings-content="true" data-mobile-open="false" class="hidden[^"]*md:block/);
 });
 
@@ -63,17 +74,30 @@ test("閉じた状態でも既存の3グループ6入力と選択値をDOMに保
 });
 
 test("現在値を変えると要約とスマホ用説明文が対応する値へ切り替わる", () => {
-  assert.equal(
-    getDisplaySettingsSummary({
+  assert.deepEqual(
+    getDisplaySettingsSummaryLabels({
       hamsterSelectorMode: "combobox",
       recordTimelineDefaultScope: "household",
       cleaningMobileDefaultDateFilter: "all"
     }),
-    "コンボボックス式・グループ全体・すべての日付"
+    ["検索選択", "グループ表示", "月全体"]
+  );
+  assert.deepEqual(
+    getDisplaySettingsSummaryLabels({
+      hamsterSelectorMode: "select",
+      recordTimelineDefaultScope: "hamster",
+      cleaningMobileDefaultDateFilter: "today"
+    }),
+    ["プルダウン", "1匹表示", "当日のみ"]
   );
 
   const markup = renderDisplaySettings("combobox", "household", "all");
-  assert.match(markup, /data-display-settings-summary="true">コンボボックス式・グループ全体・すべての日付</);
+  assert.match(markup, /data-display-settings-summary-chip="true">検索選択</);
+  assert.match(markup, /data-display-settings-summary-chip="true">グループ表示</);
+  assert.match(markup, /data-display-settings-summary-chip="true">月全体</);
+  assert.doesNotMatch(markup, /data-display-settings-summary-chip="true">combobox</);
+  assert.doesNotMatch(markup, /data-display-settings-summary-chip="true">household</);
+  assert.doesNotMatch(markup, /data-display-settings-summary-chip="true">all</);
   assert.match(
     markup,
     /data-selected-description="combobox">文字入力で候補を絞り込みながら選択します。/

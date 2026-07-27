@@ -143,7 +143,7 @@
 ## 設定（プロフィール・ダッシュボード・記録画面）
 
 - **画面または URL:** `/settings`。最下部の「アカウントの削除」から、赤枠の「削除内容を確認する」でアカウント削除確認 `/settings/account/delete` へ移動する。
-- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DisplaySettingsSection`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示を1フォーム・1保存ボタンで扱い、アカウント削除の入口は別フォームに分離する。スマホでは3つの画面表示設定を現在値の日本語要約付きディスクロージャーへまとめ、展開時は同じラジオ入力を2列セグメントとして表示して選択中の説明だけを示す。`md`以上ではディスクロージャー見出しを隠し、従来の説明付きカード表示を常時表示する。
+- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DisplaySettingsSection`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示を1フォーム・1保存ボタンで扱い、アカウント削除の入口は別フォームに分離する。スマホでは3つの画面表示設定を、設定アイコン・説明・現在値3件の短縮ラベルチップ・開閉操作文言を持つ「画面の表示設定」カテゴリカードへまとめる。展開時も同じラジオ入力をDOMに保持したまま2列セグメントとして表示し、選択中の説明だけを示す。`md`以上ではカテゴリカード見出しを隠し、従来の説明付きカード表示を常時表示する。
 - **Server Action または API:** `saveSettings`（`src/app/actions/settings.ts`）。表示名、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示をまとめて差分比較し、変更がなければ `unchanged` を返す。各初期表示だけの変更も現在のユーザー・Householdの `AppSetting` へupsertし、関連画面と `/settings` を再検証する。
 - **データアクセス・Prismaモデル:** `getDashboardSettingsPageData`、`User`、`Household`、`HouseholdMember`、`AppSetting`、`DashboardHamster`、`Hamster`。
 - **バリデーション:** `updateUserProfileSchema`（表示名）、`dashboardSettingsSchema`、`normalizeDashboardBoardCount` / `normalizeHamsterSelectorMode` / `normalizeRecordScope` / `normalizeCleaningMobileDefaultDateFilter`。記録画面の初期表示は `hamster` / `household`、衛生管理画面のスマホ日付初期表示は `today` / `all` だけを保存し、DBの未設定・不正値はそれぞれ `hamster` / `today` として扱う。

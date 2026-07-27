@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useId, useState } from "react";
 
 import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
@@ -10,6 +10,7 @@ import type { RecordScope } from "@/lib/records";
 type DisplaySettingOption<T extends string> = {
   value: T;
   label: string;
+  summaryLabel: string;
   mobileLabelParts: readonly string[];
   description: string;
 };
@@ -18,12 +19,14 @@ const HAMSTER_SELECTOR_OPTIONS: readonly DisplaySettingOption<HamsterSelectorMod
   {
     value: "combobox",
     label: "コンボボックス式",
+    summaryLabel: "検索選択",
     mobileLabelParts: ["コンボ", "ボックス式"],
     description: "文字入力で候補を絞り込みながら選択します。"
   },
   {
     value: "select",
     label: "プルダウン式",
+    summaryLabel: "プルダウン",
     mobileLabelParts: ["プルダウン式"],
     description: "一覧から選択する形式で表示します。"
   }
@@ -33,12 +36,14 @@ const RECORD_SCOPE_OPTIONS: readonly DisplaySettingOption<RecordScope>[] = [
   {
     value: "hamster",
     label: "選択中のハムスター",
+    summaryLabel: "1匹表示",
     mobileLabelParts: ["選択中の", "ハムスター"],
     description: "記録画面を開いたとき、選択した1匹の記録を表示します。"
   },
   {
     value: "household",
     label: "グループ全体",
+    summaryLabel: "グループ表示",
     mobileLabelParts: ["グループ全体"],
     description: "記録画面を開いたとき、現在の共有グループに所属する全ハムスターの記録を表示します。"
   }
@@ -48,12 +53,14 @@ const CLEANING_DATE_FILTER_OPTIONS: readonly DisplaySettingOption<CleaningMobile
   {
     value: "today",
     label: "当日のみ",
+    summaryLabel: "当日のみ",
     mobileLabelParts: ["当日のみ"],
     description: "衛生管理画面をスマートフォンで開いたとき、今日の入力欄だけを表示します。"
   },
   {
     value: "all",
     label: "すべての日付",
+    summaryLabel: "月全体",
     mobileLabelParts: ["すべての日付"],
     description: "衛生管理画面をスマートフォンで開いたとき、その月の入力欄をすべて表示します。"
   }
@@ -63,7 +70,7 @@ function selectedOption<T extends string>(options: readonly DisplaySettingOption
   return options.find((option) => option.value === value) ?? options[0];
 }
 
-export function getDisplaySettingsSummary({
+export function getDisplaySettingsSummaryLabels({
   hamsterSelectorMode,
   recordTimelineDefaultScope,
   cleaningMobileDefaultDateFilter
@@ -73,10 +80,10 @@ export function getDisplaySettingsSummary({
   cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
 }) {
   return [
-    selectedOption(HAMSTER_SELECTOR_OPTIONS, hamsterSelectorMode).label,
-    selectedOption(RECORD_SCOPE_OPTIONS, recordTimelineDefaultScope).label,
-    selectedOption(CLEANING_DATE_FILTER_OPTIONS, cleaningMobileDefaultDateFilter).label
-  ].join("・");
+    selectedOption(HAMSTER_SELECTOR_OPTIONS, hamsterSelectorMode).summaryLabel,
+    selectedOption(RECORD_SCOPE_OPTIONS, recordTimelineDefaultScope).summaryLabel,
+    selectedOption(CLEANING_DATE_FILTER_OPTIONS, cleaningMobileDefaultDateFilter).summaryLabel
+  ];
 }
 
 function ResponsiveRadioGroup<T extends string>({
@@ -162,37 +169,61 @@ export function DisplaySettingsSection({
     initialCleaningMobileDefaultDateFilter
   );
   const contentId = useId();
-  const summary = getDisplaySettingsSummary({
+  const summaryLabels = getDisplaySettingsSummaryLabels({
     hamsterSelectorMode,
     recordTimelineDefaultScope,
     cleaningMobileDefaultDateFilter
   });
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white md:overflow-visible md:rounded-none md:border-0">
+    <section className="min-w-0 overflow-hidden rounded-md border border-moss/20 bg-white shadow-sm md:overflow-visible md:rounded-none md:border-0 md:shadow-none">
       <button
         type="button"
         aria-expanded={isOpen}
         aria-controls={contentId}
+        data-display-settings-toggle
         onClick={() => setIsOpen((current) => !current)}
-        className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss md:hidden"
+        className="min-h-11 w-full bg-moss/5 p-3 text-left transition-colors hover:bg-moss/10 active:bg-moss/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss motion-reduce:transition-none md:hidden"
       >
-        <span className="min-w-0">
-          <span className="block text-sm font-bold text-ink">画面表示の設定</span>
+        <span className="flex min-w-0 items-start gap-3">
           <span
-            className="mt-0.5 block break-words text-xs leading-5 text-slate-500"
-            aria-live="polite"
-            data-display-settings-summary
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-moss/10 text-moss"
+            data-display-settings-icon
           >
-            {summary}
+            <SlidersHorizontal className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-base font-bold text-ink">画面の表示設定</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-600">
+              各画面の初期表示や選択方法を変更します。
+            </span>
           </span>
         </span>
-        <ChevronDown
-          className={`h-5 w-5 shrink-0 text-slate-500 transition-transform motion-reduce:transition-none ${
-            isOpen ? "rotate-180" : ""
-          }`}
-          aria-hidden
-        />
+
+        <span
+          className="mt-3 flex min-w-0 flex-wrap gap-1.5"
+          data-display-settings-summary
+        >
+          {summaryLabels.map((label) => (
+            <span
+              key={label}
+              className="max-w-full rounded-md border border-moss/20 bg-white px-2 py-1 text-xs font-medium leading-4 text-slate-700"
+              data-display-settings-summary-chip
+            >
+              {label}
+            </span>
+          ))}
+        </span>
+
+        <span className="mt-3 flex items-center justify-end gap-1 text-sm font-bold text-moss">
+          <span data-display-settings-action>{isOpen ? "閉じる" : "設定を変更"}</span>
+          <ChevronDown
+            className={`h-5 w-5 shrink-0 transition-transform motion-reduce:transition-none ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          />
+        </span>
       </button>
 
       <div
