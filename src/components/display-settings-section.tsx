@@ -180,19 +180,24 @@ export function DisplaySettingsSection({
     <section
       aria-label="画面の表示設定"
       data-settings-section="display"
-      className="min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm md:overflow-visible"
+      className="min-w-0 overflow-hidden rounded-md border border-moss/30 bg-white shadow-sm md:border-slate-200 md:overflow-visible"
     >
       <button
         type="button"
         aria-expanded={isOpen}
         aria-controls={contentId}
         data-display-settings-toggle
+        data-state={isOpen ? "open" : "closed"}
         onClick={() => setIsOpen((current) => !current)}
-        className={`min-h-11 w-full bg-moss/5 text-left transition-colors hover:bg-moss/10 active:bg-moss/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss motion-reduce:transition-none md:hidden ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
+        className={`min-h-11 w-full text-left transition-colors duration-200 ease-out active:bg-moss/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss motion-reduce:transition-none md:hidden ${SETTINGS_CARD_RESPONSIVE_PADDING} ${
+          isOpen
+            ? "bg-moss/[0.15] hover:bg-moss/20"
+            : "bg-moss/10 hover:bg-moss/[0.15]"
+        }`}
       >
         <span className="flex min-w-0 items-start gap-3">
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-moss/10 text-moss"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-moss/20 text-moss"
             data-display-settings-icon
           >
             <SlidersHorizontal className="h-5 w-5" aria-hidden />
@@ -225,7 +230,9 @@ export function DisplaySettingsSection({
         <span className="mt-3 flex items-center justify-end gap-1 text-sm font-bold text-moss">
           <span data-display-settings-action>{isOpen ? "閉じる" : "設定を変更"}</span>
           <ChevronDown
-            className={`h-5 w-5 shrink-0 transition-transform motion-reduce:transition-none ${
+            data-display-settings-chevron
+            data-state={isOpen ? "open" : "closed"}
+            className={`h-5 w-5 shrink-0 transition-transform duration-200 ease-out motion-reduce:transition-none ${
               isOpen ? "rotate-180" : ""
             }`}
             aria-hidden
@@ -249,29 +256,40 @@ export function DisplaySettingsSection({
         id={contentId}
         data-display-settings-content
         data-mobile-open={isOpen}
-        className={`${isOpen ? "block" : "hidden"} space-y-5 border-t border-slate-200 ${SETTINGS_CARD_RESPONSIVE_PADDING} md:block md:border-0 md:pt-4`}
+        data-state={isOpen ? "open" : "closed"}
+        className={`grid overflow-hidden transition-[grid-template-rows,opacity,visibility] duration-200 ease-out motion-reduce:transition-none md:block md:visible md:overflow-visible md:opacity-100 md:pointer-events-auto md:transition-none ${
+          isOpen
+            ? "visible grid-rows-[1fr] opacity-100"
+            : "invisible grid-rows-[0fr] opacity-0 pointer-events-none"
+        }`}
       >
-        <ResponsiveRadioGroup
-          legend="ハムスター選択方式"
-          name="hamsterSelectorMode"
-          value={hamsterSelectorMode}
-          options={HAMSTER_SELECTOR_OPTIONS}
-          onChange={setHamsterSelectorMode}
-        />
-        <ResponsiveRadioGroup
-          legend="記録画面の初期表示"
-          name="recordTimelineDefaultScope"
-          value={recordTimelineDefaultScope}
-          options={RECORD_SCOPE_OPTIONS}
-          onChange={setRecordTimelineDefaultScope}
-        />
-        <ResponsiveRadioGroup
-          legend="衛生管理画面（スマホ）の初期表示"
-          name="cleaningMobileDefaultDateFilter"
-          value={cleaningMobileDefaultDateFilter}
-          options={CLEANING_DATE_FILTER_OPTIONS}
-          onChange={setCleaningMobileDefaultDateFilter}
-        />
+        <div className="min-h-0 overflow-hidden md:overflow-visible" data-display-settings-panel>
+          <div
+            className={`space-y-5 border-t border-slate-200 ${SETTINGS_CARD_RESPONSIVE_PADDING} md:border-0 md:pt-4`}
+          >
+            <ResponsiveRadioGroup
+              legend="ハムスター選択方式"
+              name="hamsterSelectorMode"
+              value={hamsterSelectorMode}
+              options={HAMSTER_SELECTOR_OPTIONS}
+              onChange={setHamsterSelectorMode}
+            />
+            <ResponsiveRadioGroup
+              legend="記録画面の初期表示"
+              name="recordTimelineDefaultScope"
+              value={recordTimelineDefaultScope}
+              options={RECORD_SCOPE_OPTIONS}
+              onChange={setRecordTimelineDefaultScope}
+            />
+            <ResponsiveRadioGroup
+              legend="衛生管理画面（スマホ）の初期表示"
+              name="cleaningMobileDefaultDateFilter"
+              value={cleaningMobileDefaultDateFilter}
+              options={CLEANING_DATE_FILTER_OPTIONS}
+              onChange={setCleaningMobileDefaultDateFilter}
+            />
+          </div>
+        </div>
       </div>
     </section>
   );

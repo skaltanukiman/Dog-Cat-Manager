@@ -27,10 +27,14 @@ function renderDisplaySettings(
 
 test("スマホ向け画面表示設定はカテゴリ情報と現在値のチップを持ち、初期状態で閉じている", () => {
   const markup = renderDisplaySettings();
+  const controlsId = markup.match(/aria-controls="([^"]+)"/)?.[1];
 
   assert.match(markup, /<section[^>]*aria-label="画面の表示設定"[^>]*data-settings-section="display"/);
   assert.match(markup, /<button[^>]*type="button"[^>]*aria-expanded="false"[^>]*aria-controls="[^"]+"/);
+  assert.ok(controlsId);
+  assert.match(markup, new RegExp(`<div id="${controlsId}"[^>]*data-display-settings-content="true"`));
   assert.match(markup, /data-display-settings-toggle="true"/);
+  assert.match(markup, /data-display-settings-toggle="true" data-state="closed"/);
   assert.match(markup, /role="heading" aria-level="3">画面の表示設定</);
   assert.match(markup, />画面の表示設定</);
   assert.match(markup, />各画面の初期表示や選択方法を変更します。</);
@@ -44,7 +48,51 @@ test("スマホ向け画面表示設定はカテゴリ情報と現在値のチ�
   assert.match(markup, /data-display-settings-summary-chip="true">当日のみ</);
   assert.match(markup, /data-display-settings-action="true">設定を変更</);
   assert.doesNotMatch(markup, /aria-live=/);
-  assert.match(markup, /data-display-settings-content="true" data-mobile-open="false" class="hidden[^"]*md:block/);
+  assert.match(
+    markup,
+    /data-display-settings-content="true" data-mobile-open="false" data-state="closed" class="grid[^"]*invisible grid-rows-\[0fr\] opacity-0 pointer-events-none/
+  );
+});
+
+test("スマホ用コンテンツは可変高を200msで遷移し、閉状態の操作と動きを安全に制御する", () => {
+  const markup = renderDisplaySettings();
+  const source = readFileSync(
+    new URL("../src/components/display-settings-section.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(
+    markup,
+    /transition-\[grid-template-rows,opacity,visibility\] duration-200 ease-out/
+  );
+  assert.match(markup, /motion-reduce:transition-none/);
+  assert.match(markup, /md:block md:visible md:overflow-visible md:opacity-100 md:pointer-events-auto md:transition-none/);
+  assert.match(
+    markup,
+    /<div(?=[^>]*data-display-settings-panel="true")(?=[^>]*class="min-h-0 overflow-hidden md:overflow-visible")[^>]*>/
+  );
+  assert.match(markup, /data-display-settings-chevron="true" data-state="closed"/);
+  assert.match(markup, /transition-transform duration-200 ease-out motion-reduce:transition-none/);
+  assert.match(source, /\? "visible grid-rows-\[1fr\] opacity-100"/);
+  assert.match(source, /: "invisible grid-rows-\[0fr\] opacity-0 pointer-events-none"/);
+  assert.doesNotMatch(source, /max-h-\[/);
+});
+
+test("スマホ用カードはmoss系アクセントを強め、開閉状態でヘッダー背景を変える", () => {
+  const markup = renderDisplaySettings();
+  const source = readFileSync(
+    new URL("../src/components/display-settings-section.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(markup, /border-moss\/30/);
+  assert.match(markup, /bg-moss\/10 hover:bg-moss\/\[0\.15\]/);
+  assert.match(
+    markup,
+    /<span(?=[^>]*data-display-settings-icon="true")(?=[^>]*class="[^"]*bg-moss\/20)[^>]*>/
+  );
+  assert.match(source, /\? "bg-moss\/\[0\.15\] hover:bg-moss\/20"/);
+  assert.match(source, /: "bg-moss\/10 hover:bg-moss\/\[0\.15\]"/);
 });
 
 test("閉じた状態でも既存の3グループ6入力と選択値をDOMに保持する", () => {
@@ -120,7 +168,7 @@ test("スマホは同じラジオを2列セグメント表示し、md以上は�
   assert.match(markup, /<header class="hidden[^"]*md:flex"[\s\S]*?<h3[^>]*>画面の表示設定<\/h3>/);
   assert.equal(markup.match(/grid min-w-0 grid-cols-2/g)?.length, 3);
   assert.match(markup, /class="sr-only md:not-sr-only md:mt-0.5"/);
-  assert.match(markup, /data-display-settings-content="true"[^>]*class="hidden[^"]*md:block/);
+  assert.match(markup, /data-display-settings-content="true"[^>]*class="grid[^"]*md:block[^"]*md:visible/);
   assert.match(markup, /min-h-11/);
   assert.match(markup, /whitespace-nowrap/);
 });
