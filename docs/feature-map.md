@@ -143,13 +143,13 @@
 ## 設定（プロフィール・ダッシュボード・記録画面）
 
 - **画面または URL:** `/settings`。最下部の「アカウントの削除」から、赤枠の「削除内容を確認する」でアカウント削除確認 `/settings/account/delete` へ移動する。
-- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示を1フォーム・1保存ボタンで扱い、アカウント削除の入口は別フォームに分離する。各初期表示は説明付きラジオで選ぶ。
+- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DisplaySettingsSection`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示を1フォーム・1保存ボタンで扱い、アカウント削除の入口は別フォームに分離する。スマホでは3つの画面表示設定を現在値の日本語要約付きディスクロージャーへまとめ、展開時は同じラジオ入力を2列セグメントとして表示して選択中の説明だけを示す。`md`以上ではディスクロージャー見出しを隠し、従来の説明付きカード表示を常時表示する。
 - **Server Action または API:** `saveSettings`（`src/app/actions/settings.ts`）。表示名、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示をまとめて差分比較し、変更がなければ `unchanged` を返す。各初期表示だけの変更も現在のユーザー・Householdの `AppSetting` へupsertし、関連画面と `/settings` を再検証する。
 - **データアクセス・Prismaモデル:** `getDashboardSettingsPageData`、`User`、`Household`、`HouseholdMember`、`AppSetting`、`DashboardHamster`、`Hamster`。
 - **バリデーション:** `updateUserProfileSchema`（表示名）、`dashboardSettingsSchema`、`normalizeDashboardBoardCount` / `normalizeHamsterSelectorMode` / `normalizeRecordScope` / `normalizeCleaningMobileDefaultDateFilter`。記録画面の初期表示は `hamster` / `household`、衛生管理画面のスマホ日付初期表示は `today` / `all` だけを保存し、DBの未設定・不正値はそれぞれ `hamster` / `today` として扱う。
-- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序・各初期表示の差分判定、フォーム、保存、migration）、`tests/cleaning-mobile-settings.test.tsx`（衛生管理スマホ初期表示）、`tests/account-delete.test.ts`（アカウント削除の確認導線と確認UI）。
+- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序・各初期表示の差分判定、フォーム、保存、migration）、`tests/display-settings-section.test.tsx`（スマホ用ディスクロージャー、現在値要約、入力DOM保持、説明切替、`md`以上の常時表示、dirty監視フォーム接続）、`tests/cleaning-mobile-settings.test.tsx`（衛生管理スマホ初期表示）、`tests/account-delete.test.ts`（アカウント削除の確認導線と確認UI）。
 - **関連設定:** `src/lib/dashboard-settings.ts`、`src/lib/records.ts`、`src/lib/cleaning-settings.ts`、`src/lib/search.ts`、`AppSetting.recordTimelineDefaultScope`、`AppSetting.cleaningMobileDefaultDateFilter`。
-- **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・各画面の初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。表示名変更は `User.name` だけを更新し、初回作成後の共有グループ名や所有権移譲後の名前とは連動させない。初回Household名だけは `defaultHouseholdName()` で生成する。ダッシュボード対象に変更がある場合だけ全 `DashboardHamster` を削除して作り直すため、初期表示だけの変更では対象を作り直さない。順序と上限を Action と UI で一致させ、未保存変更がある間は他画面への移動確認を表示する。
+- **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・各画面の初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。スマホ用ディスクロージャーは閉じてもラジオ入力をアンマウント・無効化せずCSS表示だけを切り替えるため、フォーム送信値と未保存変更検知を維持する。表示名変更は `User.name` だけを更新し、初回作成後の共有グループ名や所有権移譲後の名前とは連動させない。初回Household名だけは `defaultHouseholdName()` で生成する。ダッシュボード対象に変更がある場合だけ全 `DashboardHamster` を削除して作り直すため、初期表示だけの変更では対象を作り直さない。順序と上限を Action と UI で一致させ、未保存変更がある間は他画面への移動確認を表示する。
 
 ## アカウント削除
 

@@ -116,7 +116,7 @@ test("衛生管理画面のスマホ初期表示だけの変更を差分とし�
 });
 
 test("記録画面の初期表示は設定フォーム・保存Action・AppSettingへ統合される", () => {
-  const form = readSource("src/components/dashboard-settings-form.tsx");
+  const form = readSource("src/components/display-settings-section.tsx");
   const action = readSource("src/app/actions/settings.ts");
   const schema = readSource("src/lib/schemas.ts");
   const prismaSchema = readSource("prisma/schema.prisma");
@@ -125,8 +125,8 @@ test("記録画面の初期表示は設定フォーム・保存Action・AppSetti
   );
 
   assert.match(form, /記録画面の初期表示/);
-  assert.match(form, /name="recordTimelineDefaultScope"[\s\S]*?value="hamster"/);
-  assert.match(form, /name="recordTimelineDefaultScope"[\s\S]*?value="household"/);
+  assert.match(form, /const RECORD_SCOPE_OPTIONS[\s\S]*?value: "hamster"[\s\S]*?value: "household"/);
+  assert.match(form, /name="recordTimelineDefaultScope"/);
   assert.match(form, /選択した1匹の記録を表示します。/);
   assert.match(form, /現在の共有グループに所属する全ハムスターの記録を表示します。/);
   assert.match(schema, /recordTimelineDefaultScope: z\.enum\(RECORD_SCOPES\)/);
@@ -141,7 +141,7 @@ test("記録画面の初期表示は設定フォーム・保存Action・AppSetti
 });
 
 test("衛生管理画面のスマホ初期表示は設定フォーム・保存Action・AppSettingへ統合される", () => {
-  const form = readSource("src/components/dashboard-settings-form.tsx");
+  const form = readSource("src/components/display-settings-section.tsx");
   const action = readSource("src/app/actions/settings.ts");
   const schema = readSource("src/lib/schemas.ts");
   const prismaSchema = readSource("prisma/schema.prisma");
@@ -149,10 +149,13 @@ test("衛生管理画面のスマホ初期表示は設定フォーム・保存Ac
     "prisma/migrations/20260727090000_add_cleaning_mobile_default_date_filter/migration.sql"
   );
 
-  assert.match(form, /name="cleaningMobileDefaultDateFilter"[\s\S]*?value="today"/);
-  assert.match(form, /name="cleaningMobileDefaultDateFilter"[\s\S]*?value="all"/);
-  assert.match(form, />当日のみ</);
-  assert.match(form, />すべての日付</);
+  assert.match(
+    form,
+    /const CLEANING_DATE_FILTER_OPTIONS[\s\S]*?value: "today"[\s\S]*?value: "all"/
+  );
+  assert.match(form, /name="cleaningMobileDefaultDateFilter"/);
+  assert.match(form, /label: "当日のみ"/);
+  assert.match(form, /label: "すべての日付"/);
   assert.match(schema, /cleaningMobileDefaultDateFilter: z\.enum\(CLEANING_MOBILE_DEFAULT_DATE_FILTERS\)/);
   assert.match(action, /cleaningMobileDefaultDateFilterChanged/);
   assert.match(
