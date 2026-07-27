@@ -171,6 +171,7 @@ test("設定カードは固定ボタン回避用の余白とxlでの解除タイ
   const layout = readSource("src/components/settings-layout.ts");
   const sources = [
     readSource("src/components/profile-settings-form.tsx"),
+    readSource("src/components/display-settings-section.tsx"),
     readSource("src/components/dashboard-settings-form.tsx"),
     readSource("src/components/account-delete-entry-form.tsx")
   ];

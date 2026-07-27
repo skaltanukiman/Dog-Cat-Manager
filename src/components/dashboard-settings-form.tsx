@@ -1,6 +1,6 @@
 "use client";
 
-import { Save, Search } from "lucide-react";
+import { LayoutDashboard, Save, Search } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 
@@ -124,52 +124,80 @@ export function DashboardSettingsForm({
       <SettingsScrollToSaveButton />
 
       <form action={saveSettings} data-dirty-watch className="space-y-6">
-      <ProfileSettingsFields name={name} email={email} />
+        <ProfileSettingsFields name={name} email={email} />
 
-      <div
-        className={`space-y-5 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
-      >
-      <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
-          表示ボード数
-          <input
-            type="number"
-            name="dashboardBoardCount"
-            min={MIN_DASHBOARD_BOARD_COUNT}
-            max={MAX_DASHBOARD_BOARD_COUNT}
-            value={limit}
-            onChange={handleLimitChange}
-            required
-          />
-          <span className="text-xs font-normal text-slate-500">
-            設定できる範囲: {MIN_DASHBOARD_BOARD_COUNT}〜{MAX_DASHBOARD_BOARD_COUNT} 件
-          </span>
-        </label>
-        <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          現在の表示対象: {effectiveSelectedIds.length} / {targetCount} 件
-          <span className="block pt-1">表示ボード数の上限は {MAX_DASHBOARD_BOARD_COUNT} 件です。</span>
-          {needsSelection ? (
-            <span className="block pt-1">表示するハムスターを {targetCount} 件選択します。</span>
-          ) : (
-            <span className="block pt-1">登録数が表示数以下のため、全ハムスターを表示します。</span>
-          )}
-          {!canSave ? <span className="block pt-1 text-red-600">表示対象を {targetCount} 件選択してください。</span> : null}
-        </div>
-      </div>
+        <DisplaySettingsSection
+          hamsterSelectorMode={hamsterSelectorMode}
+          recordTimelineDefaultScope={recordTimelineDefaultScope}
+          cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
+        />
 
-      <DisplaySettingsSection
-        hamsterSelectorMode={hamsterSelectorMode}
-        recordTimelineDefaultScope={recordTimelineDefaultScope}
-        cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
-      />
+        <section
+          aria-labelledby="dashboard-settings-heading"
+          data-settings-section="dashboard"
+          className={`space-y-5 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
+        >
+          <header className="space-y-1">
+            <div className="flex items-center gap-2">
+              <LayoutDashboard className="h-5 w-5 text-moss" aria-hidden />
+              <h3 id="dashboard-settings-heading" className="text-base font-bold text-ink">
+                ダッシュボード設定
+              </h3>
+            </div>
+            <p className="text-sm leading-6 text-slate-600">
+              ダッシュボードに表示する件数とハムスターを設定します。
+            </p>
+          </header>
 
-      {/* disabled の checkbox は送信されないため、保存対象IDは hidden input に正規化して渡す。 */}
-      {effectiveSelectedIds.map((id) => (
-        <input key={id} type="hidden" name="hamsterIds" value={id} data-dirty-control />
-      ))}
+          <div className="grid gap-4 md:grid-cols-[220px_1fr]" data-dashboard-board-count>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              表示ボード数
+              <input
+                type="number"
+                name="dashboardBoardCount"
+                min={MIN_DASHBOARD_BOARD_COUNT}
+                max={MAX_DASHBOARD_BOARD_COUNT}
+                value={limit}
+                onChange={handleLimitChange}
+                required
+              />
+              <span className="text-xs font-normal text-slate-500">
+                設定できる範囲: {MIN_DASHBOARD_BOARD_COUNT}〜{MAX_DASHBOARD_BOARD_COUNT} 件
+              </span>
+            </label>
+            <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              現在の表示対象: {effectiveSelectedIds.length} / {targetCount} 件
+              <span className="block pt-1">
+                表示ボード数の上限は {MAX_DASHBOARD_BOARD_COUNT} 件です。
+              </span>
+              {needsSelection ? (
+                <span className="block pt-1">表示するハムスターを {targetCount} 件選択します。</span>
+              ) : (
+                <span className="block pt-1">
+                  登録数が表示数以下のため、全ハムスターを表示します。
+                </span>
+              )}
+              {!canSave ? (
+                <span className="block pt-1 text-red-600">
+                  表示対象を {targetCount} 件選択してください。
+                </span>
+              ) : null}
+            </div>
+          </div>
 
-      <section className="space-y-3">
-        <h3 className="text-base font-bold text-ink">ダッシュボードに表示するハムスター</h3>
+          {/* disabled の checkbox は送信されないため、保存対象IDは hidden input に正規化して渡す。 */}
+          {effectiveSelectedIds.map((id) => (
+            <input key={id} type="hidden" name="hamsterIds" value={id} data-dirty-control />
+          ))}
+
+          <section
+            className="space-y-3 border-t border-slate-200 pt-5"
+            aria-labelledby="dashboard-hamster-selection-heading"
+            data-dashboard-hamster-selection
+          >
+            <h4 id="dashboard-hamster-selection-heading" className="text-base font-bold text-ink">
+              ダッシュボードに表示するハムスター
+            </h4>
         {hamsters.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
             ハムスターがまだ登録されていません。
@@ -268,18 +296,21 @@ export function DashboardSettingsForm({
             )}
           </>
         )}
-      </section>
+          </section>
+        </section>
 
-      <div id="dashboard-settings-save" className="flex justify-end scroll-mt-24">
-        <DirtySubmitButton
-          disabled={!canSave}
-          className="inline-flex items-center gap-2 rounded-md bg-moss px-5 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+        <div
+          id="dashboard-settings-save"
+          className="flex justify-end scroll-mt-24 pr-16 sm:pr-20 xl:pr-0"
         >
-          <Save className="h-4 w-4" aria-hidden />
-          保存
-        </DirtySubmitButton>
-      </div>
-      </div>
+          <DirtySubmitButton
+            disabled={!canSave}
+            className="inline-flex items-center gap-2 rounded-md bg-moss px-5 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <Save className="h-4 w-4" aria-hidden />
+            保存
+          </DirtySubmitButton>
+        </div>
       </form>
     </UnsavedChangesGuard>
   );

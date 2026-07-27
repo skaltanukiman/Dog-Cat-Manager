@@ -140,10 +140,10 @@
 - **関連設定:** `src/lib/dashboard-settings.ts`（Hamster 選択形式）、`src/lib/cleaning-settings.ts`（スマホ日付初期値）、`src/app/globals.css`（PC表 / モバイルカードの表示）。
 - **依存関係:** `today` 設定はスマホ表示かつ対象が今月で日付一覧にJSTの今日が存在するときだけ今日のカードを初期表示し、それ以外は存在しない日付を選ばず全日付へフォールバックする。`all` は常に全日付を初期表示する。画面内の手動選択は初期値で上書きせず、PC用の `lg` 月間テーブルには適用しない。記録が全て空なら行を削除する。VIEWERは表・モバイルカードとも入力と保存を無効化し、ActionでもDB処理前に拒否する。掃除種別・メモのフィールドを変える場合、schema、Action 差分判定、`getCleaningPageData`、ダッシュボード最新掃除表示、Prisma migration をまとめて変更する。
 
-## 設定（プロフィール・ダッシュボード・記録画面）
+## 設定（プロフィール・画面表示・ダッシュボード）
 
 - **画面または URL:** `/settings`。最下部の「アカウントの削除」から、赤枠の「削除内容を確認する」でアカウント削除確認 `/settings/account/delete` へ移動する。
-- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DisplaySettingsSection`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示を1フォーム・1保存ボタンで扱い、アカウント削除の入口は別フォームに分離する。スマホでは3つの画面表示設定を、設定アイコン・説明・現在値3件の短縮ラベルチップ・開閉操作文言を持つ「画面の表示設定」カテゴリカードへまとめる。展開時も同じラジオ入力をDOMに保持したまま2列セグメントとして表示し、選択中の説明だけを示す。`md`以上ではカテゴリカード見出しを隠し、従来の説明付きカード表示を常時表示する。
+- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DisplaySettingsSection`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。1つの設定フォーム内に「プロフィール」「画面の表示設定」「ダッシュボード設定」をこの順の兄弟カードとして置き、その後ろの1つの保存ボタンでまとめて保存する。「画面の表示設定」はハムスター選択方式・記録画面の初期表示・衛生管理画面のスマホ日付初期表示を扱い、スマホでは設定アイコン・説明・現在値3件の短縮ラベルチップ・開閉操作文言を持つ折り畳みカード、`md`以上では見出しと説明を持つ常時展開カードになる。「ダッシュボード設定」は表示ボード数・現在の表示対象件数・検索と状態フィルター・表示対象ハムスター一覧を連続して扱う。
 - **Server Action または API:** `saveSettings`（`src/app/actions/settings.ts`）。表示名、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示をまとめて差分比較し、変更がなければ `unchanged` を返す。各初期表示だけの変更も現在のユーザー・Householdの `AppSetting` へupsertし、関連画面と `/settings` を再検証する。
 - **データアクセス・Prismaモデル:** `getDashboardSettingsPageData`、`User`、`Household`、`HouseholdMember`、`AppSetting`、`DashboardHamster`、`Hamster`。
 - **バリデーション:** `updateUserProfileSchema`（表示名）、`dashboardSettingsSchema`、`normalizeDashboardBoardCount` / `normalizeHamsterSelectorMode` / `normalizeRecordScope` / `normalizeCleaningMobileDefaultDateFilter`。記録画面の初期表示は `hamster` / `household`、衛生管理画面のスマホ日付初期表示は `today` / `all` だけを保存し、DBの未設定・不正値はそれぞれ `hamster` / `today` として扱う。

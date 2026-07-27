@@ -3,6 +3,7 @@
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useId, useState } from "react";
 
+import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
 import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import type { HamsterSelectorMode } from "@/lib/dashboard-settings";
 import type { RecordScope } from "@/lib/records";
@@ -176,14 +177,18 @@ export function DisplaySettingsSection({
   });
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-md border border-moss/20 bg-white shadow-sm md:overflow-visible md:rounded-none md:border-0 md:shadow-none">
+    <section
+      aria-label="画面の表示設定"
+      data-settings-section="display"
+      className="min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm md:overflow-visible"
+    >
       <button
         type="button"
         aria-expanded={isOpen}
         aria-controls={contentId}
         data-display-settings-toggle
         onClick={() => setIsOpen((current) => !current)}
-        className="min-h-11 w-full bg-moss/5 p-3 text-left transition-colors hover:bg-moss/10 active:bg-moss/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss motion-reduce:transition-none md:hidden"
+        className={`min-h-11 w-full bg-moss/5 text-left transition-colors hover:bg-moss/10 active:bg-moss/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss motion-reduce:transition-none md:hidden ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
       >
         <span className="flex min-w-0 items-start gap-3">
           <span
@@ -193,7 +198,9 @@ export function DisplaySettingsSection({
             <SlidersHorizontal className="h-5 w-5" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-base font-bold text-ink">画面の表示設定</span>
+            <span className="block text-base font-bold text-ink" role="heading" aria-level={3}>
+              画面の表示設定
+            </span>
             <span className="mt-0.5 block text-xs leading-5 text-slate-600">
               各画面の初期表示や選択方法を変更します。
             </span>
@@ -226,11 +233,23 @@ export function DisplaySettingsSection({
         </span>
       </button>
 
+      <header className="hidden items-start gap-3 px-5 pt-5 md:flex">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-moss/10 text-moss">
+          <SlidersHorizontal className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-base font-bold text-ink">画面の表示設定</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            各画面の初期表示や選択方法を変更します。
+          </p>
+        </div>
+      </header>
+
       <div
         id={contentId}
         data-display-settings-content
         data-mobile-open={isOpen}
-        className={`${isOpen ? "block" : "hidden"} space-y-5 border-t border-slate-200 p-3 md:block md:border-0 md:p-0`}
+        className={`${isOpen ? "block" : "hidden"} space-y-5 border-t border-slate-200 ${SETTINGS_CARD_RESPONSIVE_PADDING} md:block md:border-0 md:pt-4`}
       >
         <ResponsiveRadioGroup
           legend="ハムスター選択方式"

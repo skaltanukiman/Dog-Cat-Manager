@@ -30,7 +30,9 @@ export default async function SettingsPage({
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-ink">設定</h2>
-        <p className="mt-1 text-sm text-slate-600">プロフィール、ダッシュボード、記録画面の表示設定を管理します。</p>
+        <p className="mt-1 text-sm text-slate-600">
+          プロフィール、各画面の表示方法、ダッシュボードを管理します。
+        </p>
       </div>
 
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
