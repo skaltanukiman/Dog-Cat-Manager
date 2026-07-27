@@ -34,6 +34,7 @@ type CleaningMobileFormProps = {
   hamsterId: string;
   includeInactive: boolean;
   isLocked: boolean;
+  initialSelectedDate?: string;
   readOnly?: boolean;
   recordsVersion: string;
   yearMonth: string;
@@ -41,8 +42,14 @@ type CleaningMobileFormProps = {
 
 const CLEANING_MOBILE_DAY_FILTER_EVENT = "cleaning-mobile-day-filter-change";
 
-export function CleaningMobileDayFilter({ days }: { days: CleaningMobileDayOption[] }) {
-  const [selectedDate, setSelectedDate] = useState("all");
+export function CleaningMobileDayFilter({
+  days,
+  initialSelectedDate = "all"
+}: {
+  days: CleaningMobileDayOption[];
+  initialSelectedDate?: string;
+}) {
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
 
   function handleDateChange(value: string) {
     setSelectedDate(value);
@@ -52,7 +59,11 @@ export function CleaningMobileDayFilter({ days }: { days: CleaningMobileDayOptio
   return (
     <label className="grid gap-1 text-sm font-medium text-slate-700 lg:hidden">
       日付
-      <select value={selectedDate} onChange={(event) => handleDateChange(event.currentTarget.value)}>
+      <select
+        value={selectedDate}
+        data-cleaning-selected-date={selectedDate}
+        onChange={(event) => handleDateChange(event.currentTarget.value)}
+      >
         <option value="all">すべての日付</option>
         {days.map((day) => (
           <option key={day.date} value={day.date}>
@@ -69,11 +80,12 @@ export function CleaningMobileForm({
   hamsterId,
   includeInactive,
   isLocked,
+  initialSelectedDate = "all",
   readOnly = false,
   recordsVersion,
   yearMonth
 }: CleaningMobileFormProps) {
-  const [selectedDate, setSelectedDate] = useState("all");
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
 
   useEffect(() => {
     function handleDayFilterChange(event: Event) {
@@ -90,7 +102,7 @@ export function CleaningMobileForm({
   }, []);
 
   return (
-    <div className="space-y-4 lg:hidden">
+    <div className="space-y-4 lg:hidden" data-cleaning-selected-date={selectedDate}>
       <form
         key={`cleaning-mobile-${hamsterId}-${yearMonth}-${recordsVersion}`}
         id="cleaning-mobile-form"
@@ -111,6 +123,8 @@ export function CleaningMobileForm({
               return (
                 <section
                   key={day.date}
+                  data-cleaning-date={day.date}
+                  data-cleaning-visible={isVisible}
                   className={`${isVisible ? "" : "hidden"} rounded-md border p-4 shadow-sm ${
                     day.isToday
                       ? "border-straw bg-straw/15"

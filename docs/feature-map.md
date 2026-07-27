@@ -132,24 +132,24 @@
 ## 掃除記録
 
 - **画面または URL:** `/cleaning`。
-- **主なコンポーネント:** `CleaningMobileForm`、`CleaningMobileDayFilter`、`HamsterSelectorInput`、`DirtySubmitButton`、`MobileDirtySaveArea`、`UnsavedChangesGuard`。
+- **主なコンポーネント:** `CleaningMobileForm`、`CleaningMobileDayFilter`、`HamsterSelectorInput`、`DirtySubmitButton`、`MobileDirtySaveArea`、`UnsavedChangesGuard`。スマホ用日付プルダウンと入力カードは、サーバーで確定した同じ初期選択値を受け取り、その後は既存の変更イベントで選択状態を同期する。
 - **Server Action または API:** `saveCleaningMonth`（`src/app/actions/cleaning.ts`）。
-- **データアクセス・Prismaモデル:** `getCleaningPageData`、`Hamster`、`CleaningRecord`、`AppSetting`。月内の既存行との差分から create / update / delete を行う。
-- **バリデーション:** `cleaningMonthSchema`、`yearMonthSchema`、日付・未来日チェック（`src/lib/date.ts`）。
-- **関連テスト:** `tests/authorization.test.ts`（Household所属判定）。
-- **関連設定:** `src/lib/dashboard-settings.ts`（Hamster 選択形式）、`src/app/globals.css`（PC表 / モバイルカードの表示）。
-- **依存関係:** 記録が全て空なら行を削除する。VIEWERは表・モバイルカードとも入力と保存を無効化し、ActionでもDB処理前に拒否する。掃除種別・メモのフィールドを変える場合、schema、Action 差分判定、`getCleaningPageData`、ダッシュボード最新掃除表示、Prisma migration をまとめて変更する。
+- **データアクセス・Prismaモデル:** `getCleaningPageData`、`Hamster`、`CleaningRecord`、`AppSetting`。月内の既存行との差分から create / update / delete を行う。`AppSetting.cleaningMobileDefaultDateFilter` はユーザー・Householdの組み合わせ単位で保存する。
+- **バリデーション:** `cleaningMonthSchema`、`yearMonthSchema`、日付・未来日チェック（`src/lib/date.ts`）。スマホ初期表示設定は `today` / `all` だけを保存し、未設定・不正なDB値は `today` に正規化する。
+- **関連テスト:** `tests/authorization.test.ts`（Household所属判定）、`tests/cleaning-mobile-settings.test.tsx`（設定値の正規化、今月の今日選択、過去月・日付不在時の全日付フォールバック、プルダウンとカードの初期同期、PC表の維持）。
+- **関連設定:** `src/lib/dashboard-settings.ts`（Hamster 選択形式）、`src/lib/cleaning-settings.ts`（スマホ日付初期値）、`src/app/globals.css`（PC表 / モバイルカードの表示）。
+- **依存関係:** `today` 設定はスマホ表示かつ対象が今月で日付一覧にJSTの今日が存在するときだけ今日のカードを初期表示し、それ以外は存在しない日付を選ばず全日付へフォールバックする。`all` は常に全日付を初期表示する。画面内の手動選択は初期値で上書きせず、PC用の `lg` 月間テーブルには適用しない。記録が全て空なら行を削除する。VIEWERは表・モバイルカードとも入力と保存を無効化し、ActionでもDB処理前に拒否する。掃除種別・メモのフィールドを変える場合、schema、Action 差分判定、`getCleaningPageData`、ダッシュボード最新掃除表示、Prisma migration をまとめて変更する。
 
 ## 設定（プロフィール・ダッシュボード・記録画面）
 
 - **画面または URL:** `/settings`。最下部の「アカウントの削除」から、赤枠の「削除内容を確認する」でアカウント削除確認 `/settings/account/delete` へ移動する。
-- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール、ダッシュボード設定、記録画面の初期表示範囲を1フォーム・1保存ボタンで扱い、アカウント削除の入口は別フォームに分離する。初期表示は説明付きラジオで「選択中のハムスター」または「グループ全体」を選ぶ。
-- **Server Action または API:** `saveSettings`（`src/app/actions/settings.ts`）。表示名、ダッシュボード設定、記録画面の初期表示範囲をまとめて差分比較し、変更がなければ `unchanged` を返す。初期表示だけの変更も現在のユーザー・Householdの `AppSetting` へupsertし、`/records` と `/settings` を再検証する。
+- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示を1フォーム・1保存ボタンで扱い、アカウント削除の入口は別フォームに分離する。各初期表示は説明付きラジオで選ぶ。
+- **Server Action または API:** `saveSettings`（`src/app/actions/settings.ts`）。表示名、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示をまとめて差分比較し、変更がなければ `unchanged` を返す。各初期表示だけの変更も現在のユーザー・Householdの `AppSetting` へupsertし、関連画面と `/settings` を再検証する。
 - **データアクセス・Prismaモデル:** `getDashboardSettingsPageData`、`User`、`Household`、`HouseholdMember`、`AppSetting`、`DashboardHamster`、`Hamster`。
-- **バリデーション:** `updateUserProfileSchema`（表示名）、`dashboardSettingsSchema`、`normalizeDashboardBoardCount` / `normalizeHamsterSelectorMode` / `normalizeRecordScope`。記録画面の初期表示は `hamster` / `household` だけを保存し、DBの未設定・不正値は `hamster` として扱う。
-- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序・記録画面初期表示の差分判定、フォーム、保存、migration）、`tests/account-delete.test.ts`（アカウント削除の確認導線と確認UI）。
-- **関連設定:** `src/lib/dashboard-settings.ts`、`src/lib/records.ts`、`src/lib/search.ts`、`AppSetting.recordTimelineDefaultScope`。
-- **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・記録画面初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。表示名変更は `User.name` だけを更新し、初回作成後の共有グループ名や所有権移譲後の名前とは連動させない。初回Household名だけは `defaultHouseholdName()` で生成する。ダッシュボード対象に変更がある場合だけ全 `DashboardHamster` を削除して作り直すため、初期表示だけの変更では対象を作り直さない。順序と上限を Action と UI で一致させ、未保存変更がある間は他画面への移動確認を表示する。
+- **バリデーション:** `updateUserProfileSchema`（表示名）、`dashboardSettingsSchema`、`normalizeDashboardBoardCount` / `normalizeHamsterSelectorMode` / `normalizeRecordScope` / `normalizeCleaningMobileDefaultDateFilter`。記録画面の初期表示は `hamster` / `household`、衛生管理画面のスマホ日付初期表示は `today` / `all` だけを保存し、DBの未設定・不正値はそれぞれ `hamster` / `today` として扱う。
+- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序・各初期表示の差分判定、フォーム、保存、migration）、`tests/cleaning-mobile-settings.test.tsx`（衛生管理スマホ初期表示）、`tests/account-delete.test.ts`（アカウント削除の確認導線と確認UI）。
+- **関連設定:** `src/lib/dashboard-settings.ts`、`src/lib/records.ts`、`src/lib/cleaning-settings.ts`、`src/lib/search.ts`、`AppSetting.recordTimelineDefaultScope`、`AppSetting.cleaningMobileDefaultDateFilter`。
+- **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・各画面の初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。表示名変更は `User.name` だけを更新し、初回作成後の共有グループ名や所有権移譲後の名前とは連動させない。初回Household名だけは `defaultHouseholdName()` で生成する。ダッシュボード対象に変更がある場合だけ全 `DashboardHamster` を削除して作り直すため、初期表示だけの変更では対象を作り直さない。順序と上限を Action と UI で一致させ、未保存変更がある間は他画面への移動確認を表示する。
 
 ## アカウント削除
 

@@ -10,6 +10,7 @@ import { ProfileSettingsFields } from "@/components/profile-settings-form";
 import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
 import { SettingsScrollToSaveButton } from "@/components/settings-scroll-to-save-button";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
+import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   MAX_DASHBOARD_BOARD_COUNT,
   MIN_DASHBOARD_BOARD_COUNT,
@@ -31,6 +32,7 @@ type DashboardSettingsFormProps = {
   boardCount: number;
   hamsterSelectorMode: HamsterSelectorMode;
   recordTimelineDefaultScope: RecordScope;
+  cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
   hamsters: HamsterOption[];
   selectedHamsterIds: string[];
 };
@@ -54,6 +56,7 @@ export function DashboardSettingsForm({
   boardCount,
   hamsterSelectorMode,
   recordTimelineDefaultScope,
+  cleaningMobileDefaultDateFilter,
   hamsters,
   selectedHamsterIds
 }: DashboardSettingsFormProps) {
@@ -215,6 +218,42 @@ export function DashboardSettingsForm({
               <span className="block font-semibold text-ink">グループ全体</span>
               <span className="mt-1 block text-xs leading-5 text-slate-500">
                 記録画面を開いたとき、現在の共有グループに所属する全ハムスターの記録を表示します。
+              </span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-base font-bold text-ink">衛生管理画面（スマホ）の初期表示</h3>
+        <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700">
+            <input
+              type="radio"
+              name="cleaningMobileDefaultDateFilter"
+              value="today"
+              defaultChecked={cleaningMobileDefaultDateFilter === "today"}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="block font-semibold text-ink">当日のみ</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                衛生管理画面をスマートフォンで開いたとき、今日の入力欄だけを表示します。
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700">
+            <input
+              type="radio"
+              name="cleaningMobileDefaultDateFilter"
+              value="all"
+              defaultChecked={cleaningMobileDefaultDateFilter === "all"}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="block font-semibold text-ink">すべての日付</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                衛生管理画面をスマートフォンで開いたとき、その月の入力欄をすべて表示します。
               </span>
             </span>
           </label>

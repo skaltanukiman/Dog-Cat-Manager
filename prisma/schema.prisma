@@ -78,6 +78,8 @@ model AppSetting {
   hamsterSelectorMode String             @default("select")
   // 記録画面をURLのscope指定なしで開いたときのタイムライン表示範囲。
   recordTimelineDefaultScope String      @default("hamster")
+  // 衛生管理画面をスマートフォンで開いたときの日付フィルター初期値。
+  cleaningMobileDefaultDateFilter String @default("today")
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   dashboardHamsters   DashboardHamster[]

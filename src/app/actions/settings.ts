@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
+import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   normalizeDashboardBoardCount,
   normalizeHamsterSelectorMode,
@@ -34,11 +35,17 @@ export async function saveSettings(formData: FormData) {
       dashboardBoardCount: formData.get("dashboardBoardCount"),
       hamsterSelectorMode: formData.get("hamsterSelectorMode"),
       recordTimelineDefaultScope: formData.get("recordTimelineDefaultScope"),
+      cleaningMobileDefaultDateFilter: formData.get("cleaningMobileDefaultDateFilter"),
       hamsterIds: formData.getAll("hamsterIds")
     });
     if (!dashboardResult.success) redirect("/settings?status=invalid");
 
-    const { dashboardBoardCount, hamsterSelectorMode, recordTimelineDefaultScope } = dashboardResult.data;
+    const {
+      dashboardBoardCount,
+      hamsterSelectorMode,
+      recordTimelineDefaultScope,
+      cleaningMobileDefaultDateFilter
+    } = dashboardResult.data;
     const selectedHamsterIds = [...new Set(dashboardResult.data.hamsterIds)];
     const [user, hamsters, setting] = await Promise.all([
       prisma.user.findUnique({
@@ -66,17 +73,26 @@ export async function saveSettings(formData: FormData) {
     const currentBoardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
     const currentSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
     const currentRecordTimelineDefaultScope = normalizeRecordScope(setting?.recordTimelineDefaultScope);
+    const currentCleaningMobileDefaultDateFilter = normalizeCleaningMobileDefaultDateFilter(
+      setting?.cleaningMobileDefaultDateFilter
+    );
     const currentSelectedHamsterIds = pickDashboardHamsters(
       hamsters,
       currentBoardCount,
       setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? []
     ).map((hamster) => hamster.id);
-    const { profileChanged, dashboardChanged, recordTimelineDefaultScopeChanged } = getSettingsChanges(
+    const {
+      profileChanged,
+      dashboardChanged,
+      recordTimelineDefaultScopeChanged,
+      cleaningMobileDefaultDateFilterChanged
+    } = getSettingsChanges(
       {
         name: user.name ?? "",
         dashboardBoardCount: currentBoardCount,
         hamsterSelectorMode: currentSelectorMode,
         recordTimelineDefaultScope: currentRecordTimelineDefaultScope,
+        cleaningMobileDefaultDateFilter: currentCleaningMobileDefaultDateFilter,
         hamsterIds: currentSelectedHamsterIds
       },
       {
@@ -84,11 +100,17 @@ export async function saveSettings(formData: FormData) {
         dashboardBoardCount,
         hamsterSelectorMode,
         recordTimelineDefaultScope,
+        cleaningMobileDefaultDateFilter,
         hamsterIds: selectedHamsterIds
       }
     );
 
-    if (!profileChanged && !dashboardChanged && !recordTimelineDefaultScopeChanged) {
+    if (
+      !profileChanged &&
+      !dashboardChanged &&
+      !recordTimelineDefaultScopeChanged &&
+      !cleaningMobileDefaultDateFilterChanged
+    ) {
       redirect("/settings?status=unchanged");
     }
 
@@ -98,16 +120,22 @@ export async function saveSettings(formData: FormData) {
         await tx.user.update({ where: { id: context.user.id }, data: { name: profileResult.data.name } });
       }
 
-      if (dashboardChanged || recordTimelineDefaultScopeChanged) {
+      if (dashboardChanged || recordTimelineDefaultScopeChanged || cleaningMobileDefaultDateFilterChanged) {
         const setting = await tx.appSetting.upsert({
           where: { userId_householdId: { userId: context.user.id, householdId: context.household.id } },
-          update: { dashboardBoardCount, hamsterSelectorMode, recordTimelineDefaultScope },
+          update: {
+            dashboardBoardCount,
+            hamsterSelectorMode,
+            recordTimelineDefaultScope,
+            cleaningMobileDefaultDateFilter
+          },
           create: {
             userId: context.user.id,
             householdId: context.household.id,
             dashboardBoardCount,
             hamsterSelectorMode,
-            recordTimelineDefaultScope
+            recordTimelineDefaultScope,
+            cleaningMobileDefaultDateFilter
           }
         });
         if (dashboardChanged) {

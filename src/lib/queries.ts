@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
+import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   normalizeDashboardBoardCount,
   normalizeHamsterSelectorMode,
@@ -178,16 +179,25 @@ export async function getCleaningPageData(selectedHamsterId: string | undefined,
           householdId: context.household.id
         }
       },
-      select: { hamsterSelectorMode: true }
+      select: { hamsterSelectorMode: true, cleaningMobileDefaultDateFilter: true }
     })
   ]);
   const hamsterSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
+  const cleaningMobileDefaultDateFilter = normalizeCleaningMobileDefaultDateFilter(
+    setting?.cleaningMobileDefaultDateFilter
+  );
   const selectableHamsters = getSelectableHamsters(hamsters, includeInactive);
   // 初期表示では自動選択せず、URLで明示されたハムスターだけを表示対象にする。
   const selectedHamster = pickSelectedHamster(selectableHamsters, selectedHamsterId);
 
   if (!selectedHamster) {
-    return { hamsters, selectedHamster, recordsByDate: new Map(), hamsterSelectorMode };
+    return {
+      hamsters,
+      selectedHamster,
+      recordsByDate: new Map(),
+      hamsterSelectorMode,
+      cleaningMobileDefaultDateFilter
+    };
   }
 
   const { start, end } = monthDateRange(yearMonth);
@@ -206,6 +216,7 @@ export async function getCleaningPageData(selectedHamsterId: string | undefined,
     hamsters,
     selectedHamster,
     hamsterSelectorMode,
+    cleaningMobileDefaultDateFilter,
     // 表形式では日付文字列から即座にレコードを引けるよう、DB結果をMapへ変換しておく。
     recordsByDate: new Map(records.map((record) => [toDateInputValue(record.recordDate), record]))
   };
@@ -388,6 +399,9 @@ export async function getDashboardSettingsPageData() {
   const boardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
   const hamsterSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
   const recordTimelineDefaultScope = normalizeRecordScope(setting?.recordTimelineDefaultScope);
+  const cleaningMobileDefaultDateFilter = normalizeCleaningMobileDefaultDateFilter(
+    setting?.cleaningMobileDefaultDateFilter
+  );
   const selectedIds = setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [];
   // 設定画面の初期表示でも、ダッシュボードと同じ補完ルールで選択状態を作る。
   const selectedHamsterIds = pickDashboardHamsters(hamsters, boardCount, selectedIds).map((hamster) => hamster.id);
@@ -397,6 +411,7 @@ export async function getDashboardSettingsPageData() {
     boardCount,
     hamsterSelectorMode,
     recordTimelineDefaultScope,
+    cleaningMobileDefaultDateFilter,
     hamsters,
     selectedHamsterIds
   };

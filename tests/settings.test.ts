@@ -16,6 +16,7 @@ const current: SettingsSnapshot = {
   dashboardBoardCount: 2,
   hamsterSelectorMode: "select",
   recordTimelineDefaultScope: "hamster",
+  cleaningMobileDefaultDateFilter: "today",
   hamsterIds: ["hamster-1", "hamster-2"]
 };
 
@@ -23,6 +24,7 @@ test("設定が同一ならプロフィール・ダッシュボードとも変�
   assert.deepEqual(getSettingsChanges(current, { ...current }), {
     profileChanged: false,
     recordTimelineDefaultScopeChanged: false,
+    cleaningMobileDefaultDateFilterChanged: false,
     dashboardChanged: false
   });
 });
@@ -31,6 +33,7 @@ test("表示名だけの変更を検知する", () => {
   assert.deepEqual(getSettingsChanges(current, { ...current, name: "山田 花子" }), {
     profileChanged: true,
     recordTimelineDefaultScopeChanged: false,
+    cleaningMobileDefaultDateFilterChanged: false,
     dashboardChanged: false
   });
 });
@@ -50,6 +53,7 @@ test("記録画面の初期表示だけの変更をダッシュボード変更�
     {
       profileChanged: false,
       recordTimelineDefaultScopeChanged: true,
+      cleaningMobileDefaultDateFilterChanged: false,
       dashboardChanged: false
     }
   );
@@ -59,6 +63,7 @@ test("記録画面の初期表示設定はhamsterとhouseholdだけを受け付�
   const input = {
     dashboardBoardCount: 2,
     hamsterSelectorMode: "select",
+    cleaningMobileDefaultDateFilter: "today",
     hamsterIds: ["hamster-1", "hamster-2"]
   };
 
@@ -73,6 +78,40 @@ test("記録画面の初期表示設定はhamsterとhouseholdだけを受け付�
   assert.equal(
     dashboardSettingsSchema.safeParse({ ...input, recordTimelineDefaultScope: "invalid" }).success,
     false
+  );
+});
+
+test("衛生管理画面のスマホ初期表示設定はtodayとallだけを受け付ける", () => {
+  const input = {
+    dashboardBoardCount: 2,
+    hamsterSelectorMode: "select",
+    recordTimelineDefaultScope: "hamster",
+    hamsterIds: ["hamster-1", "hamster-2"]
+  };
+
+  assert.equal(
+    dashboardSettingsSchema.safeParse({ ...input, cleaningMobileDefaultDateFilter: "today" }).success,
+    true
+  );
+  assert.equal(
+    dashboardSettingsSchema.safeParse({ ...input, cleaningMobileDefaultDateFilter: "all" }).success,
+    true
+  );
+  assert.equal(
+    dashboardSettingsSchema.safeParse({ ...input, cleaningMobileDefaultDateFilter: "invalid" }).success,
+    false
+  );
+});
+
+test("衛生管理画面のスマホ初期表示だけの変更を差分として検知する", () => {
+  assert.deepEqual(
+    getSettingsChanges(current, { ...current, cleaningMobileDefaultDateFilter: "all" }),
+    {
+      profileChanged: false,
+      recordTimelineDefaultScopeChanged: false,
+      cleaningMobileDefaultDateFilterChanged: true,
+      dashboardChanged: false
+    }
   );
 });
 
@@ -99,6 +138,30 @@ test("記録画面の初期表示は設定フォーム・保存Action・AppSetti
   assert.match(prismaSchema, /recordTimelineDefaultScope String\s+@default\("hamster"\)/);
   assert.match(migration, /ADD COLUMN "recordTimelineDefaultScope" TEXT NOT NULL DEFAULT 'hamster'/);
   assert.doesNotMatch(action, /createHouseholdActivity/);
+});
+
+test("衛生管理画面のスマホ初期表示は設定フォーム・保存Action・AppSettingへ統合される", () => {
+  const form = readSource("src/components/dashboard-settings-form.tsx");
+  const action = readSource("src/app/actions/settings.ts");
+  const schema = readSource("src/lib/schemas.ts");
+  const prismaSchema = readSource("prisma/schema.prisma");
+  const migration = readSource(
+    "prisma/migrations/20260727090000_add_cleaning_mobile_default_date_filter/migration.sql"
+  );
+
+  assert.match(form, /name="cleaningMobileDefaultDateFilter"[\s\S]*?value="today"/);
+  assert.match(form, /name="cleaningMobileDefaultDateFilter"[\s\S]*?value="all"/);
+  assert.match(form, />当日のみ</);
+  assert.match(form, />すべての日付</);
+  assert.match(schema, /cleaningMobileDefaultDateFilter: z\.enum\(CLEANING_MOBILE_DEFAULT_DATE_FILTERS\)/);
+  assert.match(action, /cleaningMobileDefaultDateFilterChanged/);
+  assert.match(
+    action,
+    /dashboardChanged \|\| recordTimelineDefaultScopeChanged \|\| cleaningMobileDefaultDateFilterChanged/
+  );
+  assert.match(action, /update: \{[\s\S]*?cleaningMobileDefaultDateFilter[\s\S]*?\}/);
+  assert.match(prismaSchema, /cleaningMobileDefaultDateFilter String\s+@default\("today"\)/);
+  assert.match(migration, /ADD COLUMN "cleaningMobileDefaultDateFilter" TEXT NOT NULL DEFAULT 'today'/);
 });
 
 test("設定カードは固定ボタン回避用の余白とxlでの解除タイミングを共有する", () => {

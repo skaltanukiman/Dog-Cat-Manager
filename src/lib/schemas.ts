@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { CLEANING_MOBILE_DEFAULT_DATE_FILTERS } from "@/lib/cleaning-settings";
 import { HAMSTER_SELECTOR_MODES, MAX_DASHBOARD_BOARD_COUNT, MIN_DASHBOARD_BOARD_COUNT } from "@/lib/dashboard-settings";
 import { isValidDateInput, isValidYearMonthInput, parseDateInput, todayInputJst } from "@/lib/date";
 import { RECORD_SCOPES } from "@/lib/records";
@@ -94,6 +95,7 @@ export const dashboardSettingsSchema = z.object({
   dashboardBoardCount: z.coerce.number().int().min(MIN_DASHBOARD_BOARD_COUNT).max(MAX_DASHBOARD_BOARD_COUNT),
   hamsterSelectorMode: z.enum(HAMSTER_SELECTOR_MODES),
   recordTimelineDefaultScope: z.enum(RECORD_SCOPES),
+  cleaningMobileDefaultDateFilter: z.enum(CLEANING_MOBILE_DEFAULT_DATE_FILTERS),
   hamsterIds: z.array(idSchema)
 });
 

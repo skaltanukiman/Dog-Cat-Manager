@@ -1,3 +1,4 @@
+import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import type { HamsterSelectorMode } from "@/lib/dashboard-settings";
 import type { RecordScope } from "@/lib/records";
 
@@ -6,6 +7,7 @@ export type SettingsSnapshot = {
   dashboardBoardCount: number;
   hamsterSelectorMode: HamsterSelectorMode;
   recordTimelineDefaultScope: RecordScope;
+  cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
   hamsterIds: readonly string[];
 };
 
@@ -18,6 +20,8 @@ export function getSettingsChanges(current: SettingsSnapshot, next: SettingsSnap
     profileChanged: current.name !== next.name,
     recordTimelineDefaultScopeChanged:
       current.recordTimelineDefaultScope !== next.recordTimelineDefaultScope,
+    cleaningMobileDefaultDateFilterChanged:
+      current.cleaningMobileDefaultDateFilter !== next.cleaningMobileDefaultDateFilter,
     dashboardChanged:
       current.dashboardBoardCount !== next.dashboardBoardCount ||
       current.hamsterSelectorMode !== next.hamsterSelectorMode ||

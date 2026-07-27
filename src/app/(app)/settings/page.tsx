@@ -21,6 +21,7 @@ export default async function SettingsPage({
     boardCount,
     hamsterSelectorMode,
     recordTimelineDefaultScope,
+    cleaningMobileDefaultDateFilter,
     hamsters,
     selectedHamsterIds
   } = await getDashboardSettingsPageData();
@@ -40,6 +41,7 @@ export default async function SettingsPage({
         boardCount={boardCount}
         hamsterSelectorMode={hamsterSelectorMode}
         recordTimelineDefaultScope={recordTimelineDefaultScope}
+        cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
         hamsters={hamsters}
         selectedHamsterIds={selectedHamsterIds}
       />

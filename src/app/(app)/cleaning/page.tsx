@@ -10,6 +10,7 @@ import { StatusMessage } from "@/components/status-message";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
+import { resolveCleaningMobileInitialSelectedDate } from "@/lib/cleaning-settings";
 import { currentMonthInputJst, getDaysInMonth, isFutureDateInput, normalizeYearMonth, todayInputJst } from "@/lib/date";
 import { getCleaningPageData } from "@/lib/queries";
 
@@ -35,16 +36,25 @@ export default async function CleaningPage({
   const canEdit = canEditHouseholdSharedData(context.membership.role);
   const yearMonth = normalizeYearMonth(getParam(params.month));
   const includeInactive = getParam(params.includeInactive) === "1";
-  const { hamsters, selectedHamster, recordsByDate, hamsterSelectorMode } = await getCleaningPageData(
-    getParam(params.hamsterId),
-    yearMonth,
-    includeInactive
-  );
+  const {
+    hamsters,
+    selectedHamster,
+    recordsByDate,
+    hamsterSelectorMode,
+    cleaningMobileDefaultDateFilter
+  } = await getCleaningPageData(getParam(params.hamsterId), yearMonth, includeInactive);
   const selectableHamsters = includeInactive ? hamsters : hamsters.filter((hamster) => hamster.isActive);
   const hasSelectableHamsters = selectableHamsters.length > 0;
   const days = getDaysInMonth(yearMonth);
   const currentMonth = currentMonthInputJst();
   const today = todayInputJst();
+  const mobileInitialSelectedDate = resolveCleaningMobileInitialSelectedDate({
+    defaultDateFilter: cleaningMobileDefaultDateFilter,
+    yearMonth,
+    currentYearMonth: currentMonth,
+    today,
+    dates: days.map((day) => day.date)
+  });
   const isLocked = selectedHamster ? !selectedHamster.isActive : false;
   const cleaningRecordsVersion = JSON.stringify(
     days.map((day) => {
@@ -99,7 +109,11 @@ export default async function CleaningPage({
               年月
               <AutoSubmitInput type="month" name="month" defaultValue={yearMonth} max={currentMonth} />
             </label>
-            <CleaningMobileDayFilter key={`${selectedHamster?.id ?? "none"}-${yearMonth}`} days={days} />
+            <CleaningMobileDayFilter
+              key={`${selectedHamster?.id ?? "none"}-${yearMonth}`}
+              days={days}
+              initialSelectedDate={mobileInitialSelectedDate}
+            />
             <label className="inline-flex h-10 items-center gap-2 self-end text-sm font-medium text-slate-700 lg:justify-end">
               <AutoSubmitInput type="checkbox" name="includeInactive" value="1" defaultChecked={includeInactive} />
               管理外も含む
@@ -278,6 +292,7 @@ export default async function CleaningPage({
                   hamsterId={selectedHamster.id}
                   includeInactive={includeInactive}
                   isLocked={isLocked}
+                  initialSelectedDate={mobileInitialSelectedDate}
                   readOnly={!canEdit}
                   recordsVersion={cleaningRecordsVersion}
                   yearMonth={yearMonth}
