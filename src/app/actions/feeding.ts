@@ -72,7 +72,7 @@ export async function setTodayFeeding(formData: FormData) {
         hamsterId: parsed.data.hamsterId
       }
     );
-    redirect(`/?status=${parsed.data.state === "marked" ? "feedingMarked" : "feedingUnmarked"}`);
+    redirect("/");
   } catch (error) {
     handleServerActionError(error, {
       operation: "feeding.setToday",

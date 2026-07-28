@@ -26,8 +26,6 @@ const messages: Record<string, string> = {
   recordCreated: "記録を登録しました。",
   recordUpdated: "記録を更新しました。",
   recordDeleted: "記録を削除しました。",
-  feedingMarked: "本日の食事を実施済みにしました。",
-  feedingUnmarked: "本日の食事記録を取り消しました。",
   invalidDate: "日付を確認してください。",
   invalidTime: "時刻を確認してください。",
   futureTime: "未来の時刻には記録できません。",

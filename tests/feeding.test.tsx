@@ -138,8 +138,22 @@ test("Server Actionは共通認可、所属・管理状態確認、履歴、revi
   assert.match(action, /category: "CARE_RECORD"/);
   assert.match(action, /publishHouseholdChangeSafely\(change\)/);
   assert.match(action, /revalidatePathsSafely\(/);
+  assert.match(action, /redirect\("\/"\)/);
+  assert.doesNotMatch(action, /feedingMarked|feedingUnmarked/);
+  assert.match(action, /redirect\("\/\?status=invalid"\)/);
+  assert.match(action, /redirect\("\/\?status=locked"\)/);
+  assert.match(action, /handleServerActionError\(/);
   assert.match(feeding, /createMany\([\s\S]*skipDuplicates: true/);
   assert.match(feeding, /deleteMany\(/);
+});
+
+test("食事変更の成功メッセージ定義を残さず、エラー用ステータスは維持する", () => {
+  const statusMessage = source("src/components/status-message.tsx");
+
+  assert.doesNotMatch(statusMessage, /feedingMarked|feedingUnmarked/);
+  assert.match(statusMessage, /locked: "管理外のハムスターは編集できません/);
+  assert.match(statusMessage, /viewerForbidden: "閲覧者はこの操作を実行できません/);
+  assert.match(statusMessage, /systemError: "処理中に予期しないエラーが発生しました/);
 });
 
 test("ダッシュボードは表示対象IDの本日分を一括取得して紐付ける", () => {
