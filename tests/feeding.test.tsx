@@ -152,7 +152,7 @@ test("ダッシュボードは表示対象IDの本日分を一括取得して紐
   assert.match(queries, /todayFeeding: feedingByHamster\.get\(hamster\.id\) \?\? null/);
 });
 
-test("食事項目は未実施・実施時刻・aria-pressed・デモ操作不可を表示する", () => {
+test("食事項目は簡潔な状態表示を使い、実施時刻は支援技術向け情報へ残す", () => {
   const unmarked = renderToStaticMarkup(
     <FeedingToggle hamsterId="hamster-1" hamsterName="きなこ" fedAt={null} readOnly />
   );
@@ -166,21 +166,37 @@ test("食事項目は未実施・実施時刻・aria-pressed・デモ操作不�
   );
 
   assert.match(unmarked, /aria-pressed="false"/);
-  assert.match(unmarked, /本日未実施/);
+  assert.match(unmarked, />未実施</);
   assert.match(unmarked, /disabled=""/);
   assert.match(unmarked, /サンプル閲覧モードでは変更できません/);
   assert.match(marked, /aria-pressed="true"/);
-  assert.match(marked, /19:05に実施済み/);
+  assert.match(marked, />実施済み</);
+  assert.doesNotMatch(marked, />19:05に実施済み</);
+  assert.match(marked, /19:05に実施済みです/);
 });
 
-test("保存中はボタンを無効化し、デモ画面は更新Actionを参照しない", () => {
+test("保存中・無効化・デモ読み取り専用の操作制御を維持する", () => {
   const component = source("src/components/feeding-toggle.tsx");
   const demoPage = source("src/app/demo/page.tsx");
+  const viewer = renderToStaticMarkup(
+    <FeedingToggle hamsterId="hamster-1" hamsterName="きなこ" fedAt={null} canEdit={false} />
+  );
+  const inactive = renderToStaticMarkup(
+    <FeedingToggle hamsterId="hamster-1" hamsterName="きなこ" fedAt={null} isActive={false} />
+  );
 
   assert.match(component, /const disabled = pending \|\| disabledReason !== null/);
   assert.match(component, /disabled=\{disabled\}/);
   assert.match(component, /保存中\.\.\./);
   assert.match(component, /focus-visible:ring-2/);
+  assert.match(component, /cursor-pointer/);
+  assert.match(component, /hover:bg-slate-100/);
+  assert.match(component, /disabled:cursor-not-allowed/);
+  assert.match(component, /shouldDimWhenDisabled=\{isActive\}/);
+  assert.match(component, /shouldDimWhenDisabled \? "disabled:opacity-65" : ""/);
+  assert.doesNotMatch(component, /CheckCircle2|<Circle/);
+  assert.match(viewer, /閲覧者は食事状態を変更できません/);
+  assert.match(inactive, /管理外のハムスターは変更できません/);
   assert.match(demoPage, /<FeedingToggle[\s\S]*readOnly/);
   assert.doesNotMatch(demoPage, /actions\/feeding|setTodayFeeding/);
 });

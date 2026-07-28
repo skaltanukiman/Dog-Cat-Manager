@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Circle, LoaderCircle, Utensils } from "lucide-react";
+import { LoaderCircle, Utensils } from "lucide-react";
 import { useFormStatus } from "react-dom";
 
 import { formatTimeJst } from "@/lib/date";
@@ -10,51 +10,49 @@ type FeedingToggleAction = (formData: FormData) => void | Promise<void>;
 function FeedingToggleButton({
   hamsterName,
   fedAt,
-  disabledReason
+  disabledReason,
+  shouldDimWhenDisabled
 }: {
   hamsterName: string;
   fedAt: string | null;
   disabledReason: string | null;
+  shouldDimWhenDisabled: boolean;
 }) {
   const { pending } = useFormStatus();
   const isMarked = fedAt !== null;
   const disabled = pending || disabledReason !== null;
-  const stateLabel = isMarked ? `${formatTimeJst(new Date(fedAt))}に実施済み` : "本日未実施";
+  const stateLabel = isMarked ? "実施済み" : "未実施";
+  const stateDescription = isMarked ? `${formatTimeJst(new Date(fedAt))}に実施済みです` : "未実施です";
+  const actionDescription = isMarked ? "押すと未実施に戻します" : "押すと実施済みにします";
 
   return (
     <button
       type="submit"
-      aria-label={`${hamsterName}の食事：${stateLabel}。${isMarked ? "未実施に戻す" : "実施済みにする"}`}
+      aria-label={`${hamsterName}の食事は${stateDescription}。${actionDescription}`}
       aria-pressed={isMarked}
       aria-disabled={disabled}
       disabled={disabled}
-      title={disabledReason ?? (isMarked ? "押すと本日未実施に戻ります" : "押すと本日実施済みになります")}
-      className={`flex min-h-11 w-full items-center justify-between gap-4 rounded-md border px-3 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-65 ${
-        isMarked
-          ? "border-moss/30 bg-moss/10 hover:border-moss/50 hover:bg-moss/20"
-          : "border-slate-200 bg-slate-50 hover:border-moss/40 hover:bg-white"
+      title={disabledReason ?? `${stateDescription}。${actionDescription}`}
+      className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3 text-left text-sm transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+        shouldDimWhenDisabled ? "disabled:opacity-65" : ""
       }`}
     >
       <span className="flex items-center gap-2 font-medium text-slate-700">
         <Utensils className="h-4 w-4 text-persimmon" aria-hidden />
         食事
       </span>
-      <span className={`inline-flex min-w-28 items-center justify-end gap-1.5 font-semibold ${isMarked ? "text-moss" : "text-slate-600"}`}>
+      <span
+        className={`inline-flex h-8 min-w-28 items-center justify-end rounded-md border border-slate-200 bg-white px-2.5 text-right text-sm font-semibold shadow-sm ${
+          isMarked ? "text-moss" : "text-slate-500"
+        }`}
+      >
         {pending ? (
           <>
             <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
             保存中...
           </>
-        ) : isMarked ? (
-          <>
-            <CheckCircle2 className="h-4 w-4" aria-hidden />
-            {stateLabel}
-          </>
         ) : (
-          <>
-            <Circle className="h-4 w-4" aria-hidden />
-            {stateLabel}
-          </>
+          stateLabel
         )}
       </span>
     </button>
@@ -95,7 +93,12 @@ export function FeedingToggle({
         <form action={readOnly ? undefined : action}>
           <input type="hidden" name="hamsterId" value={hamsterId} />
           <input type="hidden" name="state" value={fedAt ? "unmarked" : "marked"} />
-          <FeedingToggleButton hamsterName={hamsterName} fedAt={fedAt} disabledReason={disabledReason} />
+          <FeedingToggleButton
+            hamsterName={hamsterName}
+            fedAt={fedAt}
+            disabledReason={disabledReason}
+            shouldDimWhenDisabled={isActive}
+          />
         </form>
       </dd>
     </div>
