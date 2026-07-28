@@ -21,6 +21,7 @@ function FeedingToggleButton({
   const { pending } = useFormStatus();
   const isMarked = fedAt !== null;
   const disabled = pending || disabledReason !== null;
+  const hoverClass = disabled ? "" : "hover:bg-slate-100";
   const stateLabel = isMarked ? "実施済み" : "未実施";
   const stateDescription = isMarked ? `${formatTimeJst(new Date(fedAt))}に実施済みです` : "未実施です";
   const actionDescription = isMarked ? "押すと未実施に戻します" : "押すと実施済みにします";
@@ -33,7 +34,7 @@ function FeedingToggleButton({
       aria-disabled={disabled}
       disabled={disabled}
       title={disabledReason ?? `${stateDescription}。${actionDescription}`}
-      className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3 text-left text-sm transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+      className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 disabled:cursor-not-allowed ${hoverClass} ${
         shouldDimWhenDisabled ? "disabled:opacity-65" : ""
       }`}
     >
