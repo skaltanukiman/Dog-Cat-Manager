@@ -98,7 +98,7 @@ export function FeedingToggle({
             hamsterName={hamsterName}
             fedAt={fedAt}
             disabledReason={disabledReason}
-            shouldDimWhenDisabled={isActive}
+            shouldDimWhenDisabled={!readOnly && isActive}
           />
         </form>
       </dd>

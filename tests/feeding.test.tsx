@@ -198,6 +198,9 @@ test("保存中・無効化・デモ読み取り専用の操作制御を維持�
   const inactive = renderToStaticMarkup(
     <FeedingToggle hamsterId="hamster-1" hamsterName="きなこ" fedAt={null} isActive={false} />
   );
+  const demo = renderToStaticMarkup(
+    <FeedingToggle hamsterId="hamster-1" hamsterName="きなこ" fedAt={null} readOnly />
+  );
 
   assert.match(component, /const disabled = pending \|\| disabledReason !== null/);
   assert.match(component, /disabled=\{disabled\}/);
@@ -206,12 +209,14 @@ test("保存中・無効化・デモ読み取り専用の操作制御を維持�
   assert.match(component, /cursor-pointer/);
   assert.match(component, /const hoverClass = disabled \? "" : "hover:bg-slate-100"/);
   assert.match(component, /disabled:cursor-not-allowed/);
-  assert.match(component, /shouldDimWhenDisabled=\{isActive\}/);
+  assert.match(component, /shouldDimWhenDisabled=\{!readOnly && isActive\}/);
   assert.match(component, /shouldDimWhenDisabled \? "disabled:opacity-65" : ""/);
   assert.doesNotMatch(component, /CheckCircle2|<Circle/);
   assert.match(viewer, /閲覧者は食事状態を変更できません/);
   assert.match(inactive, /管理外のハムスターは変更できません/);
   assert.doesNotMatch(inactive, /hover:bg-slate-100/);
+  assert.match(demo, /disabled=""/);
+  assert.doesNotMatch(demo, /disabled:opacity-65/);
   assert.match(demoPage, /<FeedingToggle[\s\S]*readOnly/);
   assert.doesNotMatch(demoPage, /actions\/feeding|setTodayFeeding/);
 });
