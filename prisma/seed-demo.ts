@@ -46,6 +46,21 @@ function cleaningRow(
   };
 }
 
+function feedingRow(
+  hamsterKey: string,
+  hourJst: number,
+  minute: number
+): Prisma.FeedingRecordCreateWithoutHamsterInput {
+  const fedAt = relativeDate(0);
+  fedAt.setUTCHours(hourJst - 9, minute, 0, 0);
+
+  return {
+    id: `public-demo-feeding-${hamsterKey}`,
+    recordDate: relativeDate(0),
+    fedAt
+  };
+}
+
 function recordSearchText(...values: Array<string | null | undefined>) {
   return values.filter(Boolean).join("\n").normalize("NFKC").toLocaleLowerCase("ja-JP");
 }
@@ -65,6 +80,9 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
       birthDate: relativeDate(-420),
       adoptionDate: relativeDate(-360),
       isActive: true,
+      feedingRecords: {
+        create: [feedingRow("kinako", 19, 5)]
+      },
       weightRecords: {
         create: weightRows("kinako", [
           [-120, 37.4],
@@ -171,6 +189,9 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
       birthDate: relativeDate(-310),
       adoptionDate: relativeDate(-250),
       isActive: true,
+      feedingRecords: {
+        create: [feedingRow("komugi", 18, 40)]
+      },
       weightRecords: {
         create: weightRows("komugi", [
           [-120, 42.8],
@@ -568,6 +589,9 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
       birthDate: relativeDate(-640),
       adoptionDate: relativeDate(-570),
       isActive: true,
+      feedingRecords: {
+        create: [feedingRow("milk", 20, 10)]
+      },
       weightRecords: {
         create: weightRows("milk", [
           [-150, 40.2],

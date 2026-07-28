@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { monthDateRange, parseDateInput, toDateInputValue } from "@/lib/date";
+import { getTodayFeedingRecordDate, todayFeedingRecordsByHamster } from "@/lib/feeding";
 import { prisma } from "@/lib/prisma";
 import {
   getPublicDemoHamsterImagePath,
@@ -67,7 +68,12 @@ export async function getPublicDemoDashboardData() {
     }
   });
   const hamsterIds = hamsters.map((hamster) => hamster.id);
-  const [toiletRecords, bathRecords, flooringAllRecords, houseRecords] = await Promise.all([
+  const now = new Date();
+  const [feedingRecords, toiletRecords, bathRecords, flooringAllRecords, houseRecords] = await Promise.all([
+    prisma.feedingRecord.findMany({
+      where: { hamsterId: { in: hamsterIds }, recordDate: getTodayFeedingRecordDate(now) },
+      select: { id: true, hamsterId: true, recordDate: true, fedAt: true }
+    }),
     prisma.cleaningRecord.findMany({
       where: { hamsterId: { in: hamsterIds }, toiletCleaned: true },
       orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
@@ -85,6 +91,7 @@ export async function getPublicDemoDashboardData() {
       orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
     })
   ]);
+  const feedings = todayFeedingRecordsByHamster(feedingRecords, now);
   const toilets = latestRecordByHamster(toiletRecords);
   const baths = latestRecordByHamster(bathRecords);
   const flooringAll = latestRecordByHamster(flooringAllRecords);
@@ -97,6 +104,7 @@ export async function getPublicDemoDashboardData() {
     hamsters: hamsters.map((hamster) => ({
       ...hamster,
       staticImagePath: getPublicDemoHamsterImagePath(hamster.id),
+      todayFeeding: feedings.get(hamster.id) ?? null,
       latestToiletCleaning: toilets.get(hamster.id) ?? null,
       latestBathCleaning: baths.get(hamster.id) ?? null,
       latestFlooringAllCleaning: flooringAll.get(hamster.id) ?? null,

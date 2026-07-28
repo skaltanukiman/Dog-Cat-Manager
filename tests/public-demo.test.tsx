@@ -147,6 +147,7 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
         createdAt: Date;
         birthDate: Date;
         adoptionDate: Date;
+        feedingRecords?: { create: Array<{ id: string; recordDate: Date; fedAt: Date }> };
         weightRecords: { create: Array<{ id: string; recordDate: Date }> };
         cleaningRecords: { create: Array<{ id: string; recordDate: Date }> };
         records: { create: Array<{ id: string; recordDate: Date }> };
@@ -180,9 +181,12 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
 
   const weights = hamsters.flatMap((hamster) => hamster.weightRecords.create);
   const cleanings = hamsters.flatMap((hamster) => hamster.cleaningRecords.create);
+  const feedings = hamsters.flatMap((hamster) => hamster.feedingRecords?.create ?? []);
   const records = hamsters.flatMap((hamster) => hamster.records.create);
   assert.equal(new Set(weights.map((record) => record.id)).size, weights.length);
   assert.equal(new Set(cleanings.map((record) => record.id)).size, cleanings.length);
+  assert.equal(feedings.length, 3);
+  assert.equal(new Set(feedings.map((record) => record.id)).size, feedings.length);
   assert.equal(new Set(records.map((record) => record.id)).size, records.length);
   assert.deepEqual(records.map((record) => record.id).sort(), Object.values(PUBLIC_DEMO_RECORD_IDS).sort());
 
@@ -190,7 +194,12 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
     assert.ok(hamster.birthDate <= today);
     assert.ok(hamster.adoptionDate <= today);
     assert.ok(hamster.adoptionDate >= hamster.birthDate);
-    for (const record of [...hamster.weightRecords.create, ...hamster.cleaningRecords.create, ...hamster.records.create]) {
+    for (const record of [
+      ...hamster.weightRecords.create,
+      ...hamster.cleaningRecords.create,
+      ...(hamster.feedingRecords?.create ?? []),
+      ...hamster.records.create
+    ]) {
       assert.ok(record.recordDate <= today);
     }
   }

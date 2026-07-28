@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
+import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
@@ -8,6 +9,7 @@ import {
   pickDashboardHamsters
 } from "@/lib/dashboard-settings";
 import { monthDateRange, parseDateInput, toDateInputValue } from "@/lib/date";
+import { getTodayFeedingRecordDate, todayFeedingRecordsByHamster } from "@/lib/feeding";
 import { prisma } from "@/lib/prisma";
 import { normalizeRecordScope } from "@/lib/records";
 import { getAppliedWeightChartRange } from "@/lib/weight-chart-filter";
@@ -59,9 +61,18 @@ export async function getDashboardData() {
   const selectedIds = setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [];
   const dashboardHamsters = pickDashboardHamsters(hamsters, boardCount, selectedIds);
   const dashboardHamsterIds = dashboardHamsters.map((hamster) => hamster.id);
+  const now = new Date();
 
-  // ダッシュボードでは掃除全体ではなく、主要な掃除タスクごとの最終実施日を別々に表示する。
-  const [toiletCleaningRecords, bathCleaningRecords, flooringAllCleaningRecords, houseCleaningRecords] = await Promise.all([
+  // 本日の食事と、主要な掃除タスクごとの最終実施日だけをダッシュボード用に取得する。
+  const [feedingRecords, toiletCleaningRecords, bathCleaningRecords, flooringAllCleaningRecords, houseCleaningRecords] = await Promise.all([
+    // 表示対象IDをまとめて指定し、本日の食事記録を1クエリで取得する。
+    prisma.feedingRecord.findMany({
+      where: {
+        hamsterId: { in: dashboardHamsterIds },
+        recordDate: getTodayFeedingRecordDate(now)
+      },
+      select: { id: true, hamsterId: true, recordDate: true, fedAt: true }
+    }),
     prisma.cleaningRecord.findMany({
       where: {
         hamsterId: { in: dashboardHamsterIds },
@@ -91,6 +102,7 @@ export async function getDashboardData() {
       orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
     })
   ]);
+  const feedingByHamster = todayFeedingRecordsByHamster(feedingRecords, now);
   const toiletCleaningByHamster = latestRecordByHamster(toiletCleaningRecords);
   const bathCleaningByHamster = latestRecordByHamster(bathCleaningRecords);
   const flooringAllCleaningByHamster = latestRecordByHamster(flooringAllCleaningRecords);
@@ -99,11 +111,13 @@ export async function getDashboardData() {
   return {
     hamsters: dashboardHamsters.map((hamster) => ({
       ...hamster,
+      todayFeeding: feedingByHamster.get(hamster.id) ?? null,
       latestToiletCleaning: toiletCleaningByHamster.get(hamster.id) ?? null,
       latestBathCleaning: bathCleaningByHamster.get(hamster.id) ?? null,
       latestFlooringAllCleaning: flooringAllCleaningByHamster.get(hamster.id) ?? null,
       latestHouseCleaning: houseCleaningByHamster.get(hamster.id) ?? null
     })),
+    canEdit: canEditHouseholdSharedData(context.membership.role),
     boardCount,
     totalHamsters: hamsters.length
   };

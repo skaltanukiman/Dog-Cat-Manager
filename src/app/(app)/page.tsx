@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ClipboardCheck, Plus, Scale, Settings } from "lucide-react";
 
+import { setTodayFeeding } from "@/app/actions/feeding";
 import { CleaningDateToggle } from "@/components/cleaning-date-toggle";
 import { DashboardMemo } from "@/components/dashboard-memo";
 import { EmptyState } from "@/components/empty-state";
+import { FeedingToggle } from "@/components/feeding-toggle";
 import { HamsterThumbnail } from "@/components/hamster-thumbnail";
 import { StatusMessage } from "@/components/status-message";
 import { daysSinceDate, formatDateJp } from "@/lib/date";
@@ -26,7 +28,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ status?: string | string[]; errorId?: string | string[] }>;
 }) {
   const params = await searchParams;
-  const { hamsters, boardCount, totalHamsters } = await getDashboardData();
+  const { hamsters, canEdit, boardCount, totalHamsters } = await getDashboardData();
   // 表示数制限で非表示になったハムスターがいる場合だけ、設定画面への誘導文を出す。
   const hiddenHamsterCount = Math.max(totalHamsters - hamsters.length, 0);
 
@@ -104,6 +106,14 @@ export default async function DashboardPage({
                   </div>
 
                   <dl className="mt-5 grid gap-3">
+                    <FeedingToggle
+                      hamsterId={hamster.id}
+                      hamsterName={hamster.name}
+                      fedAt={hamster.todayFeeding?.fedAt.toISOString() ?? null}
+                      canEdit={canEdit}
+                      isActive={hamster.isActive}
+                      action={setTodayFeeding}
+                    />
                     <div className="flex items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3">
                       <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
                         <Scale className="h-4 w-4 text-persimmon" aria-hidden />

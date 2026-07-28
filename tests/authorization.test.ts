@@ -156,6 +156,7 @@ test("共有データ更新Server Actionは直接呼び出されても共通更�
       "deleteHamsters"
     ],
     "src/app/actions/cleaning.ts": ["saveCleaningMonth"],
+    "src/app/actions/feeding.ts": ["setTodayFeeding"],
     "src/app/actions/weights.ts": [
       "createWeightRecord",
       "updateWeightRecord",

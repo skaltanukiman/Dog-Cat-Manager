@@ -146,6 +146,16 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
         const count = numberDetail(details, "changedDayCount");
         return { summary: `${actor}さんが「${target}」の掃除記録を更新しました`, detail: month && count !== null ? `${month}・${count}日分` : null };
       }
+      case "FEEDING_MARKED":
+        return {
+          summary: `${actor}さんが「${target}」の食事を実施済みにしました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
+      case "FEEDING_UNMARKED":
+        return {
+          summary: `${actor}さんが「${target}」の食事記録を取り消しました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
       case "HEALTH_RECORD_CREATED":
       case "HEALTH_RECORD_UPDATED":
       case "HEALTH_RECORD_DELETED": {

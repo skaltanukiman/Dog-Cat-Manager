@@ -5,6 +5,7 @@ import {
   formatDateJp,
   formatDateJst,
   formatDateTimeJst,
+  formatTimeJst,
   getDaysInMonth,
   isValidDateInput,
   isValidYearMonthInput,
@@ -40,6 +41,8 @@ test("時刻を持つUTC timestampはJSTの日付と日時へ変換して表示�
   assert.equal(formatDateTimeJst(beforeJstMidnight), "2026/07/14 23:59");
   assert.equal(formatDateJst(afterJstMidnight), "2026/07/15");
   assert.equal(formatDateTimeJst(afterJstMidnight), "2026/07/15 00:01");
+  assert.equal(formatTimeJst(beforeJstMidnight), "23:59");
+  assert.equal(formatTimeJst(afterJstMidnight), "00:01");
   assert.equal(formatDateTimeJst(undefined), "未記録");
 });
 

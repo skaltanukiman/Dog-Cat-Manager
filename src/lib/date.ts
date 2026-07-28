@@ -79,8 +79,16 @@ export function formatDateTimeJst(date: Date | null | undefined) {
   return `${formatDateJst(date)} ${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`;
 }
 
-export function todayInputJst() {
-  const now = new Date();
+export function formatTimeJst(date: Date | null | undefined) {
+  if (!date) {
+    return "未記録";
+  }
+
+  const jst = getJstDate(date);
+  return `${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`;
+}
+
+export function todayInputJst(now = new Date()) {
   // 入力上限や経過日数は日本での運用を前提に、JSTの日付境界で判定する。
   const jst = getJstDate(now);
   return `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}`;

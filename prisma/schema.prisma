@@ -23,6 +23,7 @@ model Hamster {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
   cleaningRecords      CleaningRecord[]
+  feedingRecords       FeedingRecord[]
   weightRecords        WeightRecord[]
   dashboardEntries     DashboardHamster[]
   records              HamsterRecord[]
@@ -50,6 +51,23 @@ model CleaningRecord {
   @@unique([hamsterId, recordDate])
   @@index([recordDate])
   @@map("cleaning_records")
+}
+
+model FeedingRecord {
+  id              String   @id @default(cuid())
+  hamsterId       String   @map("hamster_id")
+  hamster         Hamster  @relation(fields: [hamsterId], references: [id], onDelete: Cascade)
+  recordDate      DateTime @map("record_date") @db.Date
+  fedAt           DateTime @map("fed_at")
+  createdByUserId String?  @map("created_by_user_id")
+  createdBy       User?    @relation("FeedingRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([hamsterId, recordDate])
+  @@index([recordDate])
+  @@index([createdByUserId])
+  @@map("feeding_records")
 }
 
 model WeightRecord {
@@ -121,6 +139,7 @@ model User {
   appSettings                 AppSetting[]
   createdHouseholdInvitations HouseholdInvitation[] @relation("HouseholdInvitationCreator")
   createdHamsterRecords       HamsterRecord[]       @relation("HamsterRecordCreator")
+  createdFeedingRecords       FeedingRecord[]       @relation("FeedingRecordCreator")
   createdSavedMemoryTags      SavedMemoryTag[]      @relation("SavedMemoryTagCreator")
   householdActivities         HouseholdActivity[]   @relation("HouseholdActivityActor")
   suspendedBy                 User?                  @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
@@ -328,6 +347,8 @@ enum HouseholdActivityEvent {
   MEMORY_RECORD_DELETED
   HAMSTER_PROFILE_IMAGE_UPDATED
   HAMSTER_ACTIVE_STATUS_UPDATED
+  FEEDING_MARKED
+  FEEDING_UNMARKED
 }
 
 model ContactInquiry {

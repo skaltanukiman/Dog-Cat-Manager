@@ -91,6 +91,11 @@ export const cleaningMonthSchema = z.object({
   yearMonth: yearMonthSchema
 });
 
+export const feedingStateSchema = z.object({
+  hamsterId: idSchema,
+  state: z.enum(["marked", "unmarked"])
+});
+
 export const dashboardSettingsSchema = z.object({
   dashboardBoardCount: z.coerce.number().int().min(MIN_DASHBOARD_BOARD_COUNT).max(MAX_DASHBOARD_BOARD_COUNT),
   hamsterSelectorMode: z.enum(HAMSTER_SELECTOR_MODES),
