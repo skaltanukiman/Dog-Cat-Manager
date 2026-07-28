@@ -12,6 +12,10 @@ import { monthDateRange, parseDateInput, toDateInputValue } from "@/lib/date";
 import { getTodayFeedingRecordDate, todayFeedingRecordsByHamster } from "@/lib/feeding";
 import { prisma } from "@/lib/prisma";
 import { normalizeRecordScope } from "@/lib/records";
+import {
+  getTodayWaterReplacementRecordDate,
+  todayWaterReplacementRecordsByHamster
+} from "@/lib/water-replacement";
 import { getAppliedWeightChartRange } from "@/lib/weight-chart-filter";
 
 export const WEIGHT_HISTORY_PAGE_SIZE = 20;
@@ -63,8 +67,15 @@ export async function getDashboardData() {
   const dashboardHamsterIds = dashboardHamsters.map((hamster) => hamster.id);
   const now = new Date();
 
-  // 本日の食事と、主要な掃除タスクごとの最終実施日だけをダッシュボード用に取得する。
-  const [feedingRecords, toiletCleaningRecords, bathCleaningRecords, flooringAllCleaningRecords, houseCleaningRecords] = await Promise.all([
+  // 本日の食事・水替えと、主要な掃除タスクごとの最終実施日だけをダッシュボード用に取得する。
+  const [
+    feedingRecords,
+    waterReplacementRecords,
+    toiletCleaningRecords,
+    bathCleaningRecords,
+    flooringAllCleaningRecords,
+    houseCleaningRecords
+  ] = await Promise.all([
     // 表示対象IDをまとめて指定し、本日の食事記録を1クエリで取得する。
     prisma.feedingRecord.findMany({
       where: {
@@ -72,6 +83,14 @@ export async function getDashboardData() {
         recordDate: getTodayFeedingRecordDate(now)
       },
       select: { id: true, hamsterId: true, recordDate: true, fedAt: true }
+    }),
+    // 表示対象IDをまとめて指定し、本日の水替え記録を1クエリで取得する。
+    prisma.waterReplacementRecord.findMany({
+      where: {
+        hamsterId: { in: dashboardHamsterIds },
+        recordDate: getTodayWaterReplacementRecordDate(now)
+      },
+      select: { id: true, hamsterId: true, recordDate: true, replacedAt: true }
     }),
     prisma.cleaningRecord.findMany({
       where: {
@@ -103,6 +122,7 @@ export async function getDashboardData() {
     })
   ]);
   const feedingByHamster = todayFeedingRecordsByHamster(feedingRecords, now);
+  const waterReplacementByHamster = todayWaterReplacementRecordsByHamster(waterReplacementRecords, now);
   const toiletCleaningByHamster = latestRecordByHamster(toiletCleaningRecords);
   const bathCleaningByHamster = latestRecordByHamster(bathCleaningRecords);
   const flooringAllCleaningByHamster = latestRecordByHamster(flooringAllCleaningRecords);
@@ -112,6 +132,7 @@ export async function getDashboardData() {
     hamsters: dashboardHamsters.map((hamster) => ({
       ...hamster,
       todayFeeding: feedingByHamster.get(hamster.id) ?? null,
+      todayWaterReplacement: waterReplacementByHamster.get(hamster.id) ?? null,
       latestToiletCleaning: toiletCleaningByHamster.get(hamster.id) ?? null,
       latestBathCleaning: bathCleaningByHamster.get(hamster.id) ?? null,
       latestFlooringAllCleaning: flooringAllCleaningByHamster.get(hamster.id) ?? null,

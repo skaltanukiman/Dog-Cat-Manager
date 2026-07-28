@@ -2,12 +2,14 @@ import Link from "next/link";
 import { ClipboardCheck, Plus, Scale, Settings } from "lucide-react";
 
 import { setTodayFeeding } from "@/app/actions/feeding";
+import { setTodayWaterReplacement } from "@/app/actions/water-replacement";
 import { CleaningDateToggle } from "@/components/cleaning-date-toggle";
 import { DashboardMemo } from "@/components/dashboard-memo";
 import { EmptyState } from "@/components/empty-state";
 import { FeedingToggle } from "@/components/feeding-toggle";
 import { HamsterThumbnail } from "@/components/hamster-thumbnail";
 import { StatusMessage } from "@/components/status-message";
+import { WaterReplacementToggle } from "@/components/water-replacement-toggle";
 import { daysSinceDate, formatDateJp } from "@/lib/date";
 import { getDashboardData } from "@/lib/queries";
 
@@ -113,6 +115,14 @@ export default async function DashboardPage({
                       canEdit={canEdit}
                       isActive={hamster.isActive}
                       action={setTodayFeeding}
+                    />
+                    <WaterReplacementToggle
+                      hamsterId={hamster.id}
+                      hamsterName={hamster.name}
+                      replacedAt={hamster.todayWaterReplacement?.replacedAt.toISOString() ?? null}
+                      canEdit={canEdit}
+                      isActive={hamster.isActive}
+                      action={setTodayWaterReplacement}
                     />
                     <div className="flex items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3">
                       <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">

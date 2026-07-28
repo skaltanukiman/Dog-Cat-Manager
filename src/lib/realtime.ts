@@ -13,6 +13,7 @@ export type HouseholdChangeSource =
   | "hamster"
   | "cleaning"
   | "feeding"
+  | "waterReplacement"
   | "weight"
   | "settings"
   | "household"

@@ -32,7 +32,7 @@
 - **データアクセス:** `src/lib/public-demo-queries.ts`の`getPublicDemo...`関数だけを使用する。デモHouseholdには固定IDの9体（管理中6体・管理外3体）があり、作成日時順で安定して表示する。個体ごとに異なる体重、掃除、健康・通院・思い出記録を持つ。`Household.isDemo = true`かつ固定`demoSlug = "public-sample"`の両方を満たすHouseholdを最初に取得し、見つからなければ専用準備中表示へ進む。任意Household ID、セッション、選択中Household Cookie、`getRequiredHouseholdContext()`、通常Householdへのフォールバックは使用しない。
 - **読み取り専用:** デモpageと登録UIプレビューは更新Actionをimportせず、更新用`form action`、`onSubmit`、更新APIへの`fetch`を持たない。共通一覧カードの`form`はreadOnly時に`action`を設定せず、画像管理プレビューはファイル入力・画像削除にイベントハンドラやフォーム名を付けない。保存ボタンは`type="button"`かつ無効状態とし、入力・ファイル選択・保存はHTML属性でも操作不可にする。CSV・設定・共有・管理導線は描画せず、既存Action/APIの認証・Household更新ガードは変更しない。
 - **画像:** `public/demo/hamsters/*.svg`（9体分）と`public/demo/records/*.svg`を固定配信し、ViewModelの`staticImagePath`で通常の認証付き画像APIと切り替える。`profileImageFileName`と`MemoryRecordImage.fileName`には公開パスを保存しない。
-- **データ投入:** `prisma/seed-demo.ts` / `npm run seed:demo`。固定slugと`isDemo`をtransaction内で再検証し、ユーザー所属がないデモHouseholdだけを削除・再構築する。固定ID・作成日時を持つ9体と、体重・掃除・本日の食事・飼育記録をJSTの実行日を基準として作成する。静的画像はseed対象外でリポジトリに同梱する。
+- **データ投入:** `prisma/seed-demo.ts` / `npm run seed:demo`。固定slugと`isDemo`をtransaction内で再検証し、ユーザー所属がないデモHouseholdだけを削除・再構築する。固定ID・作成日時を持つ9体と、体重・掃除・本日の食事・水替え・飼育記録をJSTの実行日を基準として作成する。静的画像はseed対象外でリポジトリに同梱する。
 - **親レイアウト:** 永続する`src/app/layout.tsx`はpathname・認証に依存しない。通常画面は`src/app/(app)/layout.tsx`、デモ画面は`src/app/demo/layout.tsx`という別のlayout枝に属する。デモ枝は`auth()`、Household切替データ、リアルタイム監視、通常ナビをimportしないため、ログイン中でも現在Household情報をデモへ混在させない。通常・デモ間のクライアント遷移と戻る操作ではlayout枝自体が切り替わる。
 - **SEO:** `src/app/demo/layout.tsx`で`noindex, nofollow`、`src/app/robots.ts`で`/demo`をDisallowする。アクセス制御は`proxy.ts`と固定デモquery条件が担う。
 - **通常データからの分離:** 通常membership取得・Household切替と、管理者向け共有一覧・件数・招待検索用共有候補は`isDemo: false`でデモHouseholdを除外する。
@@ -55,7 +55,7 @@
 - **主なコンポーネント:** `HouseholdActivityList`、既存 `PaginationLayout`。一覧フィルターは「すべて」「飼育記録」「メンバー」「グループ設定」で、変更時は1ページ目へ戻る。
 - **Server Action または API:** `commitHouseholdMutation` の任意 `activity` を業務更新後・revision更新前に実行する。名称・招待・退出の専用Mutation Repository、招待受諾、CSV import、健康・通院・思い出記録、プロフィール画像、管理状態も各既存Prisma transaction内で `createHouseholdActivity` を実行する。別WebSocketや独自pollは追加せず既存Household revision / SSE / revision pollを利用する。期限切れ履歴は `scripts/cleanup-household-activities.ts` のCLIだけから全Householdを対象に整理し、revision更新・SSE通知・操作履歴追加は行わない。
 - **データアクセス・Prismaモデル:** `HouseholdActivity`、`HouseholdActivityEvent`、`HouseholdActivityCategory`。`getCurrentHouseholdActivityPage` は `getRequiredHouseholdContext` で現在所属を確定し、Household IDと任意カテゴリーをDB条件に含め、`createdAt desc, id desc`、20件でページングする。最新表示も同じHousehold条件で5件だけ取得する。全Householdの期限切れ検索用に `createdAt` 単独indexを持つ。
-- **対象イベント:** 第一段階はグループ名変更、招待作成・無効化・参加、権限変更・参加解除・退出・所有権移譲退出、ハムスター登録・削除、体重登録・更新・削除・一括削除、アプリ版/GAS版CSV import、掃除月保存。第二段階は健康・通院・思い出の作成・更新・削除、プロフィール画像の登録・差し替え・削除、管理中・管理外切り替え。本日の食事の実施済み化・取消も `CARE_RECORD` に分類する。bulk/CSV/掃除、写真を含む思い出操作は1操作1件の要約。
+- **対象イベント:** 第一段階はグループ名変更、招待作成・無効化・参加、権限変更・参加解除・退出・所有権移譲退出、ハムスター登録・削除、体重登録・更新・削除・一括削除、アプリ版/GAS版CSV import、掃除月保存。第二段階は健康・通院・思い出の作成・更新・削除、プロフィール画像の登録・差し替え・削除、管理中・管理外切り替え。本日の食事と水替えの実施済み化・取消も `CARE_RECORD` に分類する。bulk/CSV/掃除、写真を含む思い出操作は1操作1件の要約。
 - **認可・プライバシー:** 現在所属する OWNER / ADMIN / MEMBER / VIEWER のみ閲覧可能。アプリ全体 ADMIN / SUPER_ADMIN も未所属なら取得不可。操作者・対象名は操作時snapshotを保存し、未設定名は安全な固定文言を使いメールを代用しない。token/URL、メール、CSV本文・ファイル名、フォーム、掃除メモ、健康・通院・思い出の内容、画像ファイル情報等は保存しない。第二段階は記録日、画像操作種別、管理状態の変更前後だけをdetailsへ保存する。
 - **削除・監査:** Household削除はCascade、User削除は参照をSetNullにして名前snapshotを残す。`HOUSEHOLD_ACTIVITY_RETENTION_DAYS`（初期設定90日）より古い履歴は日次cron向け専用CLIで削除し、基準日時と同時刻は残す。既存 `writeHouseholdAuditLog` / サーバーログは障害調査・内部監査用として維持し、利用者向けDB履歴へ置換しない。
 - **関連テスト:** `tests/household-activity.test.ts`（formatter、snapshot、transaction rollback、Household分離、安定順、ページング、filter、最新5件、保持日数のServer Component表示、第二段階Mutation、機密情報の非保存、enum migration）、`tests/household-activity-cleanup.test.ts`（自動削除・画面表示で共用する環境変数検証、基準日時、`lt`境界、deleteMany、dry-run）と各既存Mutationテスト。
@@ -64,13 +64,13 @@
 ## ダッシュボード
 
 - **画面または URL:** `/`。
-- **主なコンポーネント:** `DashboardMemo`、`FeedingToggle`、`CleaningDateToggle`、`HamsterThumbnail`、`EmptyState`。`FeedingToggle`は本日の食事状態とJST実施時刻を表示し、通常画面では押下で状態を切り替え、デモ・VIEWER・管理外では操作不可にする。画像登録済みの `HamsterThumbnail` はクリック・タップで拡大モーダルを表示し、未登録・読込失敗時は操作不可のプレースホルダーになる。
-- **Server Action または API:** `setTodayFeeding`（`src/app/actions/feeding.ts`）が意図する最終状態を受け取り、共通Household更新transactionで食事記録・操作履歴・revisionを確定する。設定更新は `saveSettings`。
-- **データアクセス・Prismaモデル:** `getDashboardData`（`src/lib/queries.ts`）が `Hamster`、`AppSetting` / `DashboardHamster`、本日の `FeedingRecord`、最新 `WeightRecord`、各種 `CleaningRecord` を Household とユーザー設定で取得する。食事記録は表示対象ハムスターIDとJST当日を指定した一括queryで取得する。
+- **主なコンポーネント:** `DashboardMemo`、`FeedingToggle`、`WaterReplacementToggle`、`CleaningDateToggle`、`HamsterThumbnail`、`EmptyState`。`FeedingToggle`と`WaterReplacementToggle`は本日の状態とJST実施時刻を表示し、通常画面では押下で状態を切り替え、デモ・VIEWER・管理外では操作不可にする。画像登録済みの `HamsterThumbnail` はクリック・タップで拡大モーダルを表示し、未登録・読込失敗時は操作不可のプレースホルダーになる。
+- **Server Action または API:** `setTodayFeeding`（`src/app/actions/feeding.ts`）と`setTodayWaterReplacement`（`src/app/actions/water-replacement.ts`）が意図する最終状態を受け取り、共通Household更新transactionで当日記録・操作履歴・revisionを確定する。設定更新は `saveSettings`。
+- **データアクセス・Prismaモデル:** `getDashboardData`（`src/lib/queries.ts`）が `Hamster`、`AppSetting` / `DashboardHamster`、本日の `FeedingRecord` / `WaterReplacementRecord`、最新 `WeightRecord`、各種 `CleaningRecord` を Household とユーザー設定で取得する。食事・水替え記録は表示対象ハムスターIDとJST当日を指定した一括queryで取得する。
 - **バリデーション:** 表示件数・対象選択は設定の `dashboardSettingsSchema` と `dashboard-settings.ts`。
-- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/feeding.test.tsx`（JST日付境界、日単位一意性、冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）。
+- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/feeding.test.tsx` / `tests/water-replacement.test.tsx`（JST日付境界、日単位一意性、同時・冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）。
 - **関連設定:** `src/lib/dashboard-settings.ts`（1〜30件、選択 UI の既定値）。
-- **依存関係:** 表示対象はユーザー・Household ごとの設定。食事更新後の他メンバー反映は既存Household revision / SSE / revision pollを使う。掃除種別を増減する場合は `getDashboardData` とカード表示を同時に変更する。
+- **依存関係:** 表示対象はユーザー・Household ごとの設定。食事・水替え更新後の他メンバー反映は既存Household revision / SSE / revision pollを使う。掃除種別を増減する場合は `getDashboardData` とカード表示を同時に変更する。
 
 ## ハムスター一覧・登録・編集・削除
 

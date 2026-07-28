@@ -96,6 +96,11 @@ export const feedingStateSchema = z.object({
   state: z.enum(["marked", "unmarked"])
 });
 
+export const waterReplacementStateSchema = z.object({
+  hamsterId: idSchema,
+  state: z.enum(["marked", "unmarked"])
+});
+
 export const dashboardSettingsSchema = z.object({
   dashboardBoardCount: z.coerce.number().int().min(MIN_DASHBOARD_BOARD_COUNT).max(MAX_DASHBOARD_BOARD_COUNT),
   hamsterSelectorMode: z.enum(HAMSTER_SELECTOR_MODES),

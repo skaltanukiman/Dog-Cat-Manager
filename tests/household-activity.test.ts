@@ -56,6 +56,8 @@ test("主要イベントを日本語表示へ集約し、不正detailsでも例�
   assert.equal(formatHouseholdActivity(item({ eventType: "CLEANING_MONTH_SAVED", details: { yearMonth: "2026-07", changedDayCount: 3 } })).detail, "2026年7月・3日分");
   assert.deepEqual(formatHouseholdActivity(item({ eventType: "FEEDING_MARKED", details: { recordDate: "2026-07-28" } })), { summary: "林 勇希さんが「きなこ」の食事を実施済みにしました", detail: "2026年7月28日" });
   assert.deepEqual(formatHouseholdActivity(item({ eventType: "FEEDING_UNMARKED", details: { recordDate: "2026-07-28" } })), { summary: "林 勇希さんが「きなこ」の食事記録を取り消しました", detail: "2026年7月28日" });
+  assert.deepEqual(formatHouseholdActivity(item({ eventType: "WATER_REPLACEMENT_MARKED", details: { recordDate: "2026-07-28" } })), { summary: "林 勇希さんが「きなこ」の水を交換済みにしました", detail: "2026年7月28日" });
+  assert.deepEqual(formatHouseholdActivity(item({ eventType: "WATER_REPLACEMENT_UNMARKED", details: { recordDate: "2026-07-28" } })), { summary: "林 勇希さんが「きなこ」の水替え記録を取り消しました", detail: "2026年7月28日" });
 });
 
 test("第2段階イベントを最小限のdetailsから表示し、不正値は安全にフォールバックする", () => {

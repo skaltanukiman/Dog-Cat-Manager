@@ -5,6 +5,7 @@ import { DashboardMemo } from "@/components/dashboard-memo";
 import { DemoUnavailable } from "@/components/demo-unavailable";
 import { FeedingToggle } from "@/components/feeding-toggle";
 import { HamsterThumbnail } from "@/components/hamster-thumbnail";
+import { WaterReplacementToggle } from "@/components/water-replacement-toggle";
 import { daysSinceDate, formatDateJp } from "@/lib/date";
 import { getPublicDemoDashboardData } from "@/lib/public-demo-queries";
 
@@ -66,6 +67,13 @@ export default async function DemoDashboardPage() {
                   hamsterId={hamster.id}
                   hamsterName={hamster.name}
                   fedAt={hamster.todayFeeding?.fedAt.toISOString() ?? null}
+                  isActive={hamster.isActive}
+                  readOnly
+                />
+                <WaterReplacementToggle
+                  hamsterId={hamster.id}
+                  hamsterName={hamster.name}
+                  replacedAt={hamster.todayWaterReplacement?.replacedAt.toISOString() ?? null}
                   isActive={hamster.isActive}
                   readOnly
                 />

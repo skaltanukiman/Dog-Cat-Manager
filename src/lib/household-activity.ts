@@ -156,6 +156,16 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
           summary: `${actor}さんが「${target}」の食事記録を取り消しました`,
           detail: formatDateInput(stringDetail(details, "recordDate"))
         };
+      case "WATER_REPLACEMENT_MARKED":
+        return {
+          summary: `${actor}さんが「${target}」の水を交換済みにしました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
+      case "WATER_REPLACEMENT_UNMARKED":
+        return {
+          summary: `${actor}さんが「${target}」の水替え記録を取り消しました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
       case "HEALTH_RECORD_CREATED":
       case "HEALTH_RECORD_UPDATED":
       case "HEALTH_RECORD_DELETED": {

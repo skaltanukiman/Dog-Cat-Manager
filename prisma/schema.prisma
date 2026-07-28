@@ -24,6 +24,7 @@ model Hamster {
   updatedAt            DateTime           @updatedAt
   cleaningRecords      CleaningRecord[]
   feedingRecords       FeedingRecord[]
+  waterReplacementRecords WaterReplacementRecord[]
   weightRecords        WeightRecord[]
   dashboardEntries     DashboardHamster[]
   records              HamsterRecord[]
@@ -68,6 +69,23 @@ model FeedingRecord {
   @@index([recordDate])
   @@index([createdByUserId])
   @@map("feeding_records")
+}
+
+model WaterReplacementRecord {
+  id              String   @id @default(cuid())
+  hamsterId       String   @map("hamster_id")
+  hamster         Hamster  @relation(fields: [hamsterId], references: [id], onDelete: Cascade)
+  recordDate      DateTime @map("record_date") @db.Date
+  replacedAt      DateTime @map("replaced_at")
+  createdByUserId String?  @map("created_by_user_id")
+  createdBy       User?    @relation("WaterReplacementRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([hamsterId, recordDate])
+  @@index([recordDate])
+  @@index([createdByUserId])
+  @@map("water_replacement_records")
 }
 
 model WeightRecord {
@@ -140,6 +158,7 @@ model User {
   createdHouseholdInvitations HouseholdInvitation[] @relation("HouseholdInvitationCreator")
   createdHamsterRecords       HamsterRecord[]       @relation("HamsterRecordCreator")
   createdFeedingRecords       FeedingRecord[]       @relation("FeedingRecordCreator")
+  createdWaterReplacementRecords WaterReplacementRecord[] @relation("WaterReplacementRecordCreator")
   createdSavedMemoryTags      SavedMemoryTag[]      @relation("SavedMemoryTagCreator")
   householdActivities         HouseholdActivity[]   @relation("HouseholdActivityActor")
   suspendedBy                 User?                  @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
@@ -349,6 +368,8 @@ enum HouseholdActivityEvent {
   HAMSTER_ACTIVE_STATUS_UPDATED
   FEEDING_MARKED
   FEEDING_UNMARKED
+  WATER_REPLACEMENT_MARKED
+  WATER_REPLACEMENT_UNMARKED
 }
 
 model ContactInquiry {

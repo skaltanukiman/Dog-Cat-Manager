@@ -148,6 +148,9 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
         birthDate: Date;
         adoptionDate: Date;
         feedingRecords?: { create: Array<{ id: string; recordDate: Date; fedAt: Date }> };
+        waterReplacementRecords?: {
+          create: Array<{ id: string; recordDate: Date; replacedAt: Date }>;
+        };
         weightRecords: { create: Array<{ id: string; recordDate: Date }> };
         cleaningRecords: { create: Array<{ id: string; recordDate: Date }> };
         records: { create: Array<{ id: string; recordDate: Date }> };
@@ -182,11 +185,19 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
   const weights = hamsters.flatMap((hamster) => hamster.weightRecords.create);
   const cleanings = hamsters.flatMap((hamster) => hamster.cleaningRecords.create);
   const feedings = hamsters.flatMap((hamster) => hamster.feedingRecords?.create ?? []);
+  const waterReplacements = hamsters.flatMap(
+    (hamster) => hamster.waterReplacementRecords?.create ?? []
+  );
   const records = hamsters.flatMap((hamster) => hamster.records.create);
   assert.equal(new Set(weights.map((record) => record.id)).size, weights.length);
   assert.equal(new Set(cleanings.map((record) => record.id)).size, cleanings.length);
   assert.equal(feedings.length, 3);
   assert.equal(new Set(feedings.map((record) => record.id)).size, feedings.length);
+  assert.equal(waterReplacements.length, 3);
+  assert.equal(
+    new Set(waterReplacements.map((record) => record.id)).size,
+    waterReplacements.length
+  );
   assert.equal(new Set(records.map((record) => record.id)).size, records.length);
   assert.deepEqual(records.map((record) => record.id).sort(), Object.values(PUBLIC_DEMO_RECORD_IDS).sort());
 
@@ -198,6 +209,7 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
       ...hamster.weightRecords.create,
       ...hamster.cleaningRecords.create,
       ...(hamster.feedingRecords?.create ?? []),
+      ...(hamster.waterReplacementRecords?.create ?? []),
       ...hamster.records.create
     ]) {
       assert.ok(record.recordDate <= today);

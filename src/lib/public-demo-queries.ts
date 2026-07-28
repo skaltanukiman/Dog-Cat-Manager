@@ -17,6 +17,10 @@ import {
 } from "@/lib/records";
 import type { RecordPageFilters } from "@/lib/record-queries";
 import { formatRecordTime } from "@/lib/record-time";
+import {
+  getTodayWaterReplacementRecordDate,
+  todayWaterReplacementRecordsByHamster
+} from "@/lib/water-replacement";
 import { getAppliedWeightChartRange } from "@/lib/weight-chart-filter";
 
 export const PUBLIC_DEMO_WEIGHT_HISTORY_PAGE_SIZE = 20;
@@ -69,10 +73,21 @@ export async function getPublicDemoDashboardData() {
   });
   const hamsterIds = hamsters.map((hamster) => hamster.id);
   const now = new Date();
-  const [feedingRecords, toiletRecords, bathRecords, flooringAllRecords, houseRecords] = await Promise.all([
+  const [
+    feedingRecords,
+    waterReplacementRecords,
+    toiletRecords,
+    bathRecords,
+    flooringAllRecords,
+    houseRecords
+  ] = await Promise.all([
     prisma.feedingRecord.findMany({
       where: { hamsterId: { in: hamsterIds }, recordDate: getTodayFeedingRecordDate(now) },
       select: { id: true, hamsterId: true, recordDate: true, fedAt: true }
+    }),
+    prisma.waterReplacementRecord.findMany({
+      where: { hamsterId: { in: hamsterIds }, recordDate: getTodayWaterReplacementRecordDate(now) },
+      select: { id: true, hamsterId: true, recordDate: true, replacedAt: true }
     }),
     prisma.cleaningRecord.findMany({
       where: { hamsterId: { in: hamsterIds }, toiletCleaned: true },
@@ -92,6 +107,7 @@ export async function getPublicDemoDashboardData() {
     })
   ]);
   const feedings = todayFeedingRecordsByHamster(feedingRecords, now);
+  const waterReplacements = todayWaterReplacementRecordsByHamster(waterReplacementRecords, now);
   const toilets = latestRecordByHamster(toiletRecords);
   const baths = latestRecordByHamster(bathRecords);
   const flooringAll = latestRecordByHamster(flooringAllRecords);
@@ -105,6 +121,7 @@ export async function getPublicDemoDashboardData() {
       ...hamster,
       staticImagePath: getPublicDemoHamsterImagePath(hamster.id),
       todayFeeding: feedings.get(hamster.id) ?? null,
+      todayWaterReplacement: waterReplacements.get(hamster.id) ?? null,
       latestToiletCleaning: toilets.get(hamster.id) ?? null,
       latestBathCleaning: baths.get(hamster.id) ?? null,
       latestFlooringAllCleaning: flooringAll.get(hamster.id) ?? null,

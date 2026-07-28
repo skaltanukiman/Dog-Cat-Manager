@@ -61,6 +61,21 @@ function feedingRow(
   };
 }
 
+function waterReplacementRow(
+  hamsterKey: string,
+  hourJst: number,
+  minute: number
+): Prisma.WaterReplacementRecordCreateWithoutHamsterInput {
+  const replacedAt = relativeDate(0);
+  replacedAt.setUTCHours(hourJst - 9, minute, 0, 0);
+
+  return {
+    id: `public-demo-water-replacement-${hamsterKey}`,
+    recordDate: relativeDate(0),
+    replacedAt
+  };
+}
+
 function recordSearchText(...values: Array<string | null | undefined>) {
   return values.filter(Boolean).join("\n").normalize("NFKC").toLocaleLowerCase("ja-JP");
 }
@@ -82,6 +97,9 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
       isActive: true,
       feedingRecords: {
         create: [feedingRow("kinako", 19, 5)]
+      },
+      waterReplacementRecords: {
+        create: [waterReplacementRow("kinako", 19, 10)]
       },
       weightRecords: {
         create: weightRows("kinako", [
@@ -202,6 +220,9 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
           [-20, 42.1],
           [-6, 42.2]
         ])
+      },
+      waterReplacementRecords: {
+        create: [waterReplacementRow("komugi", 20, 15)]
       },
       cleaningRecords: {
         create: [
@@ -591,6 +612,9 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
       isActive: true,
       feedingRecords: {
         create: [feedingRow("milk", 20, 10)]
+      },
+      waterReplacementRecords: {
+        create: [waterReplacementRow("milk", 20, 5)]
       },
       weightRecords: {
         create: weightRows("milk", [

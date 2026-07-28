@@ -71,6 +71,7 @@ Household削除時は履歴もCascade削除されます。アカウント削除�
 - 設定画面で選択したハムスターのカードを表示
 - 表示ボード数は 1〜30 件で設定可能
 - 表示対象数を超えるハムスターがいる場合は、表示するハムスターを選択可能
+- 当日の食事（未実施 / 実施済み）と水替え（未交換 / 交換済み）をカード全体の操作で切り替え
 - 最新体重を表示
 - トイレ掃除、砂場掃除、床材全交換、ハウス掃除ごとの最新状態を表示
 - 掃除日は「経過日数」と「日付」をクリックまたはタッチで切り替え可能
@@ -325,6 +326,14 @@ Household削除時は履歴もCascade削除されます。アカウント削除�
 - `updatedAt`
 
 `hamsterId` と `recordDate` の組み合わせはユニークです。衛生管理表は、ハムスターごとに 1 日 1 行として保存します。
+
+### `feeding_records` / `water_replacement_records`
+
+- 共通: `id`、`hamsterId`、`recordDate`、`createdByUserId`、`createdAt`、`updatedAt`
+- `feeding_records`: `fedAt`
+- `water_replacement_records`: `replacedAt`
+
+どちらも `hamsterId` と `recordDate` の組み合わせはユニークです。ダッシュボードで未実施へ戻した場合は当日レコードを削除し、JSTの日付が変わると新しい日の未実施状態になります。ハムスター削除時はCascade、操作者削除時は参照だけをSetNullにします。
 
 ### `weight_records`
 
