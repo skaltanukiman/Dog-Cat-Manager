@@ -47,6 +47,19 @@ test("表示件数・選択方式・対象順序の変更をそれぞれ検知�
   );
 });
 
+test("ダッシュボード設定は重複したハムスターIDを拒否する", () => {
+  assert.equal(
+    dashboardSettingsSchema.safeParse({
+      dashboardBoardCount: 2,
+      hamsterSelectorMode: "select",
+      recordTimelineDefaultScope: "hamster",
+      cleaningMobileDefaultDateFilter: "today",
+      hamsterIds: ["hamster-1", "hamster-1"]
+    }).success,
+    false
+  );
+});
+
 test("記録画面の初期表示だけの変更をダッシュボード変更と分けて検知する", () => {
   assert.deepEqual(
     getSettingsChanges(current, { ...current, recordTimelineDefaultScope: "household" }),

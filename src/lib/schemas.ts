@@ -106,7 +106,9 @@ export const dashboardSettingsSchema = z.object({
   hamsterSelectorMode: z.enum(HAMSTER_SELECTOR_MODES),
   recordTimelineDefaultScope: z.enum(RECORD_SCOPES),
   cleaningMobileDefaultDateFilter: z.enum(CLEANING_MOBILE_DEFAULT_DATE_FILTERS),
-  hamsterIds: z.array(idSchema)
+  hamsterIds: z
+    .array(idSchema)
+    .refine((ids) => new Set(ids).size === ids.length, { message: "ハムスターIDが重複しています。" })
 });
 
 export const updateUserProfileSchema = z.object({

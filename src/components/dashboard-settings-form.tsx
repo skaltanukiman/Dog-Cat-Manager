@@ -1,8 +1,8 @@
 "use client";
 
-import { LayoutDashboard, Save, Search } from "lucide-react";
-import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, GripVertical, LayoutDashboard, Save, Search } from "lucide-react";
+import type { ChangeEvent, DragEvent, KeyboardEvent } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { saveSettings } from "@/app/actions/settings";
 import { DisplaySettingsSection } from "@/components/display-settings-section";
@@ -15,6 +15,9 @@ import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   MAX_DASHBOARD_BOARD_COUNT,
   MIN_DASHBOARD_BOARD_COUNT,
+  moveDashboardHamsterId,
+  resizeDashboardHamsterIds,
+  toggleDashboardHamsterId,
   type HamsterSelectorMode
 } from "@/lib/dashboard-settings";
 import type { RecordScope } from "@/lib/records";
@@ -65,11 +68,21 @@ export function DashboardSettingsForm({
   const [selectedIds, setSelectedIds] = useState(selectedHamsterIds);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<HamsterStatusFilter>("all");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [orderAnnouncement, setOrderAnnouncement] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const hamsterIds = useMemo(() => hamsters.map((hamster) => hamster.id), [hamsters]);
+  const hamsterById = useMemo(() => new Map(hamsters.map((hamster) => [hamster.id, hamster])), [hamsters]);
   const needsSelection = hamsters.length > limit;
-  // 登録数が表示数以下なら個別選択は不要なので、全ハムスターを送信対象として扱う。
-  const effectiveSelectedIds = needsSelection ? selectedIds : hamsterIds;
-  const selectedIdSet = useMemo(() => new Set(effectiveSelectedIds), [effectiveSelectedIds]);
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const orderedHamsters = useMemo(
+    () =>
+      selectedIds
+        .map((id) => hamsterById.get(id))
+        .filter((hamster): hamster is HamsterOption => Boolean(hamster)),
+    [hamsterById, selectedIds]
+  );
   const filteredHamsters = useMemo(() => {
     const normalizedSearchTerm = normalizeSearchText(searchTerm);
 
@@ -85,20 +98,14 @@ export function DashboardSettingsForm({
     });
   }, [hamsters, searchTerm, selectedIdSet, statusFilter]);
   const targetCount = Math.min(limit, hamsters.length);
-  const canSave = effectiveSelectedIds.length === targetCount;
+  const canSave = selectedIds.length === targetCount;
 
   function handleLimitChange(event: ChangeEvent<HTMLInputElement>) {
     const nextLimit = clampBoardCount(event.currentTarget.valueAsNumber || MIN_DASHBOARD_BOARD_COUNT);
-    const nextNeedsSelection = hamsters.length > nextLimit;
-    const nextSelectedIds = selectedIds.filter((id) => hamsterIds.includes(id));
 
     // 表示数を減らした場合は、保存可能な件数に収まるよう現在の選択を先頭から残す。
     setLimit(nextLimit);
-    setSelectedIds(
-      nextNeedsSelection
-        ? (nextSelectedIds.length > 0 ? nextSelectedIds : hamsterIds).slice(0, nextLimit)
-        : hamsterIds
-    );
+    setSelectedIds(resizeDashboardHamsterIds(hamsterIds, selectedIds, nextLimit));
   }
 
   function handleToggle(hamsterId: string) {
@@ -106,24 +113,82 @@ export function DashboardSettingsForm({
       return;
     }
 
-    setSelectedIds((current) => {
-      if (current.includes(hamsterId)) {
-        return current.filter((id) => id !== hamsterId);
-      }
+    setSelectedIds((current) => toggleDashboardHamsterId(current, hamsterId, limit));
+  }
 
-      if (current.length >= limit) {
-        return current;
-      }
-
-      return [...current, hamsterId];
+  function notifyOrderChanged() {
+    window.requestAnimationFrame(() => {
+      formRef.current?.dispatchEvent(new Event("change", { bubbles: true }));
     });
+  }
+
+  function updateOrder(hamsterId: string, targetHamsterId: string) {
+    const nextIds = moveDashboardHamsterId(selectedIds, hamsterId, targetHamsterId);
+    const nextIndex = nextIds.indexOf(hamsterId);
+    const hamster = hamsterById.get(hamsterId);
+
+    if (nextIndex < 0 || !nextIds.some((id, index) => id !== selectedIds[index])) {
+      return;
+    }
+
+    setSelectedIds(nextIds);
+    setOrderAnnouncement(`${hamster?.name ?? "ハムスター"}を${nextIndex + 1}番目へ移動しました。`);
+    notifyOrderChanged();
+  }
+
+  function moveByOffset(hamsterId: string, offset: -1 | 1) {
+    const currentIndex = selectedIds.indexOf(hamsterId);
+    const targetId = selectedIds[currentIndex + offset];
+    if (targetId) {
+      updateOrder(hamsterId, targetId);
+    }
+  }
+
+  function handleDragStart(event: DragEvent<HTMLButtonElement>, hamsterId: string) {
+    setDraggedId(hamsterId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", hamsterId);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLLIElement>, hamsterId: string) {
+    if (!draggedId || draggedId === hamsterId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetId(hamsterId);
+  }
+
+  function handleDrop(event: DragEvent<HTMLLIElement>, targetHamsterId: string) {
+    event.preventDefault();
+    const hamsterId = draggedId ?? event.dataTransfer.getData("text/plain");
+    if (hamsterId) {
+      updateOrder(hamsterId, targetHamsterId);
+    }
+    setDraggedId(null);
+    setDropTargetId(null);
+  }
+
+  function handleDragEnd() {
+    setDraggedId(null);
+    setDropTargetId(null);
+  }
+
+  function handleDragHandleKeyDown(event: KeyboardEvent<HTMLButtonElement>, hamsterId: string) {
+    if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) {
+      return;
+    }
+
+    event.preventDefault();
+    moveByOffset(hamsterId, event.key === "ArrowUp" ? -1 : 1);
   }
 
   return (
     <UnsavedChangesGuard>
       <SettingsScrollToSaveButton />
 
-      <form action={saveSettings} data-dirty-watch className="space-y-6">
+      <form ref={formRef} action={saveSettings} data-dirty-watch className="space-y-6">
         <ProfileSettingsFields name={name} email={email} />
 
         <DisplaySettingsSection
@@ -145,7 +210,7 @@ export function DashboardSettingsForm({
               </h3>
             </div>
             <p className="text-sm leading-6 text-slate-600">
-              ダッシュボードに表示する件数とハムスターを設定します。
+              ダッシュボードに表示する件数、カードの並び順とハムスターを設定します。
             </p>
           </header>
 
@@ -166,7 +231,7 @@ export function DashboardSettingsForm({
               </span>
             </label>
             <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              現在の表示対象: {effectiveSelectedIds.length} / {targetCount} 件
+              現在の表示対象: {selectedIds.length} / {targetCount} 件
               <span className="block pt-1">
                 表示ボード数の上限は {MAX_DASHBOARD_BOARD_COUNT} 件です。
               </span>
@@ -185,8 +250,89 @@ export function DashboardSettingsForm({
             </div>
           </div>
 
+          <section
+            className="space-y-3 border-t border-slate-200 pt-5"
+            aria-labelledby="dashboard-hamster-order-heading"
+            data-dashboard-hamster-order
+          >
+            <div className="space-y-1">
+              <h4 id="dashboard-hamster-order-heading" className="text-base font-bold text-ink">
+                ダッシュボードカードの並び順
+              </h4>
+              <p id="dashboard-hamster-order-help" className="text-xs leading-5 text-slate-500">
+                ドラッグハンドル、上下ボタン、またはハンドル上で Alt + ↑ / ↓ を使って並び替えられます。
+              </p>
+            </div>
+
+            {orderedHamsters.length === 0 ? (
+              <div className="rounded-md border border-dashed border-slate-300 p-5 text-center text-sm text-slate-500">
+                表示対象のハムスターはいません。
+              </div>
+            ) : (
+              <ol className="space-y-2" aria-describedby="dashboard-hamster-order-help">
+                {orderedHamsters.map((hamster, index) => (
+                  <li
+                    key={hamster.id}
+                    onDragOver={(event) => handleDragOver(event, hamster.id)}
+                    onDrop={(event) => handleDrop(event, hamster.id)}
+                    data-drop-target={dropTargetId === hamster.id ? "true" : undefined}
+                    className={`flex min-w-0 flex-col gap-3 rounded-md border bg-white p-3 transition sm:flex-row sm:items-center sm:justify-between ${
+                      dropTargetId === hamster.id ? "border-moss ring-2 ring-moss/20" : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <button
+                        type="button"
+                        draggable
+                        onDragStart={(event) => handleDragStart(event, hamster.id)}
+                        onDragEnd={handleDragEnd}
+                        onKeyDown={(event) => handleDragHandleKeyDown(event, hamster.id)}
+                        aria-label={`${hamster.name}をドラッグして並び替え`}
+                        aria-roledescription="並び替えハンドル"
+                        aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                        className="inline-flex h-11 w-11 shrink-0 touch-none cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+                      >
+                        <GripVertical className="h-5 w-5" aria-hidden />
+                      </button>
+                      <span className="min-w-0">
+                        <span className="block break-words text-sm font-semibold text-ink">{hamster.name}</span>
+                        <span className="mt-1 inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                          {hamster.isActive ? "管理中" : "管理外"}
+                        </span>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 self-end sm:self-center" aria-label={`${hamster.name}の並び替え操作`}>
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => moveByOffset(hamster.id, -1)}
+                        aria-label={`${hamster.name}を上へ移動`}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+                      >
+                        <ArrowUp className="h-4 w-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === orderedHamsters.length - 1}
+                        onClick={() => moveByOffset(hamster.id, 1)}
+                        aria-label={`${hamster.name}を下へ移動`}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+                      >
+                        <ArrowDown className="h-4 w-4" aria-hidden />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <p className="sr-only" aria-live="polite" aria-atomic="true">
+              {orderAnnouncement}
+            </p>
+          </section>
+
           {/* disabled の checkbox は送信されないため、保存対象IDは hidden input に正規化して渡す。 */}
-          {effectiveSelectedIds.map((id) => (
+          {selectedIds.map((id) => (
             <input key={id} type="hidden" name="hamsterIds" value={id} data-dirty-control />
           ))}
 
@@ -262,7 +408,7 @@ export function DashboardSettingsForm({
                 {filteredHamsters.map((hamster) => {
                   const checked = selectedIdSet.has(hamster.id);
                   // 上限に達した後は未選択の行だけを無効化し、選択済みの解除はできるようにする。
-                  const disabled = !checked && needsSelection && effectiveSelectedIds.length >= limit;
+                  const disabled = !checked && needsSelection && selectedIds.length >= limit;
 
                   return (
                     <label

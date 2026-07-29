@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
+  getDashboardHamsterSelectionError,
   normalizeDashboardBoardCount,
   normalizeHamsterSelectorMode,
   pickDashboardHamsters
@@ -46,7 +47,7 @@ export async function saveSettings(formData: FormData) {
       recordTimelineDefaultScope,
       cleaningMobileDefaultDateFilter
     } = dashboardResult.data;
-    const selectedHamsterIds = [...new Set(dashboardResult.data.hamsterIds)];
+    const selectedHamsterIds = dashboardResult.data.hamsterIds;
     const [user, hamsters, setting] = await Promise.all([
       prisma.user.findUnique({
         where: { id: context.user.id },
@@ -64,11 +65,16 @@ export async function saveSettings(formData: FormData) {
     ]);
     if (!user) redirect("/login");
 
-    const validHamsterIds = new Set(hamsters.map((hamster) => hamster.id));
-    const requiredSelectionCount = Math.min(dashboardBoardCount, hamsters.length);
-    if (selectedHamsterIds.some((id) => !validHamsterIds.has(id))) redirect("/settings?status=invalid");
-    if (selectedHamsterIds.length > requiredSelectionCount) redirect("/settings?status=dashboardLimitExceeded");
-    if (selectedHamsterIds.length < requiredSelectionCount) redirect("/settings?status=dashboardSelectionRequired");
+    const selectionError = getDashboardHamsterSelectionError(
+      hamsters.map((hamster) => hamster.id),
+      dashboardBoardCount,
+      selectedHamsterIds
+    );
+    if (selectionError === "duplicate" || selectionError === "unknown") {
+      redirect("/settings?status=invalid");
+    }
+    if (selectionError === "tooMany") redirect("/settings?status=dashboardLimitExceeded");
+    if (selectionError === "tooFew") redirect("/settings?status=dashboardSelectionRequired");
 
     const currentBoardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
     const currentSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
