@@ -16,6 +16,11 @@ export const RECORD_PAGE_SIZE = 20;
 export const RECORD_SCOPES = ["hamster", "household"] as const;
 export type RecordScope = (typeof RECORD_SCOPES)[number];
 export const DEFAULT_RECORD_SCOPE: RecordScope = "hamster";
+export type RecordCreateKind = "health" | "medical" | "memory";
+
+export function recordCreateKindForHamsterStatus(currentKind: RecordCreateKind, hamsterIsActive: boolean): RecordCreateKind {
+  return hamsterIsActive ? currentKind : "memory";
+}
 
 export const RECORD_TYPE_LABELS: Record<HamsterRecordType, string> = {
   HEALTH: "健康・体調",

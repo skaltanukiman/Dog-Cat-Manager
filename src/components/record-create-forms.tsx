@@ -25,10 +25,10 @@ import {
   HEALTH_AMOUNT_LABELS,
   HEALTH_EXCRETION_LABELS,
   HEALTH_OVERALL_LABELS,
-  HEALTH_SYMPTOM_LABELS
+  HEALTH_SYMPTOM_LABELS,
+  recordCreateKindForHamsterStatus,
+  type RecordCreateKind
 } from "@/lib/records";
-
-type CreateKind = "health" | "medical" | "memory";
 
 const fieldClass = "grid gap-1 text-sm font-medium text-slate-700";
 // 初期値と同じ正常状態へ戻す操作。再利用できるよう実装を残し、現在は画面に表示しない。
@@ -49,15 +49,23 @@ function RecordCreateError({ error }: { error?: CreateError }) {
 
 export function RecordCreateForms({ hamsterId, hamsterIsActive, today, savedMemoryTags }: { hamsterId: string; hamsterIsActive: boolean; today: string; savedMemoryTags: string[] }) {
   const router = useRouter();
-  const [kind, setKind] = useState<CreateKind>(hamsterIsActive ? "health" : "memory");
+  const [kind, setKind] = useState<RecordCreateKind>(recordCreateKindForHamsterStatus("health", hamsterIsActive));
+  const [previousHamsterIsActive, setPreviousHamsterIsActive] = useState(hamsterIsActive);
   const healthFormRef = useRef<HTMLFormElement>(null);
-  const [pendingKind, setPendingKind] = useState<CreateKind | null>(null);
-  const [submitErrors, setSubmitErrors] = useState<Partial<Record<CreateKind, CreateError>>>({});
-  const [submitSuccesses, setSubmitSuccesses] = useState<Partial<Record<CreateKind, boolean>>>({});
-  const [formVersions, setFormVersions] = useState<Record<CreateKind, number>>({ health: 0, medical: 0, memory: 0 });
+  const [pendingKind, setPendingKind] = useState<RecordCreateKind | null>(null);
+  const [submitErrors, setSubmitErrors] = useState<Partial<Record<RecordCreateKind, CreateError>>>({});
+  const [submitSuccesses, setSubmitSuccesses] = useState<Partial<Record<RecordCreateKind, boolean>>>({});
+  const [formVersions, setFormVersions] = useState<Record<RecordCreateKind, number>>({ health: 0, medical: 0, memory: 0 });
   const [, startTransition] = useTransition();
 
-  function submitRecord(recordKind: CreateKind, action: CreateAction) {
+  if (previousHamsterIsActive !== hamsterIsActive) {
+    setPreviousHamsterIsActive(hamsterIsActive);
+    if (!hamsterIsActive) {
+      setKind((currentKind) => recordCreateKindForHamsterStatus(currentKind, hamsterIsActive));
+    }
+  }
+
+  function submitRecord(recordKind: RecordCreateKind, action: CreateAction) {
     return (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const form = event.currentTarget;

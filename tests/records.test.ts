@@ -41,6 +41,7 @@ import {
   normalizeRecordScope,
   parseRecordSearchTerms,
   normalizeRecordTypeFilter,
+  recordCreateKindForHamsterStatus,
   RECORD_PAGE_SIZE,
   recordsUrl,
   resolveRecordScope
@@ -748,7 +749,7 @@ test("記録作成成功時は選択中フォームとスクロール位置を�
   const createActions = actions.slice(actions.indexOf("export async function createHealthRecord"), actions.indexOf("async function getEditableRecord"));
   assert.doesNotMatch(createActions, /recordRedirect\(/);
   assert.equal(createActions.match(/return \{ success: true \}/g)?.length, 3);
-  assert.match(forms, /const \[kind, setKind\] = useState<CreateKind>/);
+  assert.match(forms, /const \[kind, setKind\] = useState<RecordCreateKind>/);
   assert.match(forms, /router\.refresh\(\)/);
   assert.doesNotMatch(forms, /router\.(?:push|replace)\(/);
   assert.match(forms, /setFormVersions\(\(current\) => \(\{ \.\.\.current, \[recordKind\]: current\[recordKind\] \+ 1 \}\)\)/);
@@ -760,6 +761,25 @@ test("記録作成成功時は選択中フォームとスクロール位置を�
   assert.match(statusMessage, /AUTO_DISMISS_MS = 3500/);
   assert.match(statusMessage, /LEAVE_ANIMATION_MS = 450/);
   assert.match(statusMessage, /export function AutoDismissSuccessMessage/);
+});
+
+test("記録作成フォームは管理外へ切り替わった場合だけ思い出を選択する", () => {
+  const page = source("src/app/(app)/records/page.tsx");
+  const forms = source("src/components/record-create-forms.tsx");
+  assert.equal(recordCreateKindForHamsterStatus("health", false), "memory");
+  assert.equal(recordCreateKindForHamsterStatus("medical", false), "memory");
+  assert.equal(recordCreateKindForHamsterStatus("memory", true), "memory");
+  assert.equal(recordCreateKindForHamsterStatus("health", true), "health");
+  assert.equal(recordCreateKindForHamsterStatus("medical", true), "medical");
+  assert.match(forms, /useState<RecordCreateKind>\(recordCreateKindForHamsterStatus\("health", hamsterIsActive\)\)/);
+  assert.match(forms, /useState\(hamsterIsActive\)/);
+  assert.match(forms, /if \(previousHamsterIsActive !== hamsterIsActive\) \{\s*setPreviousHamsterIsActive\(hamsterIsActive\);\s*if \(!hamsterIsActive\) \{\s*setKind\(\(currentKind\) => recordCreateKindForHamsterStatus\(currentKind, hamsterIsActive\)\);\s*\}\s*\}/);
+  assert.doesNotMatch(forms, /previousHamsterId|setPreviousHamsterId/);
+  assert.doesNotMatch(page, /<RecordCreateForms[^>]*\skey=/);
+  assert.match(forms, /onClick=\{\(\) => setKind\("health"\)\} disabled=\{!hamsterIsActive\}/);
+  assert.match(forms, /onClick=\{\(\) => setKind\("medical"\)\} disabled=\{!hamsterIsActive\}/);
+  assert.match(forms, /onClick=\{\(\) => setKind\("memory"\)\}/);
+  assert.match(forms, /<div className=\{kind === "memory" \? "" : "hidden"\}>/);
 });
 
 test("思い出写真の削除状態を未保存変更として検知し、保存ボタンを活性化できる", () => {
