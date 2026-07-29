@@ -92,6 +92,7 @@ export function DashboardSettingsForm({
   const feedbackTimerRef = useRef<number | null>(null);
   const feedbackSequenceRef = useRef(0);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
+  const dropTargetRef = useRef<DropTarget | null>(null);
   const hamsterIds = useMemo(() => hamsters.map((hamster) => hamster.id), [hamsters]);
   const hamsterById = useMemo(() => new Map(hamsters.map((hamster) => [hamster.id, hamster])), [hamsters]);
   const needsSelection = hamsters.length > limit;
@@ -236,6 +237,20 @@ export function DashboardSettingsForm({
     setRecentMove(null);
   }
 
+  function updateDropTarget(nextTarget: DropTarget | null) {
+    const currentTarget = dropTargetRef.current;
+
+    if (
+      currentTarget?.hamsterId === nextTarget?.hamsterId &&
+      currentTarget?.position === nextTarget?.position
+    ) {
+      return;
+    }
+
+    dropTargetRef.current = nextTarget;
+    setDropTarget(nextTarget);
+  }
+
   function moveByOffset(hamsterId: string, direction: MoveDirection) {
     const currentIndex = selectedIds.indexOf(hamsterId);
     const offset = direction === "up" ? -1 : 1;
@@ -288,6 +303,7 @@ export function DashboardSettingsForm({
       ?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]")
       .forEach((row) => row.getAnimations().forEach((animation) => animation.cancel()));
     clearMoveFeedback();
+    updateDropTarget(null);
     createDragPreview(event);
     setDraggedId(hamsterId);
     event.dataTransfer.effectAllowed = "move";
@@ -296,18 +312,23 @@ export function DashboardSettingsForm({
 
   function handleDragOver(event: DragEvent<HTMLLIElement>, hamsterId: string) {
     if (!draggedId || draggedId === hamsterId) {
-      setDropTarget(null);
+      updateDropTarget(null);
       return;
     }
 
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     const position = getDashboardDropPosition(event.clientY, event.currentTarget.getBoundingClientRect());
-    setDropTarget((current) =>
-      current?.hamsterId === hamsterId && current.position === position
-        ? current
-        : { hamsterId, position }
-    );
+    updateDropTarget({ hamsterId, position });
+  }
+
+  function handleOrderListDragOver(event: DragEvent<HTMLOListElement>) {
+    if (!draggedId || !dropTargetRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
   }
 
   function handleOrderListDragLeave(event: DragEvent<HTMLOListElement>) {
@@ -323,26 +344,30 @@ export function DashboardSettingsForm({
       event.clientY > rect.bottom;
 
     if (isOutside) {
-      setDropTarget(null);
+      updateDropTarget(null);
     }
   }
 
-  function handleDrop(event: DragEvent<HTMLLIElement>, targetHamsterId: string) {
+  function clearDragState() {
+    setDraggedId(null);
+    updateDropTarget(null);
+    removeDragPreview();
+  }
+
+  function handleOrderListDrop(event: DragEvent<HTMLOListElement>) {
     event.preventDefault();
     const hamsterId = draggedId ?? event.dataTransfer.getData("text/plain");
-    const position = getDashboardDropPosition(event.clientY, event.currentTarget.getBoundingClientRect());
-    if (hamsterId) {
-      updateOrder(hamsterId, targetHamsterId, position);
+    const currentDropTarget = dropTargetRef.current;
+
+    if (hamsterId && currentDropTarget && hamsterId !== currentDropTarget.hamsterId) {
+      updateOrder(hamsterId, currentDropTarget.hamsterId, currentDropTarget.position);
     }
-    setDraggedId(null);
-    setDropTarget(null);
-    removeDragPreview();
+
+    clearDragState();
   }
 
   function handleDragEnd() {
-    setDraggedId(null);
-    setDropTarget(null);
-    removeDragPreview();
+    clearDragState();
   }
 
   return (
@@ -434,7 +459,9 @@ export function DashboardSettingsForm({
                 ref={orderListRef}
                 className="flex flex-col gap-2"
                 aria-describedby="dashboard-hamster-order-help"
+                onDragOver={handleOrderListDragOver}
                 onDragLeave={handleOrderListDragLeave}
+                onDrop={handleOrderListDrop}
               >
                 {orderedHamsters.map((hamster, index) => {
                   const isDropTarget = dropTarget?.hamsterId === hamster.id;
@@ -457,7 +484,6 @@ export function DashboardSettingsForm({
                       key={hamster.id}
                       data-dashboard-hamster-order-id={hamster.id}
                       onDragOver={(event) => handleDragOver(event, hamster.id)}
-                      onDrop={(event) => handleDrop(event, hamster.id)}
                       data-drop-target={isDropTarget ? "true" : undefined}
                       data-drop-position={isDropTarget ? dropTarget.position : undefined}
                       data-dragging={isDragging ? "true" : undefined}

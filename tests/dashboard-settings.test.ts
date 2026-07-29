@@ -264,7 +264,7 @@ test("D&Dは行の上下位置を保持し、PCでは余白の中央にbeforeま
   );
   assert.match(
     dashboardSettingsFormSource,
-    /current\?\.hamsterId === hamsterId && current\.position === position[\s\S]*\{ hamsterId, position \}/
+    /const position = getDashboardDropPosition\([\s\S]*updateDropTarget\(\{ hamsterId, position \}\)/
   );
   assert.match(dashboardSettingsFormSource, /data-drop-position=\{isDropTarget \? dropTarget\.position : undefined\}/);
   assert.match(
@@ -303,10 +303,47 @@ test("D&Dは行の上下位置を保持し、PCでは余白の中央にbeforeま
   assert.match(dashboardSettingsFormSource, /onDragLeave=\{handleOrderListDragLeave\}/);
   assert.match(
     dashboardSettingsFormSource,
-    /if \(!draggedId \|\| draggedId === hamsterId\) \{\s*setDropTarget\(null\);\s*return;/
+    /if \(!draggedId \|\| draggedId === hamsterId\) \{\s*updateDropTarget\(null\);\s*return;/
   );
-  assert.match(dashboardSettingsFormSource, /function handleDragEnd\(\) \{[\s\S]*setDropTarget\(null\)/);
-  assert.match(dashboardSettingsFormSource, /function handleDrop\([\s\S]*setDropTarget\(null\)/);
+  assert.match(dashboardSettingsFormSource, /function clearDragState\(\) \{[\s\S]*updateDropTarget\(null\)/);
+  assert.match(dashboardSettingsFormSource, /function handleDragEnd\(\) \{\s*clearDragState\(\)/);
+});
+
+test("D&Dのドロップは一覧全体で受け取り、表示中のdropTargetをそのまま使用する", () => {
+  const listDropStart = dashboardSettingsFormSource.indexOf("function handleOrderListDrop");
+  const listDropEnd = dashboardSettingsFormSource.indexOf("function handleDragEnd", listDropStart);
+  const listDropSource = dashboardSettingsFormSource.slice(listDropStart, listDropEnd);
+
+  assert.notEqual(listDropStart, -1);
+  assert.notEqual(listDropEnd, -1);
+  assert.match(
+    dashboardSettingsFormSource,
+    /<ol[\s\S]*onDragOver=\{handleOrderListDragOver\}[\s\S]*onDragLeave=\{handleOrderListDragLeave\}[\s\S]*onDrop=\{handleOrderListDrop\}/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /function handleOrderListDragOver\([\s\S]*dropTargetRef\.current[\s\S]*event\.preventDefault\(\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /const dropTargetRef = useRef<DropTarget \| null>\(null\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /function updateDropTarget\([\s\S]*dropTargetRef\.current = nextTarget;\s*setDropTarget\(nextTarget\)/
+  );
+  assert.match(listDropSource, /const currentDropTarget = dropTargetRef\.current/);
+  assert.match(
+    listDropSource,
+    /updateOrder\(hamsterId, currentDropTarget\.hamsterId, currentDropTarget\.position\)/
+  );
+  assert.doesNotMatch(listDropSource, /getDashboardDropPosition|getBoundingClientRect/);
+  assert.equal(
+    dashboardSettingsFormSource.match(/onDrop=\{handleOrderListDrop\}/g)?.length,
+    1
+  );
+  assert.doesNotMatch(dashboardSettingsFormSource, /<li[\s\S]*?onDrop=/);
+  assert.match(listDropSource, /clearDragState\(\)/);
 });
 
 test("ドラッグ元を半透明にし、行全体の非操作プレビューを作成して確実に削除する", () => {
@@ -322,8 +359,9 @@ test("ドラッグ元を半透明にし、行全体の非操作プレビュー�
   assert.match(dashboardSettingsFormSource, /preview\.style\.opacity = "0\.8"/);
   assert.match(dashboardSettingsFormSource, /preview\.style\.pointerEvents = "none"/);
   assert.match(dashboardSettingsFormSource, /event\.dataTransfer\.setDragImage\(preview, 24, 24\)/);
-  assert.match(dashboardSettingsFormSource, /function handleDrop\([\s\S]*removeDragPreview\(\)/);
-  assert.match(dashboardSettingsFormSource, /function handleDragEnd\(\) \{[\s\S]*removeDragPreview\(\)/);
+  assert.match(dashboardSettingsFormSource, /function clearDragState\(\) \{[\s\S]*removeDragPreview\(\)/);
+  assert.match(dashboardSettingsFormSource, /function handleOrderListDrop\([\s\S]*clearDragState\(\)/);
+  assert.match(dashboardSettingsFormSource, /function handleDragEnd\(\) \{\s*clearDragState\(\)/);
   assert.match(
     dashboardSettingsFormSource,
     /useEffect\(\(\) => \{[\s\S]*dragPreviewRef\.current\?\.remove\(\)/
@@ -377,7 +415,7 @@ test("並び順変更はDOM更新後に共通イベントでdirtyを再評価し
   );
   assert.match(
     dashboardSettingsFormSource,
-    /function handleDrop\([\s\S]*updateOrder\(hamsterId, targetHamsterId, position\)/
+    /function handleOrderListDrop\([\s\S]*updateOrder\(hamsterId, currentDropTarget\.hamsterId, currentDropTarget\.position\)/
   );
   assert.match(
     dashboardSettingsFormSource,
