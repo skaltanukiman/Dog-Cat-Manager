@@ -176,6 +176,22 @@ test("並び順操作はPC用ハンドル、全画面幅用の上下ボタン、
   );
 });
 
+test("並び順の行はスマホで情報と操作を2列に並べ、PCでは既存の横並びを維持する", () => {
+  assert.match(
+    dashboardSettingsFormSource,
+    /grid-cols-\[minmax\(0,1fr\)_auto\] items-center gap-3[\s\S]*sm:flex sm:flex-row sm:items-center sm:justify-between/
+  );
+  assert.match(dashboardSettingsFormSource, /<div className="flex min-w-0 items-center gap-3">/);
+  assert.match(dashboardSettingsFormSource, /<span className="block break-words text-sm font-semibold text-ink">/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /<div className="grid shrink-0 grid-cols-2 gap-2" aria-label=\{`\$\{hamster\.name\}の並び替え操作`\}>/
+  );
+  assert.doesNotMatch(dashboardSettingsFormSource, /self-end/);
+  assert.match(dashboardSettingsFormSource, /className="hidden h-11 w-11[^"]*sm:inline-flex"/);
+  assert.match(dashboardSettingsFormSource, /className=\{`inline-flex h-11 w-11/);
+});
+
 test("Altと矢印キーのショートカット処理・属性・説明を残さない", () => {
   assert.doesNotMatch(dashboardSettingsFormSource, /KeyboardEvent/);
   assert.doesNotMatch(dashboardSettingsFormSource, /handleDragHandleKeyDown/);

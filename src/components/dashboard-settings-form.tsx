@@ -458,7 +458,7 @@ export function DashboardSettingsForm({
                       data-drop-position={isDropTarget ? dropTarget.position : undefined}
                       data-dragging={isDragging ? "true" : undefined}
                       data-recently-moved={isRecentlyMoved ? "true" : undefined}
-                      className={`relative flex min-w-0 flex-col gap-3 rounded-md border p-3 transition-[background-color,border-color,opacity] duration-200 motion-reduce:transition-none sm:flex-row sm:items-center sm:justify-between ${rowStateClass} ${
+                      className={`relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border p-3 transition-[background-color,border-color,opacity] duration-200 motion-reduce:transition-none sm:flex sm:flex-row sm:items-center sm:justify-between ${rowStateClass} ${
                         isDragging ? "opacity-50" : "opacity-100"
                       }`}
                     >
@@ -502,35 +502,35 @@ export function DashboardSettingsForm({
                         </span>
                       </div>
 
-                    <div className="grid grid-cols-2 gap-2 self-end sm:self-center" aria-label={`${hamster.name}の並び替え操作`}>
-                      <button
-                        type="button"
-                        disabled={index === 0}
-                        onClick={() => moveByOffset(hamster.id, "up")}
-                        aria-label={`${hamster.name}を上へ移動`}
-                        data-move-feedback={isRecentlyMoved && recentMove.direction === "up" ? "true" : undefined}
-                        className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
-                          isRecentlyMoved && recentMove.direction === "up"
-                            ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
-                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
-                        }`}
-                      >
-                        <ArrowUp className="h-4 w-4" aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={index === orderedHamsters.length - 1}
-                        onClick={() => moveByOffset(hamster.id, "down")}
-                        aria-label={`${hamster.name}を下へ移動`}
-                        data-move-feedback={isRecentlyMoved && recentMove.direction === "down" ? "true" : undefined}
-                        className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
-                          isRecentlyMoved && recentMove.direction === "down"
-                            ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
-                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
-                        }`}
-                      >
-                        <ArrowDown className="h-4 w-4" aria-hidden />
-                      </button>
+                      <div className="grid shrink-0 grid-cols-2 gap-2" aria-label={`${hamster.name}の並び替え操作`}>
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => moveByOffset(hamster.id, "up")}
+                          aria-label={`${hamster.name}を上へ移動`}
+                          data-move-feedback={isRecentlyMoved && recentMove.direction === "up" ? "true" : undefined}
+                          className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                            isRecentlyMoved && recentMove.direction === "up"
+                              ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
+                          }`}
+                        >
+                          <ArrowUp className="h-4 w-4" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === orderedHamsters.length - 1}
+                          onClick={() => moveByOffset(hamster.id, "down")}
+                          aria-label={`${hamster.name}を下へ移動`}
+                          data-move-feedback={isRecentlyMoved && recentMove.direction === "down" ? "true" : undefined}
+                          className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                            isRecentlyMoved && recentMove.direction === "down"
+                              ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
+                          }`}
+                        >
+                          <ArrowDown className="h-4 w-4" aria-hidden />
+                        </button>
                     </div>
                   </li>
                   );
