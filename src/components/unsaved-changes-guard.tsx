@@ -5,7 +5,7 @@ import type { FormEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { hasDirtyForms } from "@/components/form-dirty-state";
+import { FORM_DIRTY_REEVALUATE_EVENT, hasDirtyForms } from "@/components/form-dirty-state";
 
 type UnsavedChangesGuardProps = {
   children: ReactNode;
@@ -34,6 +34,35 @@ export function UnsavedChangesGuard({ children }: UnsavedChangesGuardProps) {
   useEffect(() => {
     // 初回描画時の値を差分比較の基準として記録する。
     hasDirtyForms();
+  }, []);
+
+  useEffect(() => {
+    let dirtyReevaluationFrame: number | null = null;
+
+    function handleDirtyReevaluation(event: Event) {
+      const form = (event as CustomEvent<{ form?: unknown }>).detail?.form;
+
+      if (!(form instanceof HTMLFormElement) || !form.matches("[data-dirty-watch]")) {
+        return;
+      }
+
+      if (dirtyReevaluationFrame !== null) {
+        window.cancelAnimationFrame(dirtyReevaluationFrame);
+      }
+
+      dirtyReevaluationFrame = window.requestAnimationFrame(() => {
+        dirtyReevaluationFrame = null;
+        setIsDirty(hasDirtyForms());
+      });
+    }
+
+    document.addEventListener(FORM_DIRTY_REEVALUATE_EVENT, handleDirtyReevaluation);
+    return () => {
+      if (dirtyReevaluationFrame !== null) {
+        window.cancelAnimationFrame(dirtyReevaluationFrame);
+      }
+      document.removeEventListener(FORM_DIRTY_REEVALUATE_EVENT, handleDirtyReevaluation);
+    };
   }, []);
 
   useEffect(() => {

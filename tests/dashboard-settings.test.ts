@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   DEFAULT_HAMSTER_SELECTOR_MODE,
+  getDashboardDropPosition,
   getDashboardHamsterSelectionError,
   moveDashboardHamsterId,
   normalizeDashboardHamsterIds,
@@ -24,6 +25,15 @@ const settingsActionSource = readFileSync(
   "utf8"
 );
 const tailwindConfigSource = readFileSync(new URL("../tailwind.config.ts", import.meta.url), "utf8");
+const formDirtyStateSource = readFileSync(
+  new URL("../src/components/form-dirty-state.ts", import.meta.url),
+  "utf8"
+);
+const unsavedChangesGuardSource = readFileSync(
+  new URL("../src/components/unsaved-changes-guard.tsx", import.meta.url),
+  "utf8"
+);
+const demoDashboardSource = readFileSync(new URL("../src/app/demo/page.tsx", import.meta.url), "utf8");
 
 test("ハムスター選択方式はコンボボックス式とプルダウン式を維持する", () => {
   assert.equal(normalizeHamsterSelectorMode("combobox"), "combobox");
@@ -98,7 +108,12 @@ test("管理状態に関係なく保存順でダッシュボード対象を返�
 
 test("上下移動、表示対象の追加・解除、表示数減少は現在の順序を基準にする", () => {
   assert.deepEqual(
-    moveDashboardHamsterId(["hamster-1", "hamster-2", "hamster-3"], "hamster-2", "hamster-1"),
+    moveDashboardHamsterId(
+      ["hamster-1", "hamster-2", "hamster-3"],
+      "hamster-2",
+      "hamster-1",
+      "before"
+    ),
     ["hamster-2", "hamster-1", "hamster-3"]
   );
   assert.deepEqual(toggleDashboardHamsterId(["hamster-2"], "hamster-3", 2), ["hamster-2", "hamster-3"]);
@@ -111,6 +126,28 @@ test("上下移動、表示対象の追加・解除、表示数減少は現在�
     ),
     ["hamster-3", "hamster-1"]
   );
+});
+
+test("ドラッグ移動は移動元を除外した後の対象位置へbeforeまたはafterで挿入する", () => {
+  const ids = ["A", "B", "C", "D"];
+
+  assert.deepEqual(moveDashboardHamsterId(ids, "A", "C", "before"), ["B", "A", "C", "D"]);
+  assert.deepEqual(moveDashboardHamsterId(ids, "A", "C", "after"), ["B", "C", "A", "D"]);
+  assert.deepEqual(moveDashboardHamsterId(ids, "D", "B", "before"), ["A", "D", "B", "C"]);
+  assert.deepEqual(moveDashboardHamsterId(ids, "D", "B", "after"), ["A", "B", "D", "C"]);
+  assert.deepEqual(moveDashboardHamsterId(["B", "C", "D", "A"], "A", "B", "before"), ids);
+  assert.deepEqual(moveDashboardHamsterId(ids, "A", "D", "after"), ["B", "C", "D", "A"]);
+  assert.deepEqual(moveDashboardHamsterId(ids, "A", "B", "before"), ids);
+  assert.deepEqual(moveDashboardHamsterId(ids, "unknown", "B", "before"), ids);
+  assert.deepEqual(moveDashboardHamsterId(ids, "A", "unknown", "after"), ids);
+});
+
+test("ポインターが対象行の上半分ならbefore、下半分ならafterを返す", () => {
+  const rect = { top: 100, height: 40 };
+
+  assert.equal(getDashboardDropPosition(119, rect), "before");
+  assert.equal(getDashboardDropPosition(120, rect), "after");
+  assert.equal(getDashboardDropPosition(139, rect), "after");
 });
 
 test("並び順一覧は選択済みだけをDOM順に描画し、末尾追加とhidden input順を共有する", () => {
@@ -135,7 +172,7 @@ test("並び順操作はPC用ハンドル、全画面幅用の上下ボタン、
   assert.match(dashboardSettingsFormSource, /aria-live="polite"/);
   assert.match(
     dashboardSettingsFormSource,
-    /formRef\.current\?\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/
+    /requestFormDirtyReevaluation\(formRef\.current\)/
   );
 });
 
@@ -156,7 +193,7 @@ test("PCホバー、移動直後、ドロップ先の順に行の視覚状態を
     dashboardSettingsFormSource,
     /const rowStateClass = isDropTarget\s*\?\s*"border-moss bg-moss\/10 ring-2 ring-moss\/20"\s*:\s*isRecentlyMoved\s*\?\s*"border-moss\/70 bg-moss\/10"\s*:\s*"border-slate-200 bg-white sm:hover:border-slate-300 sm:hover:bg-slate-50"/
   );
-  assert.match(dashboardSettingsFormSource, /transition-colors duration-200 motion-reduce:transition-none/);
+  assert.match(dashboardSettingsFormSource, /transition-\[background-color,border-color,opacity\] duration-200 motion-reduce:transition-none/);
 });
 
 test("上下移動成功時は行と押した方向のボタンを800ms強調し、連続操作の古い解除を無効化する", () => {
@@ -199,6 +236,105 @@ test("上下移動はFLIP方式で位置をアニメーションし、動きを�
     /row\.animate\(\s*\[\{ transform: `translateY\(\$\{offsetY\}px\)` \}, \{ transform: "translateY\(0\)" \}\]/
   );
   assert.match(dashboardSettingsFormSource, /row\.getAnimations\(\)\.forEach\(\(animation\) => animation\.cancel\(\)\)/);
+});
+
+test("D&Dは行の上下位置を保持し、beforeとafterの挿入ラインを片方だけ表示する", () => {
+  assert.match(
+    dashboardSettingsFormSource,
+    /getDashboardDropPosition\(event\.clientY, event\.currentTarget\.getBoundingClientRect\(\)\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /current\?\.hamsterId === hamsterId && current\.position === position[\s\S]*\{ hamsterId, position \}/
+  );
+  assert.match(dashboardSettingsFormSource, /data-drop-position=\{isDropTarget \? dropTarget\.position : undefined\}/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /isDropBefore \? \([\s\S]*data-drop-indicator="before"[\s\S]*absolute -top-1\.5 left-2 right-2[\s\S]*\) : null/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /isDropAfter \? \([\s\S]*data-drop-indicator="after"[\s\S]*absolute -bottom-1\.5 left-2 right-2[\s\S]*\) : null/
+  );
+  assert.match(dashboardSettingsFormSource, /onDragLeave=\{handleOrderListDragLeave\}/);
+  assert.match(dashboardSettingsFormSource, /function handleDragEnd\(\) \{[\s\S]*setDropTarget\(null\)/);
+  assert.match(dashboardSettingsFormSource, /function handleDrop\([\s\S]*setDropTarget\(null\)/);
+});
+
+test("ドラッグ元を半透明にし、行全体の非操作プレビューを作成して確実に削除する", () => {
+  assert.match(dashboardSettingsFormSource, /const isDragging = draggedId === hamster\.id/);
+  assert.match(dashboardSettingsFormSource, /data-dragging=\{isDragging \? "true" : undefined\}/);
+  assert.match(dashboardSettingsFormSource, /isDragging \? "opacity-50" : "opacity-100"/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /event\.currentTarget\.closest<HTMLElement>\("\[data-dashboard-hamster-order-id\]"\)/
+  );
+  assert.match(dashboardSettingsFormSource, /const preview = row\.cloneNode\(true\) as HTMLElement/);
+  assert.match(dashboardSettingsFormSource, /preview\.setAttribute\("aria-hidden", "true"\)/);
+  assert.match(dashboardSettingsFormSource, /preview\.style\.opacity = "0\.8"/);
+  assert.match(dashboardSettingsFormSource, /preview\.style\.pointerEvents = "none"/);
+  assert.match(dashboardSettingsFormSource, /event\.dataTransfer\.setDragImage\(preview, 24, 24\)/);
+  assert.match(dashboardSettingsFormSource, /function handleDrop\([\s\S]*removeDragPreview\(\)/);
+  assert.match(dashboardSettingsFormSource, /function handleDragEnd\(\) \{[\s\S]*removeDragPreview\(\)/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /useEffect\(\(\) => \{[\s\S]*dragPreviewRef\.current\?\.remove\(\)/
+  );
+});
+
+test("設定画面の管理状態バッジは通常・デモダッシュボードと同じ色と寸法を使う", () => {
+  for (const source of [dashboardSettingsFormSource, dashboardPageSource, demoDashboardSource]) {
+    assert.match(source, /rounded-md px-2 py-1 text-xs font-semibold/);
+    assert.match(source, /hamster\.isActive\s*\?\s*"bg-straw\/40 text-slate-700"\s*:\s*"bg-slate-200 text-slate-600"/);
+  }
+});
+
+test("並び順変更はDOM更新後に共通イベントでdirtyを再評価し、初期順へ戻すと解除できる", () => {
+  assert.match(
+    formDirtyStateSource,
+    /FORM_DIRTY_REEVALUATE_EVENT = "form-dirty-reevaluate"/
+  );
+  assert.match(
+    formDirtyStateSource,
+    /window\.requestAnimationFrame\(\(\) => \{\s*document\.dispatchEvent\(\s*new CustomEvent\(FORM_DIRTY_REEVALUATE_EVENT, \{[\s\S]*detail: \{ form \}/
+  );
+  assert.match(
+    formDirtyStateSource,
+    /\.map\(\(control\) => `\$\{control\.name\}:\$\{control\.type\}:\$\{normalizeControlValue\(control\)\}`\)/
+  );
+  assert.match(
+    formDirtyStateSource,
+    /document\.addEventListener\(FORM_DIRTY_REEVALUATE_EVENT, handleDirtyReevaluation\)/
+  );
+  assert.match(
+    unsavedChangesGuardSource,
+    /document\.addEventListener\(FORM_DIRTY_REEVALUATE_EVENT, handleDirtyReevaluation\)/
+  );
+  assert.match(
+    unsavedChangesGuardSource,
+    /dirtyReevaluationFrame = window\.requestAnimationFrame\(\(\) => \{[\s\S]*setIsDirty\(hasDirtyForms\(\)\)/
+  );
+  assert.match(
+    unsavedChangesGuardSource,
+    /window\.cancelAnimationFrame\(dirtyReevaluationFrame\)/
+  );
+  assert.match(unsavedChangesGuardSource, /setIsDirty\(false\)/);
+  assert.match(unsavedChangesGuardSource, /document\.addEventListener\("click", handleDocumentClick, true\)/);
+  assert.match(unsavedChangesGuardSource, /window\.addEventListener\("beforeunload", handleBeforeUnload\)/);
+  assert.match(unsavedChangesGuardSource, /保存されていない変更があります/);
+  assert.match(unsavedChangesGuardSource, /<div onChangeCapture=\{handleChangeCapture\} onSubmitCapture=\{handleSubmitCapture\}>/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /function moveByOffset\([\s\S]*updateOrder\(hamsterId, targetId, position\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /function handleDrop\([\s\S]*updateOrder\(hamsterId, targetHamsterId, position\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /if \(nextIndex < 0 \|\| !nextIds\.some\([\s\S]*\) \{\s*return false;\s*\}[\s\S]*setSelectedIds\(nextIds\);[\s\S]*requestFormDirtyReevaluation\(formRef\.current\)/
+  );
 });
 
 test("サーバー検証は重複、他Household相当の未知ID、件数超過・不足を拒否する", () => {

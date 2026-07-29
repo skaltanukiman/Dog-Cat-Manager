@@ -7,6 +7,7 @@ export const HAMSTER_SELECTOR_MODES = ["combobox", "select"] as const;
 export const DEFAULT_HAMSTER_SELECTOR_MODE: HamsterSelectorMode = "select";
 
 export type HamsterSelectorMode = (typeof HAMSTER_SELECTOR_MODES)[number];
+export type DashboardDropPosition = "before" | "after";
 
 export function normalizeDashboardBoardCount(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -78,19 +79,29 @@ export function toggleDashboardHamsterId(
 export function moveDashboardHamsterId(
   selectedIds: readonly string[],
   hamsterId: string,
-  targetHamsterId: string
+  targetHamsterId: string,
+  position: DashboardDropPosition
 ) {
   const currentIndex = selectedIds.indexOf(hamsterId);
-  const targetIndex = selectedIds.indexOf(targetHamsterId);
+  const originalTargetIndex = selectedIds.indexOf(targetHamsterId);
 
-  if (currentIndex < 0 || targetIndex < 0 || currentIndex === targetIndex) {
+  if (currentIndex < 0 || originalTargetIndex < 0 || currentIndex === originalTargetIndex) {
     return [...selectedIds];
   }
 
   const nextIds = [...selectedIds];
   nextIds.splice(currentIndex, 1);
-  nextIds.splice(targetIndex, 0, hamsterId);
+  const targetIndex = nextIds.indexOf(targetHamsterId);
+  const insertIndex = position === "before" ? targetIndex : targetIndex + 1;
+  nextIds.splice(insertIndex, 0, hamsterId);
   return nextIds;
+}
+
+export function getDashboardDropPosition(
+  clientY: number,
+  targetRect: { top: number; height: number }
+): DashboardDropPosition {
+  return clientY < targetRect.top + targetRect.height / 2 ? "before" : "after";
 }
 
 export type DashboardHamsterSelectionError = "duplicate" | "unknown" | "tooMany" | "tooFew";

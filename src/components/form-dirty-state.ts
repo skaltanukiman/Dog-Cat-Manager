@@ -4,6 +4,22 @@ import type { RefObject } from "react";
 import { useEffect, useState } from "react";
 
 const initialFormSnapshots = new WeakMap<HTMLFormElement, string>();
+export const FORM_DIRTY_REEVALUATE_EVENT = "form-dirty-reevaluate";
+
+export function requestFormDirtyReevaluation(form: HTMLFormElement | null) {
+  if (!form) {
+    return;
+  }
+
+  // Reactによるhidden inputのDOM順更新後に、初期スナップショットとの差分を再評価する。
+  window.requestAnimationFrame(() => {
+    document.dispatchEvent(
+      new CustomEvent(FORM_DIRTY_REEVALUATE_EVENT, {
+        detail: { form },
+      }),
+    );
+  });
+}
 
 function isSubmittableControl(element: Element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
   return element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement;
@@ -102,10 +118,19 @@ function subscribeToFormDirty(form: HTMLFormElement, onDirtyChange: (isDirty: bo
     });
   }
 
+  function handleDirtyReevaluation(event: Event) {
+    const eventForm = (event as CustomEvent<{ form?: unknown }>).detail?.form;
+
+    if (eventForm === form) {
+      scheduleDirtyStateUpdate();
+    }
+  }
+
   updateDirtyState();
   form.addEventListener("input", scheduleDirtyStateUpdate);
   form.addEventListener("change", scheduleDirtyStateUpdate);
   form.addEventListener("reset", scheduleDirtyStateUpdate);
+  document.addEventListener(FORM_DIRTY_REEVALUATE_EVENT, handleDirtyReevaluation);
 
   return () => {
     if (updateFrame !== null) {
@@ -114,6 +139,7 @@ function subscribeToFormDirty(form: HTMLFormElement, onDirtyChange: (isDirty: bo
     form.removeEventListener("input", scheduleDirtyStateUpdate);
     form.removeEventListener("change", scheduleDirtyStateUpdate);
     form.removeEventListener("reset", scheduleDirtyStateUpdate);
+    document.removeEventListener(FORM_DIRTY_REEVALUATE_EVENT, handleDirtyReevaluation);
   };
 }
 
