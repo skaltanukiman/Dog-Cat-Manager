@@ -209,7 +209,10 @@ test("PCホバー、移動直後、ドロップ先の順に行の視覚状態を
     dashboardSettingsFormSource,
     /const rowStateClass = isDropTarget\s*\?\s*"border-moss bg-moss\/10 ring-2 ring-moss\/20"\s*:\s*isRecentlyMoved\s*\?\s*"border-moss\/70 bg-moss\/10"\s*:\s*"border-slate-200 bg-white sm:hover:border-slate-300 sm:hover:bg-slate-50"/
   );
-  assert.match(dashboardSettingsFormSource, /transition-\[background-color,border-color,opacity\] duration-200 motion-reduce:transition-none/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /transition-\[margin,background-color,border-color,opacity\] duration-150 ease-out motion-reduce:transition-none/
+  );
 });
 
 test("上下移動成功時は行と押した方向のボタンを800ms強調し、連続操作の古い解除を無効化する", () => {
@@ -254,7 +257,7 @@ test("上下移動はFLIP方式で位置をアニメーションし、動きを�
   assert.match(dashboardSettingsFormSource, /row\.getAnimations\(\)\.forEach\(\(animation\) => animation\.cancel\(\)\)/);
 });
 
-test("D&Dは行の上下位置を保持し、beforeとafterの挿入ラインを片方だけ表示する", () => {
+test("D&Dは行の上下位置を保持し、PCでは余白の中央にbeforeまたはafterの挿入ラインを1本だけ表示する", () => {
   assert.match(
     dashboardSettingsFormSource,
     /getDashboardDropPosition\(event\.clientY, event\.currentTarget\.getBoundingClientRect\(\)\)/
@@ -266,13 +269,42 @@ test("D&Dは行の上下位置を保持し、beforeとafterの挿入ラインを
   assert.match(dashboardSettingsFormSource, /data-drop-position=\{isDropTarget \? dropTarget\.position : undefined\}/);
   assert.match(
     dashboardSettingsFormSource,
-    /isDropBefore \? \([\s\S]*data-drop-indicator="before"[\s\S]*absolute -top-1\.5 left-2 right-2[\s\S]*\) : null/
+    /const dropSpacingClass = isDropBefore \? "sm:mt-2" : isDropAfter \? "sm:mb-2" : ""/
   );
   assert.match(
     dashboardSettingsFormSource,
-    /isDropAfter \? \([\s\S]*data-drop-indicator="after"[\s\S]*absolute -bottom-1\.5 left-2 right-2[\s\S]*\) : null/
+    /const isDropBefore = isDropTarget && dropTarget\.position === "before";\s*const isDropAfter = isDropTarget && dropTarget\.position === "after";/
   );
+  assert.match(
+    dashboardSettingsFormSource,
+    /const beforeLinePositionClass = index === 0 \? "sm:-top-1\.5" : "sm:-top-2\.5";/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /index === orderedHamsters\.length - 1 \? "sm:-bottom-1\.5" : "sm:-bottom-2\.5"/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /className="flex flex-col gap-2"/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /transition-\[margin,background-color,border-color,opacity\] duration-150 ease-out motion-reduce:transition-none/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /isDropBefore \? \([\s\S]*data-drop-indicator="before"[\s\S]*absolute -top-1\.5 left-2 right-2[\s\S]*\$\{beforeLinePositionClass\}[\s\S]*\) : null/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /isDropAfter \? \([\s\S]*data-drop-indicator="after"[\s\S]*absolute -bottom-1\.5 left-2 right-2[\s\S]*\$\{afterLinePositionClass\}[\s\S]*\) : null/
+  );
+  assert.doesNotMatch(dashboardSettingsFormSource, /space-y-2/);
   assert.match(dashboardSettingsFormSource, /onDragLeave=\{handleOrderListDragLeave\}/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /if \(!draggedId \|\| draggedId === hamsterId\) \{\s*setDropTarget\(null\);\s*return;/
+  );
   assert.match(dashboardSettingsFormSource, /function handleDragEnd\(\) \{[\s\S]*setDropTarget\(null\)/);
   assert.match(dashboardSettingsFormSource, /function handleDrop\([\s\S]*setDropTarget\(null\)/);
 });

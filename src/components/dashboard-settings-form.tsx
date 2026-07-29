@@ -432,7 +432,7 @@ export function DashboardSettingsForm({
             ) : (
               <ol
                 ref={orderListRef}
-                className="space-y-2"
+                className="flex flex-col gap-2"
                 aria-describedby="dashboard-hamster-order-help"
                 onDragLeave={handleOrderListDragLeave}
               >
@@ -440,6 +440,10 @@ export function DashboardSettingsForm({
                   const isDropTarget = dropTarget?.hamsterId === hamster.id;
                   const isDropBefore = isDropTarget && dropTarget.position === "before";
                   const isDropAfter = isDropTarget && dropTarget.position === "after";
+                  const dropSpacingClass = isDropBefore ? "sm:mt-2" : isDropAfter ? "sm:mb-2" : "";
+                  const beforeLinePositionClass = index === 0 ? "sm:-top-1.5" : "sm:-top-2.5";
+                  const afterLinePositionClass =
+                    index === orderedHamsters.length - 1 ? "sm:-bottom-1.5" : "sm:-bottom-2.5";
                   const isDragging = draggedId === hamster.id;
                   const isRecentlyMoved = recentMove?.hamsterId === hamster.id;
                   const rowStateClass = isDropTarget
@@ -458,7 +462,7 @@ export function DashboardSettingsForm({
                       data-drop-position={isDropTarget ? dropTarget.position : undefined}
                       data-dragging={isDragging ? "true" : undefined}
                       data-recently-moved={isRecentlyMoved ? "true" : undefined}
-                      className={`relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border p-3 transition-[background-color,border-color,opacity] duration-200 motion-reduce:transition-none sm:flex sm:flex-row sm:items-center sm:justify-between ${rowStateClass} ${
+                      className={`relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border p-3 transition-[margin,background-color,border-color,opacity] duration-150 ease-out motion-reduce:transition-none sm:flex sm:flex-row sm:items-center sm:justify-between ${rowStateClass} ${dropSpacingClass} ${
                         isDragging ? "opacity-50" : "opacity-100"
                       }`}
                     >
@@ -466,14 +470,14 @@ export function DashboardSettingsForm({
                         <span
                           aria-hidden="true"
                           data-drop-indicator="before"
-                          className="pointer-events-none absolute -top-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm"
+                          className={`pointer-events-none absolute -top-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm ${beforeLinePositionClass}`}
                         />
                       ) : null}
                       {isDropAfter ? (
                         <span
                           aria-hidden="true"
                           data-drop-indicator="after"
-                          className="pointer-events-none absolute -bottom-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm"
+                          className={`pointer-events-none absolute -bottom-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm ${afterLinePositionClass}`}
                         />
                       ) : null}
                       <div className="flex min-w-0 items-center gap-3">
