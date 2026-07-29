@@ -23,6 +23,7 @@ const settingsActionSource = readFileSync(
   new URL("../src/app/actions/settings.ts", import.meta.url),
   "utf8"
 );
+const tailwindConfigSource = readFileSync(new URL("../tailwind.config.ts", import.meta.url), "utf8");
 
 test("ハムスター選択方式はコンボボックス式とプルダウン式を維持する", () => {
   assert.equal(normalizeHamsterSelectorMode("combobox"), "combobox");
@@ -119,19 +120,85 @@ test("並び順一覧は選択済みだけをDOM順に描画し、末尾追加�
   assert.match(dashboardSettingsFormSource, /\{selectedIds\.map\(\(id\) =>\s*\(\s*<input key=\{id\} type="hidden" name="hamsterIds"/);
 });
 
-test("並び順操作は専用ハンドル、上下ボタン、無効状態と支援技術向け説明を持つ", () => {
+test("並び順操作はPC用ハンドル、全画面幅用の上下ボタン、無効状態と支援技術向け説明を持つ", () => {
+  assert.doesNotMatch(tailwindConfigSource, /screens\s*:/);
   assert.match(dashboardSettingsFormSource, /draggable[\s\S]*aria-roledescription="並び替えハンドル"/);
-  assert.match(dashboardSettingsFormSource, /aria-keyshortcuts="Alt\+ArrowUp Alt\+ArrowDown"/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /className="hidden h-11 w-11[^"]*sm:inline-flex"/
+  );
   assert.match(dashboardSettingsFormSource, /disabled=\{index === 0\}/);
   assert.match(dashboardSettingsFormSource, /disabled=\{index === orderedHamsters\.length - 1\}/);
   assert.match(dashboardSettingsFormSource, /aria-label=\{`\$\{hamster\.name\}を上へ移動`\}/);
   assert.match(dashboardSettingsFormSource, /aria-label=\{`\$\{hamster\.name\}を下へ移動`\}/);
+  assert.match(dashboardSettingsFormSource, /className=\{`inline-flex h-11 w-11/);
   assert.match(dashboardSettingsFormSource, /aria-live="polite"/);
-  assert.match(dashboardSettingsFormSource, /touch-none/);
   assert.match(
     dashboardSettingsFormSource,
     /formRef\.current\?\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/
   );
+});
+
+test("Altと矢印キーのショートカット処理・属性・説明を残さない", () => {
+  assert.doesNotMatch(dashboardSettingsFormSource, /KeyboardEvent/);
+  assert.doesNotMatch(dashboardSettingsFormSource, /handleDragHandleKeyDown/);
+  assert.doesNotMatch(dashboardSettingsFormSource, /onKeyDown=/);
+  assert.doesNotMatch(dashboardSettingsFormSource, /aria-keyshortcuts/);
+  assert.doesNotMatch(dashboardSettingsFormSource, /Alt \+ ↑|Alt\+Arrow/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /PCではドラッグハンドルまたは上下ボタンで並び替えられます。スマートフォンでは上下ボタンを使用してください。/
+  );
+});
+
+test("PCホバー、移動直後、ドロップ先の順に行の視覚状態を強める", () => {
+  assert.match(
+    dashboardSettingsFormSource,
+    /const rowStateClass = isDropTarget\s*\?\s*"border-moss bg-moss\/10 ring-2 ring-moss\/20"\s*:\s*isRecentlyMoved\s*\?\s*"border-moss\/70 bg-moss\/10"\s*:\s*"border-slate-200 bg-white sm:hover:border-slate-300 sm:hover:bg-slate-50"/
+  );
+  assert.match(dashboardSettingsFormSource, /transition-colors duration-200 motion-reduce:transition-none/);
+});
+
+test("上下移動成功時は行と押した方向のボタンを800ms強調し、連続操作の古い解除を無効化する", () => {
+  const feedbackDuration = dashboardSettingsFormSource.match(/MOVE_FEEDBACK_DURATION_MS = (\d+)/);
+  assert.ok(feedbackDuration);
+  assert.ok(Number(feedbackDuration[1]) >= 600);
+  assert.ok(Number(feedbackDuration[1]) <= 1000);
+  assert.match(dashboardSettingsFormSource, /type RecentMove = \{\s*hamsterId: string;\s*direction: MoveDirection;/);
+  assert.match(dashboardSettingsFormSource, /setRecentMove\(\{ hamsterId, direction \}\)/);
+  assert.match(dashboardSettingsFormSource, /data-recently-moved=\{isRecentlyMoved \? "true" : undefined\}/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /data-move-feedback=\{isRecentlyMoved && recentMove\.direction === "up" \? "true" : undefined\}/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /data-move-feedback=\{isRecentlyMoved && recentMove\.direction === "down" \? "true" : undefined\}/
+  );
+  assert.match(dashboardSettingsFormSource, /feedbackSequenceRef\.current === feedbackSequence/);
+  assert.match(dashboardSettingsFormSource, /window\.clearTimeout\(feedbackTimerRef\.current\)/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /const targetId = selectedIds\[currentIndex \+ offset\];\s*if \(!targetId\) \{\s*return;\s*\}[\s\S]*startMoveFeedback/
+  );
+});
+
+test("上下移動はFLIP方式で位置をアニメーションし、動きを抑制する設定では実行しない", () => {
+  assert.match(dashboardSettingsFormSource, /pendingOrderPositionsRef\.current = captureOrderPositions\(\)/);
+  assert.match(dashboardSettingsFormSource, /useLayoutEffect\(\(\) =>/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /const offsetY = previousTop - row\.getBoundingClientRect\(\)\.top/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /row\.animate\(\s*\[\{ transform: `translateY\(\$\{offsetY\}px\)` \}, \{ transform: "translateY\(0\)" \}\]/
+  );
+  assert.match(dashboardSettingsFormSource, /row\.getAnimations\(\)\.forEach\(\(animation\) => animation\.cancel\(\)\)/);
 });
 
 test("サーバー検証は重複、他Household相当の未知ID、件数超過・不足を拒否する", () => {

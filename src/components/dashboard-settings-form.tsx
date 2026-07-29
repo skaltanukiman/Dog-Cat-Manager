@@ -1,8 +1,8 @@
 "use client";
 
 import { ArrowDown, ArrowUp, GripVertical, LayoutDashboard, Save, Search } from "lucide-react";
-import type { ChangeEvent, DragEvent, KeyboardEvent } from "react";
-import { useMemo, useRef, useState } from "react";
+import type { ChangeEvent, DragEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { saveSettings } from "@/app/actions/settings";
 import { DisplaySettingsSection } from "@/components/display-settings-section";
@@ -42,6 +42,11 @@ type DashboardSettingsFormProps = {
 };
 
 type HamsterStatusFilter = "all" | "active" | "inactive" | "selected";
+type MoveDirection = "up" | "down";
+type RecentMove = {
+  hamsterId: string;
+  direction: MoveDirection;
+};
 
 const HAMSTER_STATUS_FILTERS: { value: HamsterStatusFilter; label: string }[] = [
   { value: "all", label: "すべて" },
@@ -49,6 +54,8 @@ const HAMSTER_STATUS_FILTERS: { value: HamsterStatusFilter; label: string }[] = 
   { value: "inactive", label: "管理外" },
   { value: "selected", label: "選択済み" }
 ];
+const MOVE_FEEDBACK_DURATION_MS = 800;
+const MOVE_ANIMATION_DURATION_MS = 240;
 
 function clampBoardCount(value: number) {
   return Math.min(MAX_DASHBOARD_BOARD_COUNT, Math.max(MIN_DASHBOARD_BOARD_COUNT, Math.trunc(value)));
@@ -70,8 +77,13 @@ export function DashboardSettingsForm({
   const [statusFilter, setStatusFilter] = useState<HamsterStatusFilter>("all");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [recentMove, setRecentMove] = useState<RecentMove | null>(null);
   const [orderAnnouncement, setOrderAnnouncement] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const orderListRef = useRef<HTMLOListElement>(null);
+  const pendingOrderPositionsRef = useRef<Map<string, number> | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
+  const feedbackSequenceRef = useRef(0);
   const hamsterIds = useMemo(() => hamsters.map((hamster) => hamster.id), [hamsters]);
   const hamsterById = useMemo(() => new Map(hamsters.map((hamster) => [hamster.id, hamster])), [hamsters]);
   const needsSelection = hamsters.length > limit;
@@ -99,6 +111,45 @@ export function DashboardSettingsForm({
   }, [hamsters, searchTerm, selectedIdSet, statusFilter]);
   const targetCount = Math.min(limit, hamsters.length);
   const canSave = selectedIds.length === targetCount;
+
+  useLayoutEffect(() => {
+    const previousPositions = pendingOrderPositionsRef.current;
+    pendingOrderPositionsRef.current = null;
+
+    if (!previousPositions || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]").forEach((row) => {
+      const hamsterId = row.dataset.dashboardHamsterOrderId;
+      const previousTop = hamsterId ? previousPositions.get(hamsterId) : undefined;
+
+      if (previousTop === undefined) {
+        return;
+      }
+
+      const offsetY = previousTop - row.getBoundingClientRect().top;
+      if (offsetY === 0) {
+        return;
+      }
+
+      row.animate(
+        [{ transform: `translateY(${offsetY}px)` }, { transform: "translateY(0)" }],
+        {
+          duration: MOVE_ANIMATION_DURATION_MS,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+        }
+      );
+    });
+  }, [selectedIds]);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current !== null) {
+        window.clearTimeout(feedbackTimerRef.current);
+      }
+    };
+  }, []);
 
   function handleLimitChange(event: ChangeEvent<HTMLInputElement>) {
     const nextLimit = clampBoardCount(event.currentTarget.valueAsNumber || MIN_DASHBOARD_BOARD_COUNT);
@@ -128,23 +179,77 @@ export function DashboardSettingsForm({
     const hamster = hamsterById.get(hamsterId);
 
     if (nextIndex < 0 || !nextIds.some((id, index) => id !== selectedIds[index])) {
-      return;
+      return false;
     }
 
     setSelectedIds(nextIds);
     setOrderAnnouncement(`${hamster?.name ?? "ハムスター"}を${nextIndex + 1}番目へ移動しました。`);
     notifyOrderChanged();
+    return true;
   }
 
-  function moveByOffset(hamsterId: string, offset: -1 | 1) {
+  function captureOrderPositions() {
+    const positions = new Map<string, number>();
+
+    orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]").forEach((row) => {
+      const hamsterId = row.dataset.dashboardHamsterOrderId;
+      if (hamsterId) {
+        positions.set(hamsterId, row.getBoundingClientRect().top);
+      }
+      row.getAnimations().forEach((animation) => animation.cancel());
+    });
+
+    return positions;
+  }
+
+  function startMoveFeedback(hamsterId: string, direction: MoveDirection) {
+    const feedbackSequence = feedbackSequenceRef.current + 1;
+    feedbackSequenceRef.current = feedbackSequence;
+
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current);
+    }
+
+    setRecentMove({ hamsterId, direction });
+    feedbackTimerRef.current = window.setTimeout(() => {
+      if (feedbackSequenceRef.current === feedbackSequence) {
+        setRecentMove(null);
+        feedbackTimerRef.current = null;
+      }
+    }, MOVE_FEEDBACK_DURATION_MS);
+  }
+
+  function clearMoveFeedback() {
+    feedbackSequenceRef.current += 1;
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
+    setRecentMove(null);
+  }
+
+  function moveByOffset(hamsterId: string, direction: MoveDirection) {
     const currentIndex = selectedIds.indexOf(hamsterId);
+    const offset = direction === "up" ? -1 : 1;
     const targetId = selectedIds[currentIndex + offset];
-    if (targetId) {
-      updateOrder(hamsterId, targetId);
+    if (!targetId) {
+      return;
+    }
+
+    pendingOrderPositionsRef.current = captureOrderPositions();
+    if (updateOrder(hamsterId, targetId)) {
+      startMoveFeedback(hamsterId, direction);
+    } else {
+      pendingOrderPositionsRef.current = null;
     }
   }
 
   function handleDragStart(event: DragEvent<HTMLButtonElement>, hamsterId: string) {
+    pendingOrderPositionsRef.current = null;
+    orderListRef.current
+      ?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]")
+      .forEach((row) => row.getAnimations().forEach((animation) => animation.cancel()));
+    clearMoveFeedback();
     setDraggedId(hamsterId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", hamsterId);
@@ -173,15 +278,6 @@ export function DashboardSettingsForm({
   function handleDragEnd() {
     setDraggedId(null);
     setDropTargetId(null);
-  }
-
-  function handleDragHandleKeyDown(event: KeyboardEvent<HTMLButtonElement>, hamsterId: string) {
-    if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) {
-      return;
-    }
-
-    event.preventDefault();
-    moveByOffset(hamsterId, event.key === "ArrowUp" ? -1 : 1);
   }
 
   return (
@@ -260,7 +356,7 @@ export function DashboardSettingsForm({
                 ダッシュボードカードの並び順
               </h4>
               <p id="dashboard-hamster-order-help" className="text-xs leading-5 text-slate-500">
-                ドラッグハンドル、上下ボタン、またはハンドル上で Alt + ↑ / ↓ を使って並び替えられます。
+                PCではドラッグハンドルまたは上下ボタンで並び替えられます。スマートフォンでは上下ボタンを使用してください。
               </p>
             </div>
 
@@ -269,28 +365,35 @@ export function DashboardSettingsForm({
                 表示対象のハムスターはいません。
               </div>
             ) : (
-              <ol className="space-y-2" aria-describedby="dashboard-hamster-order-help">
-                {orderedHamsters.map((hamster, index) => (
-                  <li
-                    key={hamster.id}
-                    onDragOver={(event) => handleDragOver(event, hamster.id)}
-                    onDrop={(event) => handleDrop(event, hamster.id)}
-                    data-drop-target={dropTargetId === hamster.id ? "true" : undefined}
-                    className={`flex min-w-0 flex-col gap-3 rounded-md border bg-white p-3 transition sm:flex-row sm:items-center sm:justify-between ${
-                      dropTargetId === hamster.id ? "border-moss ring-2 ring-moss/20" : "border-slate-200"
-                    }`}
-                  >
+              <ol ref={orderListRef} className="space-y-2" aria-describedby="dashboard-hamster-order-help">
+                {orderedHamsters.map((hamster, index) => {
+                  const isDropTarget = dropTargetId === hamster.id;
+                  const isRecentlyMoved = recentMove?.hamsterId === hamster.id;
+                  const rowStateClass = isDropTarget
+                    ? "border-moss bg-moss/10 ring-2 ring-moss/20"
+                    : isRecentlyMoved
+                      ? "border-moss/70 bg-moss/10"
+                      : "border-slate-200 bg-white sm:hover:border-slate-300 sm:hover:bg-slate-50";
+
+                  return (
+                    <li
+                      key={hamster.id}
+                      data-dashboard-hamster-order-id={hamster.id}
+                      onDragOver={(event) => handleDragOver(event, hamster.id)}
+                      onDrop={(event) => handleDrop(event, hamster.id)}
+                      data-drop-target={isDropTarget ? "true" : undefined}
+                      data-recently-moved={isRecentlyMoved ? "true" : undefined}
+                      className={`flex min-w-0 flex-col gap-3 rounded-md border p-3 transition-colors duration-200 motion-reduce:transition-none sm:flex-row sm:items-center sm:justify-between ${rowStateClass}`}
+                    >
                     <div className="flex min-w-0 items-center gap-3">
                       <button
                         type="button"
                         draggable
                         onDragStart={(event) => handleDragStart(event, hamster.id)}
                         onDragEnd={handleDragEnd}
-                        onKeyDown={(event) => handleDragHandleKeyDown(event, hamster.id)}
                         aria-label={`${hamster.name}をドラッグして並び替え`}
                         aria-roledescription="並び替えハンドル"
-                        aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-                        className="inline-flex h-11 w-11 shrink-0 touch-none cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+                        className="hidden h-11 w-11 shrink-0 cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 sm:inline-flex"
                       >
                         <GripVertical className="h-5 w-5" aria-hidden />
                       </button>
@@ -306,24 +409,35 @@ export function DashboardSettingsForm({
                       <button
                         type="button"
                         disabled={index === 0}
-                        onClick={() => moveByOffset(hamster.id, -1)}
+                        onClick={() => moveByOffset(hamster.id, "up")}
                         aria-label={`${hamster.name}を上へ移動`}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+                        data-move-feedback={isRecentlyMoved && recentMove.direction === "up" ? "true" : undefined}
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                          isRecentlyMoved && recentMove.direction === "up"
+                            ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
+                        }`}
                       >
                         <ArrowUp className="h-4 w-4" aria-hidden />
                       </button>
                       <button
                         type="button"
                         disabled={index === orderedHamsters.length - 1}
-                        onClick={() => moveByOffset(hamster.id, 1)}
+                        onClick={() => moveByOffset(hamster.id, "down")}
                         aria-label={`${hamster.name}を下へ移動`}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+                        data-move-feedback={isRecentlyMoved && recentMove.direction === "down" ? "true" : undefined}
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                          isRecentlyMoved && recentMove.direction === "down"
+                            ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
+                        }`}
                       >
                         <ArrowDown className="h-4 w-4" aria-hidden />
                       </button>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ol>
             )}
             <p className="sr-only" aria-live="polite" aria-atomic="true">
