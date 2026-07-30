@@ -38,13 +38,13 @@ export default async function CleaningPage({
   const includeInactive = getParam(params.includeInactive) === "1";
   const {
     hamsters,
+    totalHamsters,
     selectedHamster,
     recordsByDate,
     hamsterSelectorMode,
     cleaningMobileDefaultDateFilter
   } = await getCleaningPageData(getParam(params.hamsterId), yearMonth, includeInactive);
-  const selectableHamsters = includeInactive ? hamsters : hamsters.filter((hamster) => hamster.isActive);
-  const hasSelectableHamsters = selectableHamsters.length > 0;
+  const hasSelectableHamsters = hamsters.length > 0;
   const days = getDaysInMonth(yearMonth);
   const currentMonth = currentMonthInputJst();
   const today = todayInputJst();
@@ -81,7 +81,7 @@ export default async function CleaningPage({
 
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
 
-      {hamsters.length === 0 ? (
+      {totalHamsters === 0 ? (
         canEdit ? <EmptyState title="先にハムスターを登録してください。" href="/hamsters" actionLabel="登録する" /> : (
           <p className="rounded-md border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
             閲覧できるハムスターはまだ登録されていません。
@@ -100,7 +100,7 @@ export default async function CleaningPage({
                 mode={hamsterSelectorMode}
                 name="hamsterId"
                 selectedId={selectedHamster?.id ?? ""}
-                options={selectableHamsters}
+                options={hamsters}
                 disabled={!hasSelectableHamsters}
                 emptyMessage="条件に一致するハムスターはいません"
               />

@@ -132,9 +132,9 @@ export function getDashboardHamsterSelectionError(
 }
 
 export function pickDashboardHamsters<T extends { id: string }>(
-  hamsters: T[],
+  hamsters: readonly T[],
   boardCount: number,
-  selectedIds: string[]
+  selectedIds: readonly string[]
 ) {
   const hamsterById = new Map(hamsters.map((hamster) => [hamster.id, hamster]));
   return normalizeDashboardHamsterIds(
@@ -142,4 +142,45 @@ export function pickDashboardHamsters<T extends { id: string }>(
     boardCount,
     selectedIds
   ).map((id) => hamsterById.get(id) as T);
+}
+
+function compareRemainingHamsters(
+  left: { id: string; isActive: boolean; createdAt: Date },
+  right: { id: string; isActive: boolean; createdAt: Date }
+) {
+  if (left.isActive !== right.isActive) {
+    return left.isActive ? -1 : 1;
+  }
+
+  const createdAtDifference = left.createdAt.getTime() - right.createdAt.getTime();
+  if (createdAtDifference !== 0) {
+    return createdAtDifference;
+  }
+
+  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+}
+
+export function orderHamstersForSelector<
+  T extends { id: string; isActive: boolean; createdAt: Date }
+>(
+  hamsters: readonly T[],
+  boardCount: number | null | undefined,
+  selectedIds: readonly string[],
+  includeInactive: boolean
+) {
+  const dashboardHamsters = pickDashboardHamsters(
+    hamsters,
+    normalizeDashboardBoardCount(boardCount),
+    selectedIds
+  );
+  const dashboardHamsterIds = new Set(dashboardHamsters.map((hamster) => hamster.id));
+  const isSelectable = (hamster: T) => includeInactive || hamster.isActive;
+  const remainingHamsters = hamsters
+    .filter((hamster) => isSelectable(hamster) && !dashboardHamsterIds.has(hamster.id))
+    .sort(compareRemainingHamsters);
+
+  return [
+    ...dashboardHamsters.filter(isSelectable),
+    ...remainingHamsters
+  ];
 }

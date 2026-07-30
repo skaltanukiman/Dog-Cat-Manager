@@ -1,5 +1,5 @@
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
-import { normalizeHamsterSelectorMode } from "@/lib/dashboard-settings";
+import { normalizeHamsterSelectorMode, orderHamstersForSelector } from "@/lib/dashboard-settings";
 import { toDateInputValue } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { formatRecordTime } from "@/lib/record-time";
@@ -26,15 +26,23 @@ export type RecordPageFilters = {
 
 export async function getRecordsPageData(filters: RecordPageFilters) {
   const context = await getRequiredHouseholdContext();
-  const [hamsters, setting, savedMemoryTagRows] = await Promise.all([
+  const [allHamsters, setting, savedMemoryTagRows] = await Promise.all([
     prisma.hamster.findMany({
       where: { householdId: context.household.id },
-      orderBy: [{ isActive: "desc" }, { createdAt: "asc" }],
-      select: { id: true, name: true, isActive: true }
+      orderBy: { createdAt: "asc" },
+      select: { id: true, name: true, isActive: true, createdAt: true }
     }),
     prisma.appSetting.findUnique({
       where: { userId_householdId: { userId: context.user.id, householdId: context.household.id } },
-      select: { hamsterSelectorMode: true, recordTimelineDefaultScope: true }
+      select: {
+        hamsterSelectorMode: true,
+        recordTimelineDefaultScope: true,
+        dashboardBoardCount: true,
+        dashboardHamsters: {
+          orderBy: { sortOrder: "asc" },
+          select: { hamsterId: true }
+        }
+      }
     }),
     prisma.savedMemoryTag.findMany({
       where: { householdId: context.household.id },
@@ -42,6 +50,12 @@ export async function getRecordsPageData(filters: RecordPageFilters) {
       select: { name: true }
     })
   ]);
+  const hamsters = orderHamstersForSelector(
+    allHamsters,
+    setting?.dashboardBoardCount,
+    setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [],
+    true
+  );
   const scope = resolveRecordScope({
     hasScopeParam: filters.hasScopeParam,
     scopeParam: filters.scopeParam,

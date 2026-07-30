@@ -6,6 +6,7 @@ import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-setting
 import {
   normalizeDashboardBoardCount,
   normalizeHamsterSelectorMode,
+  orderHamstersForSelector,
   pickDashboardHamsters
 } from "@/lib/dashboard-settings";
 import { monthDateRange, parseDateInput, toDateInputValue } from "@/lib/date";
@@ -163,11 +164,34 @@ export async function getHamsterManagementData() {
 
 export async function getHamsterOptions() {
   const context = await getRequiredHouseholdContext();
+  const [hamsters, setting] = await Promise.all([
+    prisma.hamster.findMany({
+      where: { householdId: context.household.id },
+      orderBy: { createdAt: "asc" }
+    }),
+    prisma.appSetting.findUnique({
+      where: {
+        userId_householdId: {
+          userId: context.user.id,
+          householdId: context.household.id
+        }
+      },
+      select: {
+        dashboardBoardCount: true,
+        dashboardHamsters: {
+          orderBy: { sortOrder: "asc" },
+          select: { hamsterId: true }
+        }
+      }
+    })
+  ]);
 
-  return prisma.hamster.findMany({
-    where: { householdId: context.household.id },
-    orderBy: { createdAt: "asc" }
-  });
+  return orderHamstersForSelector(
+    hamsters,
+    setting?.dashboardBoardCount,
+    setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [],
+    true
+  );
 }
 
 export async function getHamsterSelectorMode() {
@@ -185,10 +209,6 @@ export async function getHamsterSelectorMode() {
   return normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
 }
 
-function getSelectableHamsters<T extends { isActive: boolean }>(hamsters: T[], includeInactive: boolean) {
-  return includeInactive ? hamsters : hamsters.filter((hamster) => hamster.isActive);
-}
-
 function pickSelectedHamster<T extends { id: string; isActive: boolean }>(
   hamsters: T[],
   selectedHamsterId: string | undefined
@@ -202,7 +222,7 @@ function pickSelectedHamster<T extends { id: string; isActive: boolean }>(
 
 export async function getCleaningPageData(selectedHamsterId: string | undefined, yearMonth: string, includeInactive: boolean) {
   const context = await getRequiredHouseholdContext();
-  const [hamsters, setting] = await Promise.all([
+  const [allHamsters, setting] = await Promise.all([
     prisma.hamster.findMany({
       where: { householdId: context.household.id },
       orderBy: { createdAt: "asc" }
@@ -214,20 +234,34 @@ export async function getCleaningPageData(selectedHamsterId: string | undefined,
           householdId: context.household.id
         }
       },
-      select: { hamsterSelectorMode: true, cleaningMobileDefaultDateFilter: true }
+      select: {
+        hamsterSelectorMode: true,
+        cleaningMobileDefaultDateFilter: true,
+        dashboardBoardCount: true,
+        dashboardHamsters: {
+          orderBy: { sortOrder: "asc" },
+          select: { hamsterId: true }
+        }
+      }
     })
   ]);
   const hamsterSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
   const cleaningMobileDefaultDateFilter = normalizeCleaningMobileDefaultDateFilter(
     setting?.cleaningMobileDefaultDateFilter
   );
-  const selectableHamsters = getSelectableHamsters(hamsters, includeInactive);
+  const hamsters = orderHamstersForSelector(
+    allHamsters,
+    setting?.dashboardBoardCount,
+    setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [],
+    includeInactive
+  );
   // 初期表示では自動選択せず、URLで明示されたハムスターだけを表示対象にする。
-  const selectedHamster = pickSelectedHamster(selectableHamsters, selectedHamsterId);
+  const selectedHamster = pickSelectedHamster(hamsters, selectedHamsterId);
 
   if (!selectedHamster) {
     return {
       hamsters,
+      totalHamsters: allHamsters.length,
       selectedHamster,
       recordsByDate: new Map(),
       hamsterSelectorMode,
@@ -249,6 +283,7 @@ export async function getCleaningPageData(selectedHamsterId: string | undefined,
 
   return {
     hamsters,
+    totalHamsters: allHamsters.length,
     selectedHamster,
     hamsterSelectorMode,
     cleaningMobileDefaultDateFilter,
@@ -312,7 +347,7 @@ export async function getWeightPageData({
   includeInactive: boolean;
 }) {
   const context = await getRequiredHouseholdContext();
-  const [hamsters, setting] = await Promise.all([
+  const [allHamsters, setting] = await Promise.all([
     prisma.hamster.findMany({
       where: { householdId: context.household.id },
       orderBy: { createdAt: "asc" }
@@ -324,17 +359,30 @@ export async function getWeightPageData({
           householdId: context.household.id
         }
       },
-      select: { hamsterSelectorMode: true }
+      select: {
+        hamsterSelectorMode: true,
+        dashboardBoardCount: true,
+        dashboardHamsters: {
+          orderBy: { sortOrder: "asc" },
+          select: { hamsterId: true }
+        }
+      }
     })
   ]);
   const hamsterSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
-  const selectableHamsters = getSelectableHamsters(hamsters, includeInactive);
+  const hamsters = orderHamstersForSelector(
+    allHamsters,
+    setting?.dashboardBoardCount,
+    setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [],
+    includeInactive
+  );
   // 初期表示では自動選択せず、URLで明示されたハムスターだけを表示対象にする。
-  const selectedHamster = pickSelectedHamster(selectableHamsters, selectedHamsterId);
+  const selectedHamster = pickSelectedHamster(hamsters, selectedHamsterId);
 
   if (!selectedHamster) {
     return {
       hamsters,
+      totalHamsters: allHamsters.length,
       selectedHamster,
       hamsterSelectorMode,
       records: [],
@@ -389,6 +437,7 @@ export async function getWeightPageData({
 
   return {
     hamsters,
+    totalHamsters: allHamsters.length,
     selectedHamster,
     hamsterSelectorMode,
     records,

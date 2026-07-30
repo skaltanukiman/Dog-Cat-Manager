@@ -138,7 +138,17 @@ export default async function WeightsPage({
   const sortTarget = normalizeWeightSortTarget(getParam(params.sort));
   const sortDirection = normalizeSortDirection(getParam(params.direction));
   const includeInactive = getParam(params.includeInactive) === "1";
-  const { hamsters, selectedHamster, hamsterSelectorMode, records, chartRecords, monthOptions, selectedMonth, pagination } =
+  const {
+    hamsters,
+    totalHamsters,
+    selectedHamster,
+    hamsterSelectorMode,
+    records,
+    chartRecords,
+    monthOptions,
+    selectedMonth,
+    pagination
+  } =
     await getWeightPageData({
       selectedHamsterId: getParam(params.hamsterId),
       filterMode,
@@ -150,8 +160,7 @@ export default async function WeightsPage({
       sortDirection,
       includeInactive
     });
-  const selectableHamsters = includeInactive ? hamsters : hamsters.filter((hamster) => hamster.isActive);
-  const hasSelectableHamsters = selectableHamsters.length > 0;
+  const hasSelectableHamsters = hamsters.length > 0;
   const monthSelectOptions =
     selectedMonth && !monthOptions.includes(selectedMonth) ? [selectedMonth, ...monthOptions] : monthOptions;
 
@@ -206,7 +215,7 @@ export default async function WeightsPage({
 
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
 
-      {hamsters.length === 0 ? (
+      {totalHamsters === 0 ? (
         canEdit ? <EmptyState title="先にハムスターを登録してください。" href="/hamsters" actionLabel="登録する" /> : (
           <p className="rounded-md border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
             閲覧できるハムスターはまだ登録されていません。
@@ -228,7 +237,7 @@ export default async function WeightsPage({
                 mode={hamsterSelectorMode}
                 name="hamsterId"
                 selectedId={selectedHamster?.id ?? ""}
-                options={selectableHamsters}
+                options={hamsters}
                 disabled={!hasSelectableHamsters}
                 emptyMessage="条件に一致するハムスターはいません"
               />

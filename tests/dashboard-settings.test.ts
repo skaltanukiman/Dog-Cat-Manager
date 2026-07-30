@@ -9,6 +9,7 @@ import {
   moveDashboardHamsterId,
   normalizeDashboardHamsterIds,
   normalizeHamsterSelectorMode,
+  orderHamstersForSelector,
   pickDashboardHamsters,
   resizeDashboardHamsterIds,
   toggleDashboardHamsterId
@@ -103,6 +104,86 @@ test("管理状態に関係なく保存順でダッシュボード対象を返�
   assert.deepEqual(
     pickDashboardHamsters(hamsters, 3, ["inactive-1", "active-2", "active-1"]).map((hamster) => hamster.id),
     ["inactive-1", "active-2", "active-1"]
+  );
+});
+
+test("通常画面の候補はダッシュボード順を先頭にし、残りを管理状態・登録日時・ID順に並べる", () => {
+  const hamsters = [
+    { id: "B", isActive: true, createdAt: new Date("2026-01-01T00:00:00.000Z") },
+    { id: "E", isActive: false, createdAt: new Date("2026-01-02T00:00:00.000Z") },
+    { id: "D", isActive: true, createdAt: new Date("2026-01-03T00:00:00.000Z") },
+    { id: "C", isActive: false, createdAt: new Date("2026-01-04T00:00:00.000Z") },
+    { id: "A", isActive: true, createdAt: new Date("2026-01-05T00:00:00.000Z") }
+  ];
+
+  const ordered = orderHamstersForSelector(hamsters, 2, ["C", "A"], true);
+
+  assert.deepEqual(ordered.map((hamster) => hamster.id), ["C", "A", "B", "D", "E"]);
+  assert.equal(new Set(ordered.map((hamster) => hamster.id)).size, ordered.length);
+  assert.deepEqual(hamsters.map((hamster) => hamster.id), ["B", "E", "D", "C", "A"]);
+});
+
+test("管理外を含めない候補は管理外を除外してダッシュボード上の管理中順を維持する", () => {
+  const hamsters = [
+    { id: "B", isActive: true, createdAt: new Date("2026-01-01T00:00:00.000Z") },
+    { id: "C", isActive: false, createdAt: new Date("2026-01-02T00:00:00.000Z") },
+    { id: "A", isActive: true, createdAt: new Date("2026-01-03T00:00:00.000Z") },
+    { id: "D", isActive: true, createdAt: new Date("2026-01-04T00:00:00.000Z") }
+  ];
+
+  assert.deepEqual(
+    orderHamstersForSelector(hamsters, 3, ["C", "A", "D"], false).map((hamster) => hamster.id),
+    ["A", "D", "B"]
+  );
+});
+
+test("ダッシュボード外で登録日時が同じ候補はID昇順にする", () => {
+  const createdAt = new Date("2026-01-01T00:00:00.000Z");
+  const hamsters = [
+    { id: "dashboard", isActive: true, createdAt },
+    { id: "active-z", isActive: true, createdAt },
+    { id: "inactive-a", isActive: false, createdAt },
+    { id: "active-a", isActive: true, createdAt },
+    { id: "inactive-z", isActive: false, createdAt }
+  ];
+
+  assert.deepEqual(
+    orderHamstersForSelector(hamsters, 1, ["dashboard"], true).map((hamster) => hamster.id),
+    ["dashboard", "active-a", "active-z", "inactive-a", "inactive-z"]
+  );
+});
+
+test("保存IDの不足・無効ID・設定なしはダッシュボードと同じ補完規則を使う", () => {
+  const hamsters = ["A", "B", "C", "D"].map((id, index) => ({
+    id,
+    isActive: true,
+    createdAt: new Date(Date.UTC(2026, 0, index + 1))
+  }));
+
+  assert.deepEqual(
+    orderHamstersForSelector(hamsters, 3, ["deleted", "C"], true).map((hamster) => hamster.id),
+    ["C", "A", "B", "D"]
+  );
+  assert.deepEqual(
+    orderHamstersForSelector(hamsters, undefined, [], true).map((hamster) => hamster.id),
+    ["A", "B", "C", "D"]
+  );
+});
+
+test("同じ共有グループでもユーザーごとの保存順から異なる候補順を生成する", () => {
+  const hamsters = ["A", "B", "C"].map((id, index) => ({
+    id,
+    isActive: true,
+    createdAt: new Date(Date.UTC(2026, 0, index + 1))
+  }));
+
+  assert.deepEqual(
+    orderHamstersForSelector(hamsters, 2, ["C", "A"], true).map((hamster) => hamster.id),
+    ["C", "A", "B"]
+  );
+  assert.deepEqual(
+    orderHamstersForSelector(hamsters, 2, ["B", "C"], true).map((hamster) => hamster.id),
+    ["B", "C", "A"]
   );
 });
 

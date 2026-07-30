@@ -86,6 +86,7 @@
 
 ## 健康・通院・思い出記録
 
+- **ハムスター候補順:** 現在のユーザー・Householdの `AppSetting` にある表示件数と `DashboardHamster.sortOrder` を使い、`orderHamstersForSelector` で実際のダッシュボード対象を先頭、その後を管理中・管理外、登録日時、IDの順にする。記録画面は従来どおり管理外も候補に含める。
 - **画面または URL:** `/records`、認証付き思い出画像 `/api/records/[id]/image`。
 - **健康記録の任意時刻:** `RecordTimeInput` が「時間も記録する」選択時だけ `recordTime` を入力・編集し、`src/lib/record-time.ts` が `HH:mm` と0〜1439分を相互変換する。登録・編集Actionは保存時点のサーバー側JST現在時刻と比較し、当日の未来時刻を拒否する。`HamsterRecord.recordTimeMinutes` は健康記録だけが使用する任意の `SmallInt` で、migration `20260717120000_add_health_record_time` が範囲制約と並び順用索引を追加する。カードは日付、任意時刻、登録者の順に表示し、同日内は時刻ありの降順、時刻なし、作成日時、IDの順で取得する。
 - **主なコンポーネント:** `RecordCreateForms`、`MemoryTagInput`、`RecordTimeline`、`RecordImageField`、`RecordKeywordInput`、`HamsterSelectorInput`、`AutoSubmitFilterForm`、`FilterClearButton`、`DirtySubmitButton`、`UnsavedChangesGuard`、`StatusMessage`。登録フォームは健康・通院・思い出で分け、閲覧は同じカード型タイムラインへ統合する。表示範囲は「選択中のハムスター」と「グループ全体」を切り替える。URLに `scope` があれば明示値、不正値なら安全側の `hamster`、未指定ならユーザー・Household別の `AppSetting.recordTimelineDefaultScope`（未設定・不正値は `hamster`）を使う。画面内の切替・フィルター・ページング・記録更新削除後は `scope=hamster` / `scope=household` を明示して現在の範囲を維持し、他画面から単純に `/records` を開く場合だけ保存済み初期値を適用する。グループ表示でもハムスター選択は新規登録先・個別表示へ戻る対象として維持する。`HamsterSelectorInput` はプルダウン・検索可能コンボボックスの両方式で外部 `selectedId` の変更を表示値と送信用IDへ同期し、props同期だけでは自動送信しない。`RecordTimeline` はカード本体を白に統一して本文・写真・編集フォームの可読性を保ち、健康・体調をグリーン、通院をブルー、思い出をローズ系の左アクセント・丸アイコン・淡い種類バッジで区別する。グループ表示では各カードに `scope=hamster` を明示したハムスター名の個別タイムラインリンクを表示する。文字ラベルとアイコンも併用し、色だけには依存しない。作成フォームはServer Actionをクライアントイベントから呼び、エラーをフォーム内へ表示して画面位置・文字・選択・チェック・画像選択を保持する。`RecordImageField` は元画像10MB上限とMIME形式を送信前に検証し、保存時に2MB以下へ自動圧縮することを案内する。`MemoryTagInput` は「、」またはカンマ区切りのタグ入力、Householdの保存済みタグと初期候補のボタン入力、思い出保存時のタグ同時保存チェックに対応する。保存済みタグは1件以上ある場合だけ件数付きの折りたたみを表示し、展開後の削除ボタンからモーダルを開いて複数候補を一括削除できる。初期候補も1件以上ある場合だけ見出しと候補一覧を表示する。削除後は入力内容とスクロール位置を保ったまま候補を更新する。対象ハムスターは常に選択済みとして空選択を表示しない。フィルターは選択・日付・チェックを即時、文字入力を短いデバウンス後に自動適用し、クリア時は入力値を初期化して再取得する。キーワードは平仮名・カタカナ等の正規化、`#` 入力時の現在の表示範囲にある使用済みタグ候補に対応する。カンマ区切りではキーワード同士・タグ同士をOR、キーワード群とタグ群をANDで検索する。いずれもスクロール位置と表示範囲を維持する。
@@ -98,6 +99,7 @@
 
 ## 体重履歴
 
+- **ハムスター候補順:** `getWeightPageData` が現在のユーザー・Householdのダッシュボード設定と `orderHamstersForSelector` を使って候補順を確定する。「管理外も含む」がオフなら管理外を除外した候補だけを返す。
 - **画面または URL:** `/weights`。
 - **主なコンポーネント:** `WeightHistoryList`、`WeightChart`、`HamsterSelectorInput`、`AutoSubmitInput` / `AutoSubmitSelect`、`SelectionActionBar`。
 - **Server Action または API:** `createWeightRecord`、`updateWeightRecord`、`deleteWeightRecord`、`deleteWeightRecords`（`src/app/actions/weights.ts`）。
@@ -109,6 +111,7 @@
 
 ## 体重 CSV エクスポート
 
+- **ハムスター候補順:** `getHamsterOptions` が現在のユーザー・Householdのダッシュボード設定と `orderHamstersForSelector` を使って管理外を含む候補順を確定する。画面の「すべて」は候補配列より前に置く。
 - **画面または URL:** `/weights/export`、ダウンロード API `/export/weights`、旧 `/export` はリダイレクト。
 - **主なコンポーネント:** `WeightCsvExportForm`、`HamsterSelectorInput`、`StatusMessage`。画面全体は Server Component のまま、列選択とダウンロード可否だけを小さな Client Component で管理する。
 - **Server Action または API:** `src/app/(app)/export/weights/route.ts` の GET（CSV Response）。
@@ -131,6 +134,7 @@
 
 ## 掃除記録
 
+- **ハムスター候補順:** `getCleaningPageData` が現在のユーザー・Householdのダッシュボード設定と `orderHamstersForSelector` を使って候補順を確定する。「管理外も含む」がオフなら管理外を除外した候補だけを返す。
 - **画面または URL:** `/cleaning`。
 - **主なコンポーネント:** `CleaningMobileForm`、`CleaningMobileDayFilter`、`HamsterSelectorInput`、`DirtySubmitButton`、`MobileDirtySaveArea`、`UnsavedChangesGuard`。スマホ用日付プルダウンと入力カードは、サーバーで確定した同じ初期選択値を受け取り、その後は既存の変更イベントで選択状態を同期する。
 - **Server Action または API:** `saveCleaningMonth`（`src/app/actions/cleaning.ts`）。

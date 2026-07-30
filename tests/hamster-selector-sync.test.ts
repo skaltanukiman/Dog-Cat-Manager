@@ -103,3 +103,62 @@ test("共通選択コンポーネントを使う記録・清掃・体重・CSV�
   assert.match(selector, /if \(!autoSubmit\)/);
   assert.match(selector, /<select[\s\S]*onChange=\{\(event\) => setSelectValue\(event\.currentTarget\.value\)\}/);
 });
+
+test("通常画面は現在ユーザー・Householdのダッシュボード設定で共通の候補順を生成する", () => {
+  const queries = source("src/lib/queries.ts");
+  const recordQueries = source("src/lib/record-queries.ts");
+  const cleaningPage = source("src/app/(app)/cleaning/page.tsx");
+  const weightsPage = source("src/app/(app)/weights/page.tsx");
+  const getOptionsSource = queries.slice(
+    queries.indexOf("export async function getHamsterOptions"),
+    queries.indexOf("export async function getHamsterSelectorMode")
+  );
+  const cleaningSource = queries.slice(
+    queries.indexOf("export async function getCleaningPageData"),
+    queries.indexOf("type WeightHistoryFilterMode")
+  );
+  const weightSource = queries.slice(
+    queries.indexOf("export async function getWeightPageData"),
+    queries.indexOf("export async function getDashboardSettingsPageData")
+  );
+
+  for (const querySource of [getOptionsSource, cleaningSource, weightSource, recordQueries]) {
+    assert.match(
+      querySource,
+      /userId_householdId:\s*\{\s*userId: context\.user\.id,\s*householdId: context\.household\.id\s*\}/
+    );
+    assert.match(querySource, /dashboardBoardCount: true/);
+    assert.match(querySource, /dashboardHamsters:\s*\{\s*orderBy: \{ sortOrder: "asc" \}/);
+    assert.match(querySource, /orderHamstersForSelector\(/);
+    assert.match(querySource, /setting\?\.dashboardHamsters\.map\(\(entry\) => entry\.hamsterId\) \?\? \[\]/);
+  }
+
+  assert.match(cleaningSource, /orderHamstersForSelector\([\s\S]*includeInactive\s*\)/);
+  assert.match(weightSource, /orderHamstersForSelector\([\s\S]*includeInactive\s*\)/);
+  assert.match(recordQueries, /orderHamstersForSelector\([\s\S]*true\s*\)/);
+  assert.match(cleaningPage, /options=\{hamsters\}/);
+  assert.match(weightsPage, /options=\{hamsters\}/);
+});
+
+test("プルダウンとコンボボックスは候補配列順を共有し、検索時にも並べ替えない", () => {
+  const selector = source("src/components/hamster-selector-input.tsx");
+  const combobox = source("src/components/hamster-combobox.tsx");
+  const filteredOptionsSource = combobox.slice(
+    combobox.indexOf("const filteredOptions"),
+    combobox.indexOf("function syncHiddenInput")
+  );
+
+  assert.match(selector, /options\.map\(\(hamster\) =>/);
+  assert.match(filteredOptionsSource, /comboboxOptions\.filter\(/);
+  assert.doesNotMatch(filteredOptionsSource, /\.sort\(/);
+});
+
+test("CSVの「すべて」は候補先頭を維持し、デモ取得処理には通常画面の候補順を適用しない", () => {
+  const combobox = source("src/components/hamster-combobox.tsx");
+  const exportForm = source("src/components/weight-csv-export-form.tsx");
+  const demoQueries = source("src/lib/public-demo-queries.ts");
+
+  assert.match(combobox, /\[\{ id: "", name: allOptionLabel,[\s\S]*\}, \.\.\.options\]/);
+  assert.match(exportForm, /allOptionLabel="すべて"/);
+  assert.doesNotMatch(demoQueries, /orderHamstersForSelector/);
+});
