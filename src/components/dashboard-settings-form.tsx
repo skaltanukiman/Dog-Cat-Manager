@@ -499,7 +499,7 @@ export function DashboardSettingsForm({
             ) : (
               <ol
                 ref={orderListRef}
-                className="flex max-h-[var(--dashboard-order-max-height)] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain [--dashboard-order-max-height:min(55vh,28rem)] supports-[height:1dvh]:[--dashboard-order-max-height:min(55dvh,28rem)] sm:max-h-none sm:overflow-visible sm:overscroll-auto"
+                className="-mr-11 flex max-h-[var(--dashboard-order-max-height)] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain [--dashboard-order-max-height:min(55vh,28rem)] supports-[height:1dvh]:[--dashboard-order-max-height:min(55dvh,28rem)] sm:mr-0 sm:max-h-none sm:overflow-visible sm:overscroll-auto"
                 aria-describedby="dashboard-hamster-order-help"
                 onDragOver={handleOrderListDragOver}
                 onDragLeave={handleOrderListDragLeave}
@@ -530,7 +530,7 @@ export function DashboardSettingsForm({
                       data-drop-position={isDropTarget ? dropTarget.position : undefined}
                       data-dragging={isDragging ? "true" : undefined}
                       data-recently-moved={isRecentlyMoved ? "true" : undefined}
-                      className={`relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-md border p-2 transition-[margin,background-color,border-color,opacity] duration-150 ease-out motion-reduce:transition-none sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-3 ${rowStateClass} ${dropSpacingClass} ${
+                      className={`relative grid min-w-0 shrink-0 grid-cols-[2.75rem_minmax(0,1fr)] items-stretch gap-0 overflow-hidden rounded-md border p-0 transition-[margin,background-color,border-color,opacity] duration-150 ease-out motion-reduce:transition-none sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:overflow-visible sm:p-3 ${rowStateClass} ${dropSpacingClass} ${
                         isDragging ? "opacity-50" : "opacity-100"
                       }`}
                     >
@@ -548,71 +548,77 @@ export function DashboardSettingsForm({
                           className={`pointer-events-none absolute -bottom-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm ${afterLinePositionClass}`}
                         />
                       ) : null}
-                      <div className="contents sm:flex sm:min-w-0 sm:items-center sm:gap-3">
-                        <button
-                          type="button"
-                          draggable
-                          onDragStart={(event) => handleDragStart(event, hamster.id)}
-                          onDragEnd={handleDragEnd}
-                          aria-label={`${hamster.name}をドラッグして並び替え`}
-                          aria-roledescription="並び替えハンドル"
-                          className="hidden h-11 w-11 shrink-0 cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 sm:inline-flex"
-                        >
-                          <GripVertical className="h-5 w-5" aria-hidden />
-                        </button>
-                        <span className="contents sm:min-w-0 sm:block">
-                          <span className="col-span-2 block break-words text-sm font-semibold text-ink sm:col-auto">
-                            <span
-                              aria-label={`${index + 1}番目`}
-                              className="mr-1 inline-flex min-w-5 items-center justify-center rounded bg-slate-100 px-1 py-0.5 text-[11px] font-semibold leading-4 tabular-nums text-slate-600 sm:hidden"
-                            >
-                              {index + 1}
+                      <span
+                        data-dashboard-hamster-rank
+                        aria-label={`${index + 1}番目`}
+                        className="flex min-w-0 items-center justify-center border-r border-slate-200 px-1 text-sm font-bold tabular-nums text-slate-600 sm:hidden"
+                      >
+                        {index + 1}
+                      </span>
+                      <div
+                        data-dashboard-hamster-row-content
+                        className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2 sm:contents"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <button
+                            type="button"
+                            draggable
+                            onDragStart={(event) => handleDragStart(event, hamster.id)}
+                            onDragEnd={handleDragEnd}
+                            aria-label={`${hamster.name}をドラッグして並び替え`}
+                            aria-roledescription="並び替えハンドル"
+                            className="hidden h-11 w-11 shrink-0 cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 sm:inline-flex"
+                          >
+                            <GripVertical className="h-5 w-5" aria-hidden />
+                          </button>
+                          <span className="min-w-0">
+                            <span className="block break-words text-sm font-semibold text-ink">
+                              {hamster.name}
                             </span>
-                            {hamster.name}
+                            <span
+                              className={`mt-1 inline-flex shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${
+                                hamster.isActive
+                                  ? "bg-straw/40 text-slate-700"
+                                  : "bg-slate-200 text-slate-600"
+                              }`}
+                            >
+                              {hamster.isActive ? "管理中" : "管理外"}
+                            </span>
                           </span>
-                          <span
-                            className={`inline-flex shrink-0 justify-self-start whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold sm:mt-1 ${
-                              hamster.isActive
-                                ? "bg-straw/40 text-slate-700"
-                                : "bg-slate-200 text-slate-600"
+                        </div>
+
+                        <div className="grid shrink-0 grid-cols-2 gap-2" aria-label={`${hamster.name}の並び替え操作`}>
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => moveByOffset(hamster.id, "up")}
+                            aria-label={`${hamster.name}を上へ移動`}
+                            data-move-feedback={isRecentlyMoved && recentMove.direction === "up" ? "true" : undefined}
+                            className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                              isRecentlyMoved && recentMove.direction === "up"
+                                ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
                             }`}
                           >
-                            {hamster.isActive ? "管理中" : "管理外"}
-                          </span>
-                        </span>
+                            <ArrowUp className="h-4 w-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === orderedHamsters.length - 1}
+                            onClick={() => moveByOffset(hamster.id, "down")}
+                            aria-label={`${hamster.name}を下へ移動`}
+                            data-move-feedback={isRecentlyMoved && recentMove.direction === "down" ? "true" : undefined}
+                            className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                              isRecentlyMoved && recentMove.direction === "down"
+                                ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
+                            }`}
+                          >
+                            <ArrowDown className="h-4 w-4" aria-hidden />
+                          </button>
+                        </div>
                       </div>
-
-                      <div className="grid shrink-0 grid-cols-2 gap-2" aria-label={`${hamster.name}の並び替え操作`}>
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={() => moveByOffset(hamster.id, "up")}
-                          aria-label={`${hamster.name}を上へ移動`}
-                          data-move-feedback={isRecentlyMoved && recentMove.direction === "up" ? "true" : undefined}
-                          className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
-                            isRecentlyMoved && recentMove.direction === "up"
-                              ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
-                              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
-                          }`}
-                        >
-                          <ArrowUp className="h-4 w-4" aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === orderedHamsters.length - 1}
-                          onClick={() => moveByOffset(hamster.id, "down")}
-                          aria-label={`${hamster.name}を下へ移動`}
-                          data-move-feedback={isRecentlyMoved && recentMove.direction === "down" ? "true" : undefined}
-                          className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
-                            isRecentlyMoved && recentMove.direction === "down"
-                              ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
-                              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
-                          }`}
-                        >
-                          <ArrowDown className="h-4 w-4" aria-hidden />
-                        </button>
-                    </div>
-                  </li>
+                    </li>
                   );
                 })}
               </ol>
