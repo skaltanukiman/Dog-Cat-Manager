@@ -25,6 +25,7 @@ import {
 } from "@/lib/dashboard-settings";
 import type { RecordScope } from "@/lib/records";
 import { normalizeSearchText } from "@/lib/search";
+import { getDashboardOrderScrollTop } from "@/lib/dashboard-order-scroll";
 
 type HamsterOption = {
   id: string;
@@ -53,6 +54,10 @@ type RecentMove = {
 type DropTarget = {
   hamsterId: string;
   position: DashboardDropPosition;
+};
+type PendingScrollRequest = {
+  hamsterId: string;
+  sequence: number;
 };
 
 const HAMSTER_STATUS_FILTERS: { value: HamsterStatusFilter; label: string }[] = [
@@ -89,8 +94,9 @@ export function DashboardSettingsForm({
   const formRef = useRef<HTMLFormElement>(null);
   const orderListRef = useRef<HTMLOListElement>(null);
   const pendingOrderPositionsRef = useRef<Map<string, number> | null>(null);
-  const pendingScrollHamsterIdRef = useRef<string | null>(null);
+  const pendingScrollRequestRef = useRef<PendingScrollRequest | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
+  const scrollRequestSequenceRef = useRef(0);
   const feedbackTimerRef = useRef<number | null>(null);
   const feedbackSequenceRef = useRef(0);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
@@ -125,9 +131,9 @@ export function DashboardSettingsForm({
 
   useLayoutEffect(() => {
     const previousPositions = pendingOrderPositionsRef.current;
-    const pendingScrollHamsterId = pendingScrollHamsterIdRef.current;
+    const pendingScrollRequest = pendingScrollRequestRef.current;
     pendingOrderPositionsRef.current = null;
-    pendingScrollHamsterIdRef.current = null;
+    pendingScrollRequestRef.current = null;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (previousPositions && !reducedMotion) {
@@ -156,7 +162,7 @@ export function DashboardSettingsForm({
 
     const orderList = orderListRef.current;
     if (
-      !pendingScrollHamsterId ||
+      !pendingScrollRequest ||
       !orderList ||
       !window.matchMedia("(max-width: 639px)").matches ||
       orderList.scrollHeight <= orderList.clientHeight
@@ -166,22 +172,43 @@ export function DashboardSettingsForm({
 
     const movedRow = Array.from(
       orderList.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]")
-    ).find((row) => row.dataset.dashboardHamsterOrderId === pendingScrollHamsterId);
+    ).find((row) => row.dataset.dashboardHamsterOrderId === pendingScrollRequest.hamsterId);
     if (!movedRow) {
       return;
     }
 
-    if (scrollFrameRef.current !== null) {
-      window.cancelAnimationFrame(scrollFrameRef.current);
-    }
-    scrollFrameRef.current = window.requestAnimationFrame(() => {
-      movedRow.scrollIntoView({
-        block: "nearest",
-        inline: "nearest",
-        behavior: reducedMotion ? "auto" : "smooth"
+    const scheduleScroll = () => {
+      if (pendingScrollRequest.sequence !== scrollRequestSequenceRef.current) {
+        return;
+      }
+
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+      scrollFrameRef.current = window.requestAnimationFrame(() => {
+        if (pendingScrollRequest.sequence !== scrollRequestSequenceRef.current) {
+          scrollFrameRef.current = null;
+          return;
+        }
+
+        const rowLayoutTop = movedRow.offsetTop - orderList.offsetTop;
+        const nextScrollTop = getDashboardOrderScrollTop({
+          currentScrollTop: orderList.scrollTop,
+          maxScrollTop: orderList.scrollHeight - orderList.clientHeight,
+          listTop: orderList.scrollTop,
+          listBottom: orderList.scrollTop + orderList.clientHeight,
+          rowTop: rowLayoutTop,
+          rowBottom: rowLayoutTop + movedRow.offsetHeight
+        });
+
+        if (nextScrollTop !== orderList.scrollTop) {
+          orderList.scrollTo({ top: nextScrollTop, behavior: reducedMotion ? "auto" : "smooth" });
+        }
+        scrollFrameRef.current = null;
       });
-      scrollFrameRef.current = null;
-    });
+    };
+
+    scheduleScroll();
   }, [selectedIds]);
 
   useEffect(() => {
@@ -295,13 +322,23 @@ export function DashboardSettingsForm({
     }
 
     pendingOrderPositionsRef.current = captureOrderPositions();
-    pendingScrollHamsterIdRef.current = hamsterId;
+    const scrollRequestSequence = scrollRequestSequenceRef.current + 1;
+    pendingScrollRequestRef.current = { hamsterId, sequence: scrollRequestSequence };
     const position = direction === "up" ? "before" : "after";
     if (updateOrder(hamsterId, targetId, position)) {
+      scrollRequestSequenceRef.current = scrollRequestSequence;
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+      const orderList = orderListRef.current;
+      if (orderList && window.matchMedia("(max-width: 639px)").matches) {
+        orderList.scrollTo({ top: orderList.scrollTop, behavior: "auto" });
+      }
       startMoveFeedback(hamsterId, direction);
     } else {
       pendingOrderPositionsRef.current = null;
-      pendingScrollHamsterIdRef.current = null;
+      pendingScrollRequestRef.current = null;
     }
   }
 

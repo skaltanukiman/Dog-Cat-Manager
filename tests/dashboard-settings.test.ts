@@ -14,6 +14,7 @@ import {
   resizeDashboardHamsterIds,
   toggleDashboardHamsterId
 } from "../src/lib/dashboard-settings";
+import { getDashboardOrderScrollTop } from "../src/lib/dashboard-order-scroll";
 
 const dashboardSettingsFormSource = readFileSync(
   new URL("../src/components/dashboard-settings-form.tsx", import.meta.url),
@@ -303,11 +304,19 @@ test("並び順一覧はスマートフォンだけ高さを制限し、順位�
   assert.doesNotMatch(dashboardSettingsFormSource, /mr-1 inline-flex min-w-5/);
 });
 
-test("スマートフォンの上下移動後は更新済みDOMの対象行を必要な分だけスクロール追従する", () => {
-  assert.match(dashboardSettingsFormSource, /const pendingScrollHamsterIdRef = useRef<string \| null>\(null\)/);
+test("スマートフォンの並び順スクロール量は上側・下側のはみ出しだけを補正する", () => {
+  const commonMetrics = { currentScrollTop: 100, maxScrollTop: 500, listTop: 200, listBottom: 500 };
+
+  assert.equal(getDashboardOrderScrollTop({ ...commonMetrics, rowTop: 170, rowBottom: 250 }), 70);
+  assert.equal(getDashboardOrderScrollTop({ ...commonMetrics, rowTop: 450, rowBottom: 540 }), 140);
+  assert.equal(getDashboardOrderScrollTop({ ...commonMetrics, rowTop: 250, rowBottom: 450 }), 100);
+});
+
+test("スマートフォンの上下移動後はtransformの影響を受けないレイアウト位置で即座にスクロール追従する", () => {
+  assert.match(dashboardSettingsFormSource, /const pendingScrollRequestRef = useRef<PendingScrollRequest \| null>\(null\)/);
   assert.match(
     dashboardSettingsFormSource,
-    /function moveByOffset[\s\S]*pendingScrollHamsterIdRef\.current = hamsterId;[\s\S]*updateOrder/
+    /function moveByOffset[\s\S]*pendingScrollRequestRef\.current = \{ hamsterId, sequence: scrollRequestSequence \};[\s\S]*scrollRequestSequenceRef\.current = scrollRequestSequence/
   );
   assert.match(
     dashboardSettingsFormSource,
@@ -315,7 +324,23 @@ test("スマートフォンの上下移動後は更新済みDOMの対象行を�
   );
   assert.match(
     dashboardSettingsFormSource,
-    /window\.requestAnimationFrame\(\(\) => \{[\s\S]*movedRow\.scrollIntoView\(\{[\s\S]*block: "nearest",[\s\S]*behavior: reducedMotion \? "auto" : "smooth"/
+    /const rowLayoutTop = movedRow\.offsetTop - orderList\.offsetTop;/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /getDashboardOrderScrollTop\(\{[\s\S]*listTop: orderList\.scrollTop,[\s\S]*listBottom: orderList\.scrollTop \+ orderList\.clientHeight,[\s\S]*rowTop: rowLayoutTop,[\s\S]*rowBottom: rowLayoutTop \+ movedRow\.offsetHeight/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /orderList\.scrollTo\(\{ top: nextScrollTop, behavior: reducedMotion \? "auto" : "smooth" \}\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /pendingScrollRequest\.sequence !== scrollRequestSequenceRef\.current/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /window\.matchMedia\("\(max-width: 639px\)"\)\.matches[\s\S]*orderList\.scrollTo\(\{ top: orderList\.scrollTop, behavior: "auto" \}\)/
   );
 });
 
