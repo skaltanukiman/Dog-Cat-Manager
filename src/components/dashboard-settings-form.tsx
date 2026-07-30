@@ -89,6 +89,8 @@ export function DashboardSettingsForm({
   const formRef = useRef<HTMLFormElement>(null);
   const orderListRef = useRef<HTMLOListElement>(null);
   const pendingOrderPositionsRef = useRef<Map<string, number> | null>(null);
+  const pendingScrollHamsterIdRef = useRef<string | null>(null);
+  const scrollFrameRef = useRef<number | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
   const feedbackSequenceRef = useRef(0);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
@@ -123,32 +125,62 @@ export function DashboardSettingsForm({
 
   useLayoutEffect(() => {
     const previousPositions = pendingOrderPositionsRef.current;
+    const pendingScrollHamsterId = pendingScrollHamsterIdRef.current;
     pendingOrderPositionsRef.current = null;
+    pendingScrollHamsterIdRef.current = null;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (!previousPositions || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (previousPositions && !reducedMotion) {
+      orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]").forEach((row) => {
+        const hamsterId = row.dataset.dashboardHamsterOrderId;
+        const previousTop = hamsterId ? previousPositions.get(hamsterId) : undefined;
+
+        if (previousTop === undefined) {
+          return;
+        }
+
+        const offsetY = previousTop - row.getBoundingClientRect().top;
+        if (offsetY === 0) {
+          return;
+        }
+
+        row.animate(
+          [{ transform: `translateY(${offsetY}px)` }, { transform: "translateY(0)" }],
+          {
+            duration: MOVE_ANIMATION_DURATION_MS,
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+          }
+        );
+      });
+    }
+
+    const orderList = orderListRef.current;
+    if (
+      !pendingScrollHamsterId ||
+      !orderList ||
+      !window.matchMedia("(max-width: 639px)").matches ||
+      orderList.scrollHeight <= orderList.clientHeight
+    ) {
       return;
     }
 
-    orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]").forEach((row) => {
-      const hamsterId = row.dataset.dashboardHamsterOrderId;
-      const previousTop = hamsterId ? previousPositions.get(hamsterId) : undefined;
+    const movedRow = Array.from(
+      orderList.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]")
+    ).find((row) => row.dataset.dashboardHamsterOrderId === pendingScrollHamsterId);
+    if (!movedRow) {
+      return;
+    }
 
-      if (previousTop === undefined) {
-        return;
-      }
-
-      const offsetY = previousTop - row.getBoundingClientRect().top;
-      if (offsetY === 0) {
-        return;
-      }
-
-      row.animate(
-        [{ transform: `translateY(${offsetY}px)` }, { transform: "translateY(0)" }],
-        {
-          duration: MOVE_ANIMATION_DURATION_MS,
-          easing: "cubic-bezier(0.22, 1, 0.36, 1)"
-        }
-      );
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+    }
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      movedRow.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: reducedMotion ? "auto" : "smooth"
+      });
+      scrollFrameRef.current = null;
     });
   }, [selectedIds]);
 
@@ -156,6 +188,9 @@ export function DashboardSettingsForm({
     return () => {
       if (feedbackTimerRef.current !== null) {
         window.clearTimeout(feedbackTimerRef.current);
+      }
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
       }
       dragPreviewRef.current?.remove();
       dragPreviewRef.current = null;
@@ -260,11 +295,13 @@ export function DashboardSettingsForm({
     }
 
     pendingOrderPositionsRef.current = captureOrderPositions();
+    pendingScrollHamsterIdRef.current = hamsterId;
     const position = direction === "up" ? "before" : "after";
     if (updateOrder(hamsterId, targetId, position)) {
       startMoveFeedback(hamsterId, direction);
     } else {
       pendingOrderPositionsRef.current = null;
+      pendingScrollHamsterIdRef.current = null;
     }
   }
 
@@ -442,9 +479,14 @@ export function DashboardSettingsForm({
             data-dashboard-hamster-order
           >
             <div className="space-y-1">
-              <h4 id="dashboard-hamster-order-heading" className="text-base font-bold text-ink">
-                ダッシュボードカードの並び順
-              </h4>
+              <div className="flex items-start justify-between gap-3">
+                <h4 id="dashboard-hamster-order-heading" className="text-base font-bold text-ink">
+                  ダッシュボードカードの並び順
+                </h4>
+                <span className="shrink-0 whitespace-nowrap text-xs font-medium tabular-nums text-slate-500 sm:hidden">
+                  全{orderedHamsters.length}件
+                </span>
+              </div>
               <p id="dashboard-hamster-order-help" className="text-xs leading-5 text-slate-500">
                 PCではドラッグハンドルまたは上下ボタンで並び替えられます。スマートフォンでは上下ボタンを使用してください。
               </p>
@@ -457,7 +499,7 @@ export function DashboardSettingsForm({
             ) : (
               <ol
                 ref={orderListRef}
-                className="flex flex-col gap-2"
+                className="flex max-h-[var(--dashboard-order-max-height)] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain [--dashboard-order-max-height:min(55vh,28rem)] supports-[height:1dvh]:[--dashboard-order-max-height:min(55dvh,28rem)] sm:max-h-none sm:overflow-visible sm:overscroll-auto"
                 aria-describedby="dashboard-hamster-order-help"
                 onDragOver={handleOrderListDragOver}
                 onDragLeave={handleOrderListDragLeave}
@@ -488,7 +530,7 @@ export function DashboardSettingsForm({
                       data-drop-position={isDropTarget ? dropTarget.position : undefined}
                       data-dragging={isDragging ? "true" : undefined}
                       data-recently-moved={isRecentlyMoved ? "true" : undefined}
-                      className={`relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border p-3 transition-[margin,background-color,border-color,opacity] duration-150 ease-out motion-reduce:transition-none sm:flex sm:flex-row sm:items-center sm:justify-between ${rowStateClass} ${dropSpacingClass} ${
+                      className={`relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-md border p-2 transition-[margin,background-color,border-color,opacity] duration-150 ease-out motion-reduce:transition-none sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-3 ${rowStateClass} ${dropSpacingClass} ${
                         isDragging ? "opacity-50" : "opacity-100"
                       }`}
                     >
@@ -506,7 +548,7 @@ export function DashboardSettingsForm({
                           className={`pointer-events-none absolute -bottom-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm ${afterLinePositionClass}`}
                         />
                       ) : null}
-                      <div className="flex min-w-0 items-center gap-3">
+                      <div className="contents sm:flex sm:min-w-0 sm:items-center sm:gap-3">
                         <button
                           type="button"
                           draggable
@@ -518,10 +560,18 @@ export function DashboardSettingsForm({
                         >
                           <GripVertical className="h-5 w-5" aria-hidden />
                         </button>
-                        <span className="min-w-0">
-                          <span className="block break-words text-sm font-semibold text-ink">{hamster.name}</span>
+                        <span className="contents sm:min-w-0 sm:block">
+                          <span className="col-span-2 block break-words text-sm font-semibold text-ink sm:col-auto">
+                            <span
+                              aria-label={`${index + 1}番目`}
+                              className="mr-1 inline-flex min-w-5 items-center justify-center rounded bg-slate-100 px-1 py-0.5 text-[11px] font-semibold leading-4 tabular-nums text-slate-600 sm:hidden"
+                            >
+                              {index + 1}
+                            </span>
+                            {hamster.name}
+                          </span>
                           <span
-                            className={`mt-1 inline-flex shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${
+                            className={`inline-flex shrink-0 justify-self-start whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold sm:mt-1 ${
                               hamster.isActive
                                 ? "bg-straw/40 text-slate-700"
                                 : "bg-slate-200 text-slate-600"

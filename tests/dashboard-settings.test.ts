@@ -260,10 +260,16 @@ test("並び順操作はPC用ハンドル、全画面幅用の上下ボタン、
 test("並び順の行はスマホで情報と操作を2列に並べ、PCでは既存の横並びを維持する", () => {
   assert.match(
     dashboardSettingsFormSource,
-    /grid-cols-\[minmax\(0,1fr\)_auto\] items-center gap-3[\s\S]*sm:flex sm:flex-row sm:items-center sm:justify-between/
+    /grid-cols-\[minmax\(0,1fr\)_auto\] items-center gap-x-3 gap-y-1[\s\S]*sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-3/
   );
-  assert.match(dashboardSettingsFormSource, /<div className="flex min-w-0 items-center gap-3">/);
-  assert.match(dashboardSettingsFormSource, /<span className="block break-words text-sm font-semibold text-ink">/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /<div className="contents sm:flex sm:min-w-0 sm:items-center sm:gap-3">/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /<span className="contents sm:min-w-0 sm:block">[\s\S]*<span className="col-span-2 block break-words text-sm font-semibold text-ink sm:col-auto">[\s\S]*\{hamster\.name\}/
+  );
   assert.match(
     dashboardSettingsFormSource,
     /<div className="grid shrink-0 grid-cols-2 gap-2" aria-label=\{`\$\{hamster\.name\}の並び替え操作`\}>/
@@ -271,6 +277,41 @@ test("並び順の行はスマホで情報と操作を2列に並べ、PCでは�
   assert.doesNotMatch(dashboardSettingsFormSource, /self-end/);
   assert.match(dashboardSettingsFormSource, /className="hidden h-11 w-11[^"]*sm:inline-flex"/);
   assert.match(dashboardSettingsFormSource, /className=\{`inline-flex h-11 w-11/);
+});
+
+test("並び順一覧はスマートフォンだけ高さを制限し、順位と総件数を現在の配列順で表示する", () => {
+  assert.match(
+    dashboardSettingsFormSource,
+    /className="flex max-h-\[var\(--dashboard-order-max-height\)\] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain [^"]*sm:max-h-none sm:overflow-visible sm:overscroll-auto"/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /\[--dashboard-order-max-height:min\(55vh,28rem\)\][^"]*supports-\[height:1dvh\]:\[--dashboard-order-max-height:min\(55dvh,28rem\)\]/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /className="shrink-0 whitespace-nowrap text-xs font-medium tabular-nums text-slate-500 sm:hidden">\s*全\{orderedHamsters\.length\}件/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /\{orderedHamsters\.map\(\(hamster, index\) =>[\s\S]*aria-label=\{`\$\{index \+ 1\}番目`\}[\s\S]*tabular-nums[^"]*sm:hidden[\s\S]*\{index \+ 1\}[\s\S]*\{hamster\.name\}/
+  );
+});
+
+test("スマートフォンの上下移動後は更新済みDOMの対象行を必要な分だけスクロール追従する", () => {
+  assert.match(dashboardSettingsFormSource, /const pendingScrollHamsterIdRef = useRef<string \| null>\(null\)/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /function moveByOffset[\s\S]*pendingScrollHamsterIdRef\.current = hamsterId;[\s\S]*updateOrder/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /window\.matchMedia\("\(max-width: 639px\)"\)\.matches[\s\S]*orderList\.scrollHeight <= orderList\.clientHeight/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /window\.requestAnimationFrame\(\(\) => \{[\s\S]*movedRow\.scrollIntoView\(\{[\s\S]*block: "nearest",[\s\S]*behavior: reducedMotion \? "auto" : "smooth"/
+  );
 });
 
 test("Altと矢印キーのショートカット処理・属性・説明を残さない", () => {
@@ -366,7 +407,7 @@ test("D&Dは行の上下位置を保持し、PCでは余白の中央にbeforeま
   );
   assert.match(
     dashboardSettingsFormSource,
-    /className="flex flex-col gap-2"/
+    /className="flex max-h-\[var\(--dashboard-order-max-height\)\] flex-col gap-2/
   );
   assert.match(
     dashboardSettingsFormSource,
