@@ -5,6 +5,7 @@ import { auth, signOut } from "@/auth";
 import { AppNav } from "@/components/app-nav";
 import { HouseholdSwitcher } from "@/components/household-switcher";
 import { RealtimeRefreshListener } from "@/components/realtime-refresh-listener";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { getCurrentHouseholdSwitcherData } from "@/lib/auth-context";
 
 async function signOutAction() {
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen">
       {session?.user ? (
         <>
+          <ServiceWorkerRegistration />
           {householdSwitcherData ? (
             <RealtimeRefreshListener
               key={householdSwitcherData.context.household.id}

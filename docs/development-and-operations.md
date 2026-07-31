@@ -1253,3 +1253,79 @@ docker compose exec -T db psql -U hamster_user hamster_manager < backup.sql
 ```
 
 `.env` で DB 名やユーザー名を変更している場合は、コマンド内の `hamster_user` と `hamster_manager` も実際の値に合わせてください。
+
+## 食事・水替えのWebプッシュ通知
+
+通知はWeb標準のService Worker、Push API、Notifications API、VAPIDを使用します。HTTPS（開発用localhostを除く）が必須です。アプリ全体のオフラインキャッシュは行いません。
+
+### VAPID鍵と環境変数
+
+秘密鍵をGitへ追加せず、本番VPSの`.env`だけに保存してください。鍵は次で生成できます。
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+生成結果を次の環境変数へ設定します。`WEB_PUSH_SUBJECT`には運用者が管理する`mailto:` URIまたはHTTPS URLを指定します。実在値をREADMEやexampleファイルへ書かないでください。
+
+```env
+WEB_PUSH_VAPID_PUBLIC_KEY=
+WEB_PUSH_VAPID_PRIVATE_KEY=
+WEB_PUSH_SUBJECT=
+```
+
+鍵を変更すると既存購読を利用できなくなるため、原則として同じ鍵を継続利用します。変更時は利用者が各端末で一度解除し、再度有効にしてください。
+
+### 利用者の操作
+
+1. PWAへログインし、対象の共有グループへ切り替えて`設定`を開きます。
+2. 食事・水替えそれぞれの通知ON/OFF、完了期限、何分前に通知するかを保存します。初期値は食事22:00、水替え21:00、各30分前で、既存ユーザーはOFFです。
+3. 通知を受け取る端末ごとに`この端末で通知を有効にする`を押し、ブラウザーの許可を選びます。ページ表示だけで許可ダイアログが出ることはありません。
+
+AndroidではChrome系ブラウザーでPWAをインストールして操作します。iPhone/iPadではSafariの共有メニューからホーム画面へ追加し、追加したPWAを起動してから有効化してください。通常のSafariタブからはiOSのWebプッシュを有効化できません。拒否後は自動再要求しないため、OSまたはブラウザー設定から通知を許可してから再操作します。
+
+停止する場合は、対象共有グループの食事・水替え通知をOFFにします。特定端末だけ止める場合は、その端末で`この端末の通知を解除する`を押します。同じUserのPCとスマートフォンは別購読として管理されます。
+
+### VPS cron
+
+本番イメージには`src/lib`、`scripts`、`tsconfig.json`、実行時依存をコピーするため、CLIをappコンテナ内で実行できます。VPSのcrontabへ次を追加します。`/path/to/Hamster-Manager-Browser`は実際の配置先へ必ず書き換えてください。
+
+```cron
+* * * * * cd /path/to/Hamster-Manager-Browser && docker compose exec -T app npm run notifications:dispatch
+```
+
+手動実行と終了コードの確認例:
+
+```bash
+docker compose exec -T app npm run notifications:dispatch
+echo $?
+docker compose logs --since=10m app
+```
+
+予定時刻との完全一致ではなく、予定時刻から60分以内の未送信分を処理します。同じUser・Household・JST対象日・予定時刻はDB一意制約で1件だけ予約し、2分リース後にクラッシュ回復できます。一時失敗は5分後に最大3回再試行します。404/410を返した無効な購読だけ自動削除し、その他の一時失敗では削除しません。一部端末が成功した場合、成功端末への重複を防ぐため配信全体は成功扱いです。
+
+### 動作確認とトラブルシュート
+
+実端末では、テスト用Householdの管理中ハムスターについて当日の食事または水替えを未実施にし、期限と事前分数から算出される予定時刻を現在時刻の直前に設定してCLIを実行します。通知が届いたこと、タップで既存PWAが`/`へ移動して前面化すること、実施済みへ変更してからCLIを実行すると送信されないことを確認してください。本番の個人データや鍵をテストログへ貼り付けないでください。
+
+届かない場合は次を確認します。
+
+- HTTPS証明書、PWAインストール、端末・ブラウザーの通知許可
+- 設定画面の端末状態が`通知有効`で、対象Householdの通知がONか
+- 対象が管理中で、JST当日の`FeedingRecord` / `WaterReplacementRecord`が本当に未登録か
+- VAPID 3環境変数、cron、appコンテナの時刻、`docker compose logs`の件数・errorId
+- iOSではホーム画面から起動したPWAか、省電力・集中モードなどOS側制限がないか
+
+Service Worker更新後はブラウザーの更新検出に時間差があるため、PWAを完全に閉じて再起動し、必要ならブラウザーのサイトデータまたはService Worker登録状態を確認します。サイトデータ消去は端末購読も失うため、その後は設定画面から再登録してください。
+
+### デプロイとロールバック
+
+通常どおりDBとuploadsをバックアップし、環境変数を設定してからイメージを再構築します。起動時の`prisma migrate deploy`で通知設定、端末購読、配信履歴のmigrationが適用されます。起動後にhealthcheck、CLI手動実行、cronの順で確認します。
+
+```bash
+docker compose build app
+docker compose up -d --wait --wait-timeout 120
+docker compose exec -T app npm run notifications:dispatch
+```
+
+アプリだけを旧版へ戻しても追加テーブル・列は旧版から参照されないため、まずcronを停止して旧イメージへ戻せます。DBまで戻す場合は、先にバックアップを確保し、通知cronを停止し、旧アプリへ切り替えてから通知テーブル・enum・AppSetting追加列を慎重に削除してください。購読・配信履歴は失われ、再デプロイ後に端末の再登録が必要になる可能性があります。

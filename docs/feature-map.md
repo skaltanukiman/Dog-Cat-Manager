@@ -1,6 +1,6 @@
 # 機能マップ
 
-最終確認: 2026-07-20。Next.js App Router / Prisma / PostgreSQL 構成において、画面から Server Action・Route Handler・データアクセスまでを辿るための索引です。原則として、Household に属するデータは `getRequiredHouseholdContext()` で現在の所属を確定し、共有データ更新Actionは `getRequiredHouseholdMutationContext()` でVIEWERをDB処理前に拒否します。Action / API 側でも対象の所属・管理状態を確認します。
+最終確認: 2026-07-31。Next.js App Router / Prisma / PostgreSQL 構成において、画面から Server Action・Route Handler・データアクセスまでを辿るための索引です。原則として、Household に属するデータは `getRequiredHouseholdContext()` で現在の所属を確定し、共有データ更新Actionは `getRequiredHouseholdMutationContext()` でVIEWERをDB処理前に拒否します。Action / API 側でも対象の所属・管理状態を確認します。
 
 ## 共通の起点
 
@@ -9,7 +9,7 @@
 | 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`と境界一致する`/demo`配下だけが公開。通常画面は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` と `tests/public-demo.test.tsx` で検証する。 |
 | 現在の Household と権限 | `src/lib/authorization.ts`, `src/lib/auth-context.ts`, `src/app/actions/households.ts`, `src/components/household-switcher.tsx` | `OWNER` / `ADMIN` / `MEMBER` / `VIEWER` の閲覧・共有データ編集・招待・解除・権限変更を共通判定する。`hamster_current_household` Cookie は所属確認後にのみ更新する。 |
 | レイアウト・ナビゲーション | `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/app/demo/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | 永続するRootLayoutは全経路共通の`html`・`body`・メタデータだけを担当する。通常URLは`(app)` Route Groupに置き、同Groupのlayoutが認証・Household切替・リアルタイム監視・通常ヘッダー・main幅を構成する。デモURLは別のlayout枝で専用ヘッダー・ナビ・main幅を構成するため、クライアント遷移や戻る操作でも両シェルが混在しない。1024px 未満では主要5画面をアイコンなしの均等幅タブで表示し、設定・共有・管理は補助メニューにまとめる。`lg` 以上では従来のボタン型ナビゲーションを1行で表示する。 |
-| PWA メタデータ | `src/app/manifest.ts`, `src/app/layout.tsx`, `src/app/favicon.ico`, `src/app/apple-icon.png`, `public/icons/pwa-192.png`, `public/icons/pwa-512.png`, `public/icons/pwa-maskable-512.png` | App Router のファイル規約でブラウザー用faviconとApple用アイコンを、標準 Metadata API でインストール情報、テーマ色、通常・maskableアイコンを配信する。Service Worker、オフライン機能、プッシュ通知は持たない。`tests/manifest.test.ts` でManifestの主要項目を検証する。 |
+| PWA メタデータ・プッシュ通知 | `src/app/manifest.ts`, `src/components/service-worker-registration.tsx`, `public/sw.js`, `public/icons/*`, `src/app/api/push/subscriptions/*`, `src/lib/care-notification-dispatch.ts` | Manifestとアイコンに加え、認証済み通常画面で通知専用Service Workerを登録する。Service Workerはpush/clickだけを扱い、オフラインキャッシュは持たない。購読APIは認証・同一origin・入力上限を検証する。 |
 | 日付・検索・フォーム状態 | `src/lib/date.ts`, `src/lib/search.ts`, `src/components/form-dirty-state.ts`, `src/components/unsaved-changes-guard.tsx`, `src/components/dirty-submit-button.tsx` | 測定日・掃除日などの日付のみの値は暦日を維持し、`createdAt`・`expiresAt`など時刻を持つUTC timestampは画面表示時にJSTへ変換する。形式だけでなく実在する暦日・年月とJST日付境界を `tests/date-validation.test.ts` で検証する。未保存ガードと保存ボタン活性は一覧・掃除・体重で共有する。 |
 | エラー・ログ | `src/lib/server-errors.ts`, `src/lib/logger.ts`, `src/app/error.tsx`, `src/app/global-error.tsx`, `src/components/status-message.tsx`, `src/components/unexpected-error-panel.tsx` | 利用者には内部例外を出さず errorId を表示する。`tests/error-handling.test.ts`、`tests/logger.test.ts` を併せて更新する。 |
 | サポート・お問い合わせ | `src/app/(app)/contact`, `src/app/(app)/admin/inquiries`, `src/app/actions/contact.ts`, `src/lib/contact-inquiry-*.ts`, `src/components/contact-*.tsx` | User単位のチケットとメッセージ履歴をDBへ保存する。利用者は自分の問い合わせだけ、ADMIN / SUPER_ADMINは全件を閲覧・返信・管理できる。 |
@@ -155,6 +155,15 @@
 - **関連テスト:** `tests/dashboard-settings.test.ts`（保存順序の正規化、削除・追加・切り詰め、全件表示、管理状態、並び替え操作、サーバー検証、保存・描画経路）、`tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序・各初期表示の差分判定、重複ID検証、フォーム、保存、migration）、`tests/display-settings-section.test.tsx`（スマホ用ディスクロージャー、現在値要約、入力DOM保持、説明切替、`md`以上の常時表示、ダッシュボード設定内の表示順、dirty監視フォーム接続）、`tests/cleaning-mobile-settings.test.tsx`（衛生管理スマホ初期表示）、`tests/account-delete.test.ts`（アカウント削除の確認導線と確認UI）。
 - **関連設定:** `src/lib/dashboard-settings.ts`、`src/components/form-dirty-state.ts`、`src/components/unsaved-changes-guard.tsx`、`src/lib/records.ts`、`src/lib/cleaning-settings.ts`、`src/lib/search.ts`、`AppSetting.recordTimelineDefaultScope`、`AppSetting.cleaningMobileDefaultDateFilter`。
 - **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・各画面の初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。スマホ用ディスクロージャーは閉じてもラジオ入力をアンマウント・無効化せずCSS表示だけを切り替えるため、フォーム送信値と未保存変更検知を維持する。表示名変更は `User.name` だけを更新し、初回作成後の共有グループ名や所有権移譲後の名前とは連動させない。初回Household名だけは `defaultHouseholdName()` で生成する。ダッシュボード対象または順序に変更がある場合だけ全 `DashboardHamster` を削除し、送信順の配列インデックスを `sortOrder` として作り直すため、初期表示だけの変更では対象を作り直さない。保存順に含まれる有効IDを優先し、削除済みIDを除き、新規ハムスターを末尾へ補って表示数で切り詰める。全件表示でも登録順へ置換しない。並び順のDOM更新後は共通dirty再評価イベントでhidden inputの初期スナップショットと現在順を比較し、変更時は画面移動・beforeunload警告を有効化し、初期順へ戻した場合は解除する。順序と上限を Action と UI で一致させる。
+
+## 食事・水替えのWebプッシュ通知
+
+- **画面またはURL:** `/settings` の独立した通知設定カード。食事・水替えごとのON/OFF、JST期限時刻、事前通知分数と、この端末の購読状態・有効化・解除を扱う。iOS/iPadOSはホーム画面へ追加したPWAからだけ許可操作を行う。
+- **Service Worker / API:** `public/sw.js` は `push` と `notificationclick` のみを処理し、通知押下時は既存ウィンドウを `/` へ移動してfocusするか新規に開く。`src/app/api/push/subscriptions/route.ts` と `status/route.ts` は認証中User、利用状態、同一origin、入力サイズ・形式、endpoint所有者を検証する。`/sw.js` と通知アイコンだけを `src/proxy.ts` の公開対象とし、購読APIは公開しない。
+- **データアクセス:** `AppSetting` の通知6項目はUser×Household単位で、既存値はOFF。`WebPushSubscription` はUser×端末endpoint単位でUser削除時Cascade。`CareNotificationDispatch` はUser・Household・JST対象日・予定分の一意制約により配信予約・成功・再試行・不要を保持する。Household/User削除はCascadeし、退出・解除後は送信直前のmembership再確認で配信しない。
+- **定期CLI:** `scripts/dispatch-care-notifications.ts` / `npm run notifications:dispatch` をVPS cronから毎分呼ぶ。JST当日、予定時刻から60分以内だけを候補にし、管理中の全ハムスター（ダッシュボード非表示を含む）について `FeedingRecord` / `WaterReplacementRecord` を再確認する。2分リースで予約を短く確保してからトランザクション外で送信し、全端末が一時失敗した場合だけ5分間隔・最大3回。一部成功時は成功端末への重複回避を優先して成功扱い、404/410の購読だけ削除する。
+- **セキュリティ・ログ:** VAPID秘密鍵、endpoint、p256dh、auth、メールをレスポンス・画面・ログへ出さない。通知本文は個体名だけを件数付きで短縮する。運用ログは設定・候補・成功・skip・一時失敗・無効購読の件数と内部ID/errorIdだけを扱う。
+- **関連テスト:** `tests/care-notifications.test.ts`（設定値、JST境界、遅延窓、本文短縮、管理状態・Household・送信直前再確認、重複予約、再試行、購読所有者、無効購読、Service Worker、公開パス、UI状態）。
 
 ## アカウント削除
 

@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 
 import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
+import { normalizeCareNotificationSettings } from "@/lib/care-notifications";
 import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   normalizeDashboardBoardCount,
@@ -489,6 +490,7 @@ export async function getDashboardSettingsPageData() {
   const selectedIds = setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [];
   // 設定画面の初期表示でも、ダッシュボードと同じ補完ルールで選択状態を作る。
   const selectedHamsterIds = pickDashboardHamsters(hamsters, boardCount, selectedIds).map((hamster) => hamster.id);
+  const careNotificationSettings = normalizeCareNotificationSettings(setting);
 
   return {
     user: context.user,
@@ -496,6 +498,7 @@ export async function getDashboardSettingsPageData() {
     hamsterSelectorMode,
     recordTimelineDefaultScope,
     cleaningMobileDefaultDateFilter,
+    careNotificationSettings,
     hamsters,
     selectedHamsterIds
   };

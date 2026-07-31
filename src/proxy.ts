@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { isPublicDemoPath } from "@/lib/public-demo";
 
-const PUBLIC_PATHS = ["/login", "/invitations/accept", "/api/health"];
-const PUBLIC_PREFIXES = ["/api/auth"];
+const PUBLIC_PATHS = ["/login", "/invitations/accept", "/api/health", "/sw.js", "/manifest.webmanifest"];
+const PUBLIC_PREFIXES = ["/api/auth", "/icons/"];
 
 function isPublicPath(pathname: string) {
   return (

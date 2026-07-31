@@ -8,6 +8,7 @@ const messages: Record<string, string> = {
   updated: "更新しました。",
   deleted: "削除しました。",
   saved: "保存しました。",
+  notificationSaved: "通知設定を保存しました。",
   profileUpdated: "表示名を更新しました。",
   householdNameUpdated: "共有グループ名を更新しました。",
   householdNameUnchanged: "共有グループ名に変更はありません。",

@@ -116,6 +116,13 @@ model AppSetting {
   recordTimelineDefaultScope String      @default("hamster")
   // 衛生管理画面をスマートフォンで開いたときの日付フィルター初期値。
   cleaningMobileDefaultDateFilter String @default("today")
+  // 通知時刻は文字列ではなくJSTの0時からの経過分数として比較する。
+  feedingNotificationEnabled Boolean      @default(false)
+  feedingDeadlineMinutes     Int          @default(1320)
+  feedingNotifyBeforeMinutes Int          @default(30)
+  waterNotificationEnabled   Boolean      @default(false)
+  waterDeadlineMinutes       Int          @default(1260)
+  waterNotifyBeforeMinutes   Int          @default(30)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   dashboardHamsters   DashboardHamster[]
@@ -168,6 +175,8 @@ model User {
   contactInquiries            ContactInquiry[]       @relation("ContactInquiryUser")
   assignedContactInquiries    ContactInquiry[]       @relation("ContactInquiryAssignedAdmin")
   contactInquiryMessages      ContactInquiryMessage[] @relation("ContactInquiryMessageSender")
+  webPushSubscriptions        WebPushSubscription[]
+  careNotificationDispatches  CareNotificationDispatch[]
   createdAt                   DateTime              @default(now()) @map("created_at")
   updatedAt                   DateTime              @updatedAt @map("updated_at")
 
@@ -250,8 +259,58 @@ model Household {
   invitations           HouseholdInvitation[]
   savedMemoryTags       SavedMemoryTag[]
   activities            HouseholdActivity[]
+  careNotificationDispatches CareNotificationDispatch[]
 
   @@map("households")
+}
+
+model WebPushSubscription {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  endpoint      String    @unique @db.Text
+  p256dh        String    @db.Text
+  auth          String    @db.Text
+  userAgent     String?   @map("user_agent") @db.VarChar(512)
+  lastSuccessAt DateTime? @map("last_success_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("web_push_subscriptions")
+}
+
+model CareNotificationDispatch {
+  id              String                         @id @default(cuid())
+  userId          String                         @map("user_id")
+  householdId     String                         @map("household_id")
+  targetDate      DateTime                       @map("target_date") @db.Date
+  scheduledMinute Int                            @map("scheduled_minute")
+  status          CareNotificationDispatchStatus @default(CLAIMED)
+  attemptCount    Int                            @default(1) @map("attempt_count")
+  claimToken      String                         @map("claim_token")
+  claimedAt       DateTime                       @default(now()) @map("claimed_at")
+  leaseExpiresAt  DateTime                       @map("lease_expires_at")
+  nextAttemptAt   DateTime?                      @map("next_attempt_at")
+  lastAttemptAt   DateTime?                      @map("last_attempt_at")
+  sentAt          DateTime?                      @map("sent_at")
+  createdAt       DateTime                       @default(now()) @map("created_at")
+  updatedAt       DateTime                       @updatedAt @map("updated_at")
+  user            User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household       Household                      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, householdId, targetDate, scheduledMinute])
+  @@index([status, nextAttemptAt])
+  @@index([status, leaseExpiresAt])
+  @@index([householdId, targetDate])
+  @@map("care_notification_dispatches")
+}
+
+enum CareNotificationDispatchStatus {
+  CLAIMED
+  SENT
+  RETRYABLE
+  SKIPPED
 }
 
 model HouseholdMember {

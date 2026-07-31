@@ -1,8 +1,10 @@
 import { AccountDeleteEntryForm } from "@/components/account-delete-entry-form";
 import { ContactSupportEntry } from "@/components/contact-support-entry";
 import { DashboardSettingsForm } from "@/components/dashboard-settings-form";
+import { NotificationSettingsForm } from "@/components/notification-settings-form";
 import { StatusMessage } from "@/components/status-message";
 import { getDashboardSettingsPageData } from "@/lib/queries";
+import { getPublicVapidConfiguration } from "@/lib/web-push";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +24,11 @@ export default async function SettingsPage({
     hamsterSelectorMode,
     recordTimelineDefaultScope,
     cleaningMobileDefaultDateFilter,
+    careNotificationSettings,
     hamsters,
     selectedHamsterIds
   } = await getDashboardSettingsPageData();
+  const vapid = getPublicVapidConfiguration();
 
   return (
     <div className="space-y-6">
@@ -46,6 +50,12 @@ export default async function SettingsPage({
         cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
         hamsters={hamsters}
         selectedHamsterIds={selectedHamsterIds}
+      />
+
+      <NotificationSettingsForm
+        settings={careNotificationSettings}
+        vapidConfigured={vapid.configured}
+        vapidPublicKey={vapid.publicKey}
       />
 
       <ContactSupportEntry />
