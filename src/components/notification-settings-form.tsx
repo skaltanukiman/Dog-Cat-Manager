@@ -1,16 +1,25 @@
 "use client";
 
 import { Bell, BellOff, ChevronDown, Save, Smartphone } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 
 import { saveCareNotificationSettings } from "@/app/actions/care-notifications";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
+import {
+  commitFormDirtyState,
+  requestFormDirtyReevaluation
+} from "@/components/form-dirty-state";
 import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
+import { StatusMessage } from "@/components/status-message";
 import {
   formatMinutesAsTime,
   MAX_NOTIFY_BEFORE_MINUTES,
   type CareNotificationSettings
 } from "@/lib/care-notifications";
+import {
+  INITIAL_SETTINGS_SAVE_STATE,
+  isCommittedSettingsSave
+} from "@/lib/settings-save-state";
 
 export type DeviceState =
   | "checking"
@@ -283,6 +292,11 @@ export function NotificationSettingsForm({
   const [waterNotificationEnabled, setWaterNotificationEnabled] = useState(settings.waterNotificationEnabled);
   const [compactBodyEnabled, setCompactBodyEnabled] = useState(settings.careNotificationCompactBody);
   const [deviceState, setDeviceState] = useState<DeviceState>("checking");
+  const formRef = useRef<HTMLFormElement>(null);
+  const [saveState, saveAction, isSaving] = useActionState(
+    saveCareNotificationSettings,
+    INITIAL_SETTINGS_SAVE_STATE
+  );
   const contentId = useId();
   const summaryLabels = [
     ...getCareNotificationSummaryLabels({
@@ -292,6 +306,51 @@ export function NotificationSettingsForm({
     }),
     getDeviceNotificationSummaryLabel(deviceState)
   ];
+
+  useEffect(() => {
+    if (saveState.submissionId === 0) {
+      return;
+    }
+
+    if (isCommittedSettingsSave(saveState)) {
+      const savedSettings = saveState.savedCareNotificationSettings;
+      window.requestAnimationFrame(() => {
+        const form = formRef.current;
+        if (form && savedSettings) {
+          setFeedingNotificationEnabled(savedSettings.feedingNotificationEnabled);
+          setWaterNotificationEnabled(savedSettings.waterNotificationEnabled);
+          setCompactBodyEnabled(savedSettings.careNotificationCompactBody);
+
+          const setChecked = (name: string, checked: boolean) => {
+            const input = form.elements.namedItem(name);
+            if (input instanceof HTMLInputElement) {
+              input.checked = checked;
+              input.defaultChecked = checked;
+            }
+          };
+          const setValue = (name: string, value: string) => {
+            const input = form.elements.namedItem(name);
+            if (input instanceof HTMLInputElement) {
+              input.value = value;
+              input.defaultValue = value;
+            }
+          };
+
+          setChecked("feedingNotificationEnabled", savedSettings.feedingNotificationEnabled);
+          setChecked("waterNotificationEnabled", savedSettings.waterNotificationEnabled);
+          setChecked("careNotificationCompactBody", savedSettings.careNotificationCompactBody);
+          setValue("feedingDeadline", formatMinutesAsTime(savedSettings.feedingDeadlineMinutes));
+          setValue("feedingNotifyBeforeMinutes", String(savedSettings.feedingNotifyBeforeMinutes));
+          setValue("waterDeadline", formatMinutesAsTime(savedSettings.waterDeadlineMinutes));
+          setValue("waterNotifyBeforeMinutes", String(savedSettings.waterNotifyBeforeMinutes));
+        }
+        commitFormDirtyState(form);
+      });
+      return;
+    }
+
+    requestFormDirtyReevaluation(formRef.current);
+  }, [saveState]);
 
   return (
     <section
@@ -370,7 +429,13 @@ export function NotificationSettingsForm({
       >
         <div className="min-h-0 overflow-hidden">
           <div className={`border-t border-slate-200 ${SETTINGS_CARD_RESPONSIVE_PADDING}`}>
-            <form action={saveCareNotificationSettings} data-dirty-watch className="space-y-4">
+            <form
+              ref={formRef}
+              action={saveAction}
+              data-dirty-watch
+              aria-busy={isSaving}
+              className="space-y-4"
+            >
               <CareFields
                 prefix="feeding"
                 title="食事通知"
@@ -425,11 +490,26 @@ export function NotificationSettingsForm({
                   簡略表示例：食事が未実施のハムスターがいます
                 </p>
               </fieldset>
-              <div className="flex justify-end">
-                <DirtySubmitButton className="inline-flex min-h-11 items-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300">
-                  <Save className="h-4 w-4" aria-hidden />
-                  通知設定を保存
-                </DirtySubmitButton>
+              <div>
+                {saveState.status ? (
+                  <div
+                    key={saveState.submissionId}
+                    data-settings-save-toast
+                    className="fixed inset-x-4 bottom-20 z-50 sm:left-auto sm:right-5 sm:w-full sm:max-w-md"
+                  >
+                    <StatusMessage status={saveState.status} errorId={saveState.errorId} />
+                  </div>
+                ) : null}
+                <div className="flex justify-end">
+                  <DirtySubmitButton
+                    allowPristineSubmit
+                    disabled={isSaving}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    <Save className="h-4 w-4" aria-hidden />
+                    {isSaving ? "保存中…" : "通知設定を保存"}
+                  </DirtySubmitButton>
+                </div>
               </div>
             </form>
             <div className="mt-5">

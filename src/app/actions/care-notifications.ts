@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { unstable_rethrow } from "next/navigation";
 
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import {
@@ -10,9 +10,16 @@ import {
 import { normalizeCareNotificationSettings } from "@/lib/care-notifications";
 import { prisma } from "@/lib/prisma";
 import { revalidatePathsSafely } from "@/lib/safe-side-effects";
-import { handleServerActionError } from "@/lib/server-errors";
+import { logUnexpectedError } from "@/lib/server-errors";
+import {
+  createSettingsSaveState,
+  type SettingsSaveState
+} from "@/lib/settings-save-state";
 
-export async function saveCareNotificationSettings(formData: FormData) {
+export async function saveCareNotificationSettings(
+  previousState: SettingsSaveState,
+  formData: FormData
+): Promise<SettingsSaveState> {
   try {
     const context = await getRequiredHouseholdContext();
     const nextSetting = parseCareNotificationSettingsForm({
@@ -24,7 +31,7 @@ export async function saveCareNotificationSettings(formData: FormData) {
       waterNotifyBeforeMinutes: formData.get("waterNotifyBeforeMinutes"),
       careNotificationCompactBody: formData.get("careNotificationCompactBody") === "on"
     });
-    if (!nextSetting) redirect("/settings?status=invalid");
+    if (!nextSetting) return createSettingsSaveState(previousState, "invalid");
 
     const current = await prisma.appSetting.findUnique({
       where: {
@@ -41,10 +48,12 @@ export async function saveCareNotificationSettings(formData: FormData) {
       }
     });
     if (careNotificationSettingsEqual(normalizeCareNotificationSettings(current), nextSetting)) {
-      redirect("/settings?status=unchanged");
+      return createSettingsSaveState(previousState, "unchanged", {
+        savedCareNotificationSettings: nextSetting
+      });
     }
 
-    await prisma.$transaction(async (tx) => {
+    const saved = await prisma.$transaction(async (tx) => {
       // VIEWERも自分の設定は変更可能。共有データではないが、保存直前の所属だけは再確認する。
       const membership = await tx.householdMember.findUnique({
         where: {
@@ -52,7 +61,7 @@ export async function saveCareNotificationSettings(formData: FormData) {
         },
         select: { id: true }
       });
-      if (!membership) redirect("/settings?status=forbidden");
+      if (!membership) return false;
       await tx.appSetting.upsert({
         where: {
           userId_householdId: { userId: context.user.id, householdId: context.household.id }
@@ -60,16 +69,21 @@ export async function saveCareNotificationSettings(formData: FormData) {
         update: nextSetting,
         create: { userId: context.user.id, householdId: context.household.id, ...nextSetting }
       });
+      return true;
     });
+    if (!saved) return createSettingsSaveState(previousState, "forbidden");
     revalidatePathsSafely([{ path: "/settings" }], "careNotifications.settings.revalidate", {
       userId: context.user.id,
       householdId: context.household.id
     });
-    redirect("/settings?status=notificationSaved");
-  } catch (error) {
-    handleServerActionError(error, {
-      operation: "careNotifications.settings.save",
-      pathname: "/settings"
+    return createSettingsSaveState(previousState, "notificationSaved", {
+      savedCareNotificationSettings: nextSetting
     });
+  } catch (error) {
+    unstable_rethrow(error);
+    const errorId = logUnexpectedError(error, {
+      operation: "careNotifications.settings.save"
+    });
+    return createSettingsSaveState(previousState, "systemError", { errorId });
   }
 }

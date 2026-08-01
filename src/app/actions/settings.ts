@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
@@ -19,10 +19,14 @@ import {
 } from "@/lib/realtime";
 import { revalidatePathsSafely } from "@/lib/safe-side-effects";
 import { dashboardSettingsSchema, updateUserProfileSchema } from "@/lib/schemas";
-import { handleServerActionError } from "@/lib/server-errors";
+import { logUnexpectedError } from "@/lib/server-errors";
 import { getSettingsChanges } from "@/lib/settings-diff";
+import {
+  createSettingsSaveState,
+  type SettingsSaveState
+} from "@/lib/settings-save-state";
 
-export async function saveSettings(formData: FormData) {
+export async function saveSettings(previousState: SettingsSaveState, formData: FormData): Promise<SettingsSaveState> {
   try {
     const context = await getRequiredHouseholdContext();
     const profileResult = updateUserProfileSchema.safeParse({ name: formData.get("name") });
@@ -30,7 +34,7 @@ export async function saveSettings(formData: FormData) {
       const isNameTooLong = profileResult.error.issues.some(
         (issue) => issue.path[0] === "name" && issue.code === "too_big"
       );
-      redirect(isNameTooLong ? "/settings?status=profileNameTooLong" : "/settings?status=invalid");
+      return createSettingsSaveState(previousState, isNameTooLong ? "profileNameTooLong" : "invalid");
     }
     const dashboardResult = dashboardSettingsSchema.safeParse({
       dashboardBoardCount: formData.get("dashboardBoardCount"),
@@ -39,7 +43,7 @@ export async function saveSettings(formData: FormData) {
       cleaningMobileDefaultDateFilter: formData.get("cleaningMobileDefaultDateFilter"),
       hamsterIds: formData.getAll("hamsterIds")
     });
-    if (!dashboardResult.success) redirect("/settings?status=invalid");
+    if (!dashboardResult.success) return createSettingsSaveState(previousState, "invalid");
 
     const {
       dashboardBoardCount,
@@ -48,6 +52,13 @@ export async function saveSettings(formData: FormData) {
       cleaningMobileDefaultDateFilter
     } = dashboardResult.data;
     const selectedHamsterIds = dashboardResult.data.hamsterIds;
+    const savedDashboardSettings = {
+      dashboardBoardCount,
+      hamsterSelectorMode,
+      recordTimelineDefaultScope,
+      cleaningMobileDefaultDateFilter,
+      hamsterIds: selectedHamsterIds
+    };
     const [user, hamsters, setting] = await Promise.all([
       prisma.user.findUnique({
         where: { id: context.user.id },
@@ -71,10 +82,14 @@ export async function saveSettings(formData: FormData) {
       selectedHamsterIds
     );
     if (selectionError === "duplicate" || selectionError === "unknown") {
-      redirect("/settings?status=invalid");
+      return createSettingsSaveState(previousState, "invalid");
     }
-    if (selectionError === "tooMany") redirect("/settings?status=dashboardLimitExceeded");
-    if (selectionError === "tooFew") redirect("/settings?status=dashboardSelectionRequired");
+    if (selectionError === "tooMany") {
+      return createSettingsSaveState(previousState, "dashboardLimitExceeded");
+    }
+    if (selectionError === "tooFew") {
+      return createSettingsSaveState(previousState, "dashboardSelectionRequired");
+    }
 
     const currentBoardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
     const currentSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
@@ -117,7 +132,10 @@ export async function saveSettings(formData: FormData) {
       !recordTimelineDefaultScopeChanged &&
       !cleaningMobileDefaultDateFilterChanged
     ) {
-      redirect("/settings?status=unchanged");
+      return createSettingsSaveState(previousState, "unchanged", {
+        savedName: profileResult.data.name,
+        savedDashboardSettings
+      });
     }
 
     const actorClientId = getRealtimeActorId(formData);
@@ -185,8 +203,13 @@ export async function saveSettings(formData: FormData) {
       "settings.save.revalidate",
       { householdId: context.household.id, userId: context.user.id }
     );
-    redirect("/settings?status=saved");
+    return createSettingsSaveState(previousState, "saved", {
+      savedName: profileResult.data.name,
+      savedDashboardSettings
+    });
   } catch (error) {
-    handleServerActionError(error, { operation: "settings.save", pathname: "/settings" });
+    unstable_rethrow(error);
+    const errorId = logUnexpectedError(error, { operation: "settings.save" });
+    return createSettingsSaveState(previousState, "systemError", { errorId });
   }
 }

@@ -186,7 +186,8 @@ test("設定フォームはプロフィール、画面表示、ダッシュボ�
   const hamsterSelectionIndex = form.indexOf("ダッシュボードに表示するハムスター");
   const saveIndex = form.indexOf('id="dashboard-settings-save"');
 
-  assert.match(form, /<form ref=\{formRef\} action=\{saveSettings\} data-dirty-watch/);
+  assert.match(form, /useActionState\(saveSettings, INITIAL_SETTINGS_SAVE_STATE\)/);
+  assert.match(form, /<form[\s\S]*?ref=\{formRef\}[\s\S]*?action=\{saveAction\}[\s\S]*?data-dirty-watch/);
   assert.ok(profileIndex < displayIndex);
   assert.ok(displayIndex < dashboardIndex);
   assert.ok(dashboardIndex < boardCountIndex);
@@ -196,7 +197,7 @@ test("設定フォームはプロフィール、画面表示、ダッシュボ�
   assert.ok(hamsterSelectionIndex < saveIndex);
   assert.match(
     form,
-    /<DisplaySettingsSection[\s\S]*?cleaningMobileDefaultDateFilter=\{cleaningMobileDefaultDateFilter\}\s*\/>[\s\S]*?<section[\s\S]*?data-settings-section="dashboard"/
+    /<DisplaySettingsSection[\s\S]*?cleaningMobileDefaultDateFilter=\{cleaningMobileDefaultDateFilter\}[\s\S]*?\/>[\s\S]*?<section[\s\S]*?data-settings-section="dashboard"/
   );
   assert.match(form, /<h3[^>]*>[\s\S]*?ダッシュボード設定[\s\S]*?<\/h3>/);
   assert.match(form, /ダッシュボードに表示する件数、カードの並び順とハムスターを設定します。/);

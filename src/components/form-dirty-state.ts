@@ -21,6 +21,15 @@ export function requestFormDirtyReevaluation(form: HTMLFormElement | null) {
   });
 }
 
+export function commitFormDirtyState(form: HTMLFormElement | null) {
+  if (!form) {
+    return;
+  }
+
+  initialFormSnapshots.set(form, getFormSnapshot(form));
+  requestFormDirtyReevaluation(form);
+}
+
 function isSubmittableControl(element: Element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
   return element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement;
 }

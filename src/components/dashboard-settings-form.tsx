@@ -2,15 +2,19 @@
 
 import { ArrowDown, ArrowUp, GripVertical, LayoutDashboard, Save, Search } from "lucide-react";
 import type { ChangeEvent, DragEvent } from "react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { saveSettings } from "@/app/actions/settings";
 import { DisplaySettingsSection } from "@/components/display-settings-section";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
-import { requestFormDirtyReevaluation } from "@/components/form-dirty-state";
+import {
+  commitFormDirtyState,
+  requestFormDirtyReevaluation
+} from "@/components/form-dirty-state";
 import { ProfileSettingsFields } from "@/components/profile-settings-form";
 import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
 import { SettingsScrollToSaveButton } from "@/components/settings-scroll-to-save-button";
+import { StatusMessage } from "@/components/status-message";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
@@ -26,6 +30,10 @@ import {
 import type { RecordScope } from "@/lib/records";
 import { normalizeSearchText } from "@/lib/search";
 import { getDashboardOrderScrollTop } from "@/lib/dashboard-order-scroll";
+import {
+  INITIAL_SETTINGS_SAVE_STATE,
+  isCommittedSettingsSave
+} from "@/lib/settings-save-state";
 
 type HamsterOption = {
   id: string;
@@ -92,6 +100,7 @@ export function DashboardSettingsForm({
   const [recentMove, setRecentMove] = useState<RecentMove | null>(null);
   const [orderAnnouncement, setOrderAnnouncement] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const [saveState, saveAction, isSaving] = useActionState(saveSettings, INITIAL_SETTINGS_SAVE_STATE);
   const orderListRef = useRef<HTMLOListElement>(null);
   const pendingOrderPositionsRef = useRef<Map<string, number> | null>(null);
   const pendingScrollRequestRef = useRef<PendingScrollRequest | null>(null);
@@ -128,6 +137,57 @@ export function DashboardSettingsForm({
   }, [hamsters, searchTerm, selectedIdSet, statusFilter]);
   const targetCount = Math.min(limit, hamsters.length);
   const canSave = selectedIds.length === targetCount;
+
+  useEffect(() => {
+    if (saveState.submissionId === 0) {
+      return;
+    }
+
+    const form = formRef.current;
+    if (!isCommittedSettingsSave(saveState)) {
+      requestFormDirtyReevaluation(form);
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const savedSettings = saveState.savedDashboardSettings;
+      if (savedSettings) {
+        setLimit(savedSettings.dashboardBoardCount);
+        setSelectedIds(savedSettings.hamsterIds);
+      }
+
+      const nameControl = form?.elements.namedItem("name");
+      if (nameControl instanceof HTMLInputElement && saveState.savedName !== undefined) {
+        nameControl.value = saveState.savedName;
+        nameControl.defaultValue = saveState.savedName;
+      }
+
+      if (form && savedSettings) {
+        const boardCountControl = form.elements.namedItem("dashboardBoardCount");
+        if (boardCountControl instanceof HTMLInputElement) {
+          boardCountControl.value = String(savedSettings.dashboardBoardCount);
+          boardCountControl.defaultValue = boardCountControl.value;
+        }
+        for (const name of [
+          "hamsterSelectorMode",
+          "recordTimelineDefaultScope",
+          "cleaningMobileDefaultDateFilter"
+        ]) {
+          const controls = form.elements.namedItem(name);
+          const radios = controls instanceof RadioNodeList ? Array.from(controls) : [controls];
+          for (const control of radios) {
+            if (control instanceof HTMLInputElement) {
+              const savedValue = savedSettings[name as keyof typeof savedSettings];
+              control.checked = control.value === savedValue;
+              control.defaultChecked = control.checked;
+            }
+          }
+        }
+      }
+
+      window.requestAnimationFrame(() => commitFormDirtyState(form));
+    });
+  }, [saveState]);
 
   useLayoutEffect(() => {
     const previousPositions = pendingOrderPositionsRef.current;
@@ -448,13 +508,21 @@ export function DashboardSettingsForm({
     <UnsavedChangesGuard>
       <SettingsScrollToSaveButton />
 
-      <form ref={formRef} action={saveSettings} data-dirty-watch className="space-y-6">
+      <form
+        ref={formRef}
+        action={saveAction}
+        data-dirty-watch
+        aria-busy={isSaving}
+        className="space-y-6"
+      >
         <ProfileSettingsFields name={name} email={email} />
 
         <DisplaySettingsSection
           hamsterSelectorMode={hamsterSelectorMode}
           recordTimelineDefaultScope={recordTimelineDefaultScope}
           cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
+          savedSettings={saveState.savedDashboardSettings}
+          savedSubmissionId={saveState.submissionId}
         />
 
         <section
@@ -779,17 +847,26 @@ export function DashboardSettingsForm({
           </section>
         </section>
 
-        <div
-          id="dashboard-settings-save"
-          className="flex justify-end scroll-mt-24 pr-16 sm:pr-20 xl:pr-0"
-        >
-          <DirtySubmitButton
-            disabled={!canSave}
-            className="inline-flex items-center gap-2 rounded-md bg-moss px-5 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            <Save className="h-4 w-4" aria-hidden />
-            保存
-          </DirtySubmitButton>
+        <div id="dashboard-settings-save" className="scroll-mt-24">
+          {saveState.status ? (
+            <div
+              key={saveState.submissionId}
+              data-settings-save-toast
+              className="fixed inset-x-4 bottom-20 z-50 sm:left-auto sm:right-5 sm:w-full sm:max-w-md"
+            >
+              <StatusMessage status={saveState.status} errorId={saveState.errorId} />
+            </div>
+          ) : null}
+          <div className="flex justify-end pr-16 sm:pr-20 xl:pr-0">
+            <DirtySubmitButton
+              allowPristineSubmit
+              disabled={!canSave || isSaving}
+              className="inline-flex items-center gap-2 rounded-md bg-moss px-5 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <Save className="h-4 w-4" aria-hidden />
+              {isSaving ? "保存中…" : "保存"}
+            </DirtySubmitButton>
+          </div>
         </div>
       </form>
     </UnsavedChangesGuard>

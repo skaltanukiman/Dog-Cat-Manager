@@ -143,7 +143,8 @@ test("設定ActionはセッションUserと現在Householdを使いVIEWERを共�
   assert.match(source, /householdMember\.findUnique/);
   assert.match(source, /userId: context\.user\.id/);
   assert.match(source, /householdId: context\.household\.id/);
-  assert.match(source, /status=unchanged/);
+  assert.match(source, /createSettingsSaveState\(previousState, "unchanged"/);
+  assert.doesNotMatch(source, /redirect\("\/settings\?status=/);
 });
 
 test("購読APIは認証・同一origin・サイズを検証し、User IDを本文から受け取らない", () => {

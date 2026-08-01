@@ -189,14 +189,15 @@ test("概要対象のcheckboxはフォーム送信を維持したcontrolled stat
   assert.match(source, /useState\(settings\.careNotificationCompactBody\)/);
   assert.match(source, /name=\{`\$\{prefix\}NotificationEnabled`\}[\s\S]*?checked=\{enabled\}[\s\S]*?onChange=/);
   assert.match(source, /name="careNotificationCompactBody"[\s\S]*?checked=\{compactBodyEnabled\}[\s\S]*?onChange=/);
-  assert.match(source, /<form action=\{saveCareNotificationSettings\} data-dirty-watch/);
+  assert.match(source, /useActionState\([\s\S]*?saveCareNotificationSettings,[\s\S]*?INITIAL_SETTINGS_SAVE_STATE/);
+  assert.match(source, /<form[\s\S]*?ref=\{formRef\}[\s\S]*?action=\{saveAction\}[\s\S]*?data-dirty-watch/);
   assert.match(source, /<button[\s\S]*?type="button"[\s\S]*?aria-expanded=\{isOpen\}[\s\S]*?aria-controls=\{contentId\}/);
 });
 
 test("フォームと端末通知は開閉条件でアンマウントされない", () => {
   const source = readSource();
   const contentStart = source.indexOf("data-notification-settings-content");
-  const formStart = source.indexOf("<form action={saveCareNotificationSettings}", contentStart);
+  const formStart = source.indexOf("<form", contentStart);
   const deviceStart = source.indexOf("<DeviceNotificationControls", contentStart);
 
   assert.ok(contentStart >= 0);

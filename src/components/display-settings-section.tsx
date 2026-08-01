@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
 import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
@@ -154,12 +154,20 @@ type DisplaySettingsSectionProps = {
   hamsterSelectorMode: HamsterSelectorMode;
   recordTimelineDefaultScope: RecordScope;
   cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
+  savedSettings?: {
+    hamsterSelectorMode: HamsterSelectorMode;
+    recordTimelineDefaultScope: RecordScope;
+    cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
+  };
+  savedSubmissionId?: number;
 };
 
 export function DisplaySettingsSection({
   hamsterSelectorMode: initialHamsterSelectorMode,
   recordTimelineDefaultScope: initialRecordTimelineDefaultScope,
-  cleaningMobileDefaultDateFilter: initialCleaningMobileDefaultDateFilter
+  cleaningMobileDefaultDateFilter: initialCleaningMobileDefaultDateFilter,
+  savedSettings,
+  savedSubmissionId = 0
 }: DisplaySettingsSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hamsterSelectorMode, setHamsterSelectorMode] = useState(initialHamsterSelectorMode);
@@ -175,6 +183,18 @@ export function DisplaySettingsSection({
     recordTimelineDefaultScope,
     cleaningMobileDefaultDateFilter
   });
+
+  useEffect(() => {
+    if (savedSubmissionId === 0 || !savedSettings) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      setHamsterSelectorMode(savedSettings.hamsterSelectorMode);
+      setRecordTimelineDefaultScope(savedSettings.recordTimelineDefaultScope);
+      setCleaningMobileDefaultDateFilter(savedSettings.cleaningMobileDefaultDateFilter);
+    });
+  }, [savedSettings, savedSubmissionId]);
 
   return (
     <section
