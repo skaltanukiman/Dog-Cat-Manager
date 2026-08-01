@@ -240,7 +240,10 @@ test("重複予約はDB一意制約、短いリース、条件付き更新で競
   const source = readSource("src/lib/care-notification-dispatch.ts");
   assert.match(schema, /@@unique\(\[userId, householdId, targetDate, scheduledMinute\]\)/);
   assert.match(migration, /CREATE UNIQUE INDEX "care_notification_dispatches_user_id_household_id_target_date_scheduled_minute_key"/);
-  assert.match(source, /isPrismaUniqueConstraintError/);
+  assert.match(source, /careNotificationDispatch\.createMany\([\s\S]*?skipDuplicates: true/);
+  assert.match(source, /if \(created\.count !== 1\) return null/);
+  assert.match(source, /findFirst\([\s\S]*?claimToken[\s\S]*?status: "CLAIMED"/);
+  assert.doesNotMatch(source, /careNotificationDispatch\.create\(/);
   assert.match(source, /claimToken/);
   assert.match(source, /leaseExpiresAt/);
   assert.match(source, /updateMany\([\s\S]*?status: "CLAIMED"/);

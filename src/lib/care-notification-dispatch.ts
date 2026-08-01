@@ -18,7 +18,6 @@ import {
 import { todayInputJst, toDateInputValue } from "@/lib/date";
 import { writeServerLog } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { isPrismaUniqueConstraintError } from "@/lib/server-errors";
 import {
   configureWebPush,
   isInvalidPushSubscriptionError,
@@ -67,31 +66,38 @@ async function reserveNewDispatch(
   now: Date
 ): Promise<ClaimedDispatch | null> {
   const claimToken = randomUUID();
-  try {
-    return await prisma.careNotificationDispatch.create({
-      data: {
-        userId,
-        householdId,
-        targetDate,
-        scheduledMinute,
-        claimToken,
-        claimedAt: now,
-        leaseExpiresAt: addMinutes(now, NOTIFICATION_CLAIM_LEASE_MINUTES)
-      },
-      select: {
-        id: true,
-        userId: true,
-        householdId: true,
-        targetDate: true,
-        scheduledMinute: true,
-        attemptCount: true,
-        claimToken: true
-      }
-    });
-  } catch (error) {
-    if (isPrismaUniqueConstraintError(error)) return null;
-    throw error;
-  }
+  const created = await prisma.careNotificationDispatch.createMany({
+    data: {
+      userId,
+      householdId,
+      targetDate,
+      scheduledMinute,
+      claimToken,
+      claimedAt: now,
+      leaseExpiresAt: addMinutes(now, NOTIFICATION_CLAIM_LEASE_MINUTES)
+    },
+    skipDuplicates: true
+  });
+  if (created.count !== 1) return null;
+  return prisma.careNotificationDispatch.findFirst({
+    where: {
+      userId,
+      householdId,
+      targetDate,
+      scheduledMinute,
+      claimToken,
+      status: "CLAIMED"
+    },
+    select: {
+      id: true,
+      userId: true,
+      householdId: true,
+      targetDate: true,
+      scheduledMinute: true,
+      attemptCount: true,
+      claimToken: true
+    }
+  });
 }
 
 async function reclaimDispatch(id: string, now: Date): Promise<ClaimedDispatch | null> {
