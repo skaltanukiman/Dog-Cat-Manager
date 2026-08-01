@@ -15,6 +15,7 @@ import {
 } from "../src/components/demo-record-create-forms-preview";
 import { DemoWeightCreatePreview } from "../src/components/demo-weight-create-preview";
 import { HamsterThumbnail } from "../src/components/hamster-thumbnail";
+import { parseDateInput, todayInputJst } from "../src/lib/date";
 import {
   isPublicDemoHousehold,
   isPublicDemoPath,
@@ -158,7 +159,7 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
     };
   };
   const hamsters = data.hamsters.create;
-  const today = new Date();
+  const today = parseDateInput(todayInputJst());
 
   assert.equal(hamsters.length, 9);
   assert.deepEqual(hamsters.map((hamster) => hamster.id), Object.values(PUBLIC_DEMO_HAMSTER_IDS));
