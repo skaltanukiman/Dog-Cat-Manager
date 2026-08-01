@@ -352,13 +352,24 @@ test("設定UIは非対応・未選択・拒否・未登録・有効・解除・
   assert.match(source, /setCompactBodyEnabled\(event\.currentTarget\.checked\)/);
   assert.match(source, /compactBodyEnabled \? "オン" : "オフ"/);
   assert.match(source, /htmlFor="care-notification-compact-body"[\s\S]*?min-h-11/);
-  assert.match(source, /id="care-notification-compact-body"[\s\S]*?aria-labelledby="care-notification-compact-label care-notification-compact-state"/);
-  assert.match(source, /border-slate-500[\s\S]*?peer-checked:border-moss[\s\S]*?peer-checked:bg-moss/);
+  assert.match(source, /id="care-notification-compact-body"[\s\S]*?aria-labelledby="care-notification-compact-label"/);
+  assert.match(source, /bg-slate-400[\s\S]*?duration-200[\s\S]*?peer-checked:border-moss[\s\S]*?peer-checked:bg-moss/);
+  assert.match(source, /transition-transform duration-200[\s\S]*?peer-checked:translate-x-5/);
+  assert.match(source, /id="care-notification-compact-state"[\s\S]*?aria-hidden="true"/);
+  assert.match(source, /id="care-notification-compact-state"[\s\S]*?whitespace-nowrap/);
   assert.doesNotMatch(source, /cursor-pointer items-center justify-between/);
   const compactControlStart = source.indexOf('htmlFor="care-notification-compact-body"');
+  const compactControlOpeningEnd = source.indexOf(">", compactControlStart);
   const compactControlEnd = source.indexOf("</label>", compactControlStart);
+  const compactStateStart = source.indexOf('id="care-notification-compact-state"');
+  const compactStateEnd = source.indexOf("</span>", compactStateStart);
   const compactHelpStart = source.indexOf('id="care-notification-compact-help"');
   assert.ok(compactControlStart >= 0 && compactControlEnd > compactControlStart);
+  assert.doesNotMatch(
+    source.slice(compactControlStart, compactControlOpeningEnd),
+    /rounded-md|border-slate-200|bg-slate-50|px-3/
+  );
+  assert.doesNotMatch(source.slice(compactStateStart, compactStateEnd), /aria-live/);
   assert.ok(compactHelpStart > compactControlEnd);
   assert.doesNotMatch(source.slice(compactControlStart, compactControlEnd), /ハムスター名を表示せず/);
 });

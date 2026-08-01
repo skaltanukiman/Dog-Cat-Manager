@@ -250,7 +250,7 @@ export function NotificationSettingsForm({
           </p>
           <label
             htmlFor="care-notification-compact-body"
-            className="mt-2 inline-flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 hover:border-slate-300 hover:bg-slate-100"
+            className="mt-1 inline-flex min-h-11 cursor-pointer items-center gap-3 py-2"
           >
             <span className="relative shrink-0">
               <input
@@ -259,17 +259,17 @@ export function NotificationSettingsForm({
                 type="checkbox"
                 checked={compactBodyEnabled}
                 onChange={(event) => setCompactBodyEnabled(event.currentTarget.checked)}
-                aria-labelledby="care-notification-compact-label care-notification-compact-state"
+                aria-labelledby="care-notification-compact-label"
                 aria-describedby="care-notification-compact-help"
                 className="peer sr-only"
               />
-              <span className="block h-7 w-12 rounded-full border-2 border-slate-500 bg-white transition-colors peer-checked:border-moss peer-checked:bg-moss peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-moss" />
-              <span className="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+              <span className="block h-6 w-11 rounded-full border border-slate-500 bg-slate-400 transition-colors duration-200 ease-out peer-checked:border-moss peer-checked:bg-moss peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-moss motion-reduce:transition-none" />
+              <span className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out peer-checked:translate-x-5 motion-reduce:transition-none" />
             </span>
             <span
               id="care-notification-compact-state"
-              className={`text-sm font-semibold ${compactBodyEnabled ? "text-moss" : "text-slate-700"}`}
-              aria-live="polite"
+              className={`whitespace-nowrap text-sm font-semibold ${compactBodyEnabled ? "text-moss" : "text-slate-700"}`}
+              aria-hidden="true"
             >
               {compactBodyEnabled ? "オン" : "オフ"}
             </span>
