@@ -56,7 +56,8 @@ textarea {
 }
 
 input[type="date"],
-input[type="month"] {
+input[type="month"],
+input[type="time"] {
   display: block;
   inline-size: 100%;
   min-inline-size: 0;
@@ -70,7 +71,8 @@ input[type="month"] {
 }
 
 input[type="date"]::-webkit-date-and-time-value,
-input[type="month"]::-webkit-date-and-time-value {
+input[type="month"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -79,12 +81,14 @@ input[type="month"]::-webkit-date-and-time-value {
 }
 
 input[type="date"]::-webkit-datetime-edit,
-input[type="month"]::-webkit-datetime-edit {
+input[type="month"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit {
   text-align: left;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="month"]::-webkit-calendar-picker-indicator {
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
   margin-left: auto;
 }
 

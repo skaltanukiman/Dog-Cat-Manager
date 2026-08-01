@@ -249,9 +249,9 @@ function CareFields({
         通知する
       </label>
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
-        <label className="text-sm font-medium text-slate-700">
+        <label className="min-w-0 max-w-full text-left text-sm font-medium text-slate-700">
           完了期限時刻
-          <input name={`${prefix}Deadline`} type="time" required defaultValue={formatMinutesAsTime(deadlineMinutes)} className="mt-1 block min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-ink" />
+          <input name={`${prefix}Deadline`} type="time" required defaultValue={formatMinutesAsTime(deadlineMinutes)} className="mt-1 block min-h-11 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3 text-left text-base text-ink" />
         </label>
         <label className="text-sm font-medium text-slate-700">
           期限の何分前に通知するか
