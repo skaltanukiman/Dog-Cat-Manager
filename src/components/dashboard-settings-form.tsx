@@ -20,11 +20,13 @@ import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   MAX_DASHBOARD_BOARD_COUNT,
   MIN_DASHBOARD_BOARD_COUNT,
+  getDashboardHamsterRemovalPosition,
   getDashboardDropPosition,
   moveDashboardHamsterId,
   resizeDashboardHamsterIds,
   toggleDashboardHamsterId,
   type DashboardDropPosition,
+  type DashboardHamsterRemovalPosition,
   type HamsterSelectorMode
 } from "@/lib/dashboard-settings";
 import type { RecordScope } from "@/lib/records";
@@ -103,6 +105,8 @@ export function DashboardSettingsForm({
   const [saveState, saveAction, isSaving] = useActionState(saveSettings, INITIAL_SETTINGS_SAVE_STATE);
   const orderListRef = useRef<HTMLOListElement>(null);
   const pendingOrderPositionsRef = useRef<Map<string, number> | null>(null);
+  const removedSelectionPositionsRef = useRef<Map<string, DashboardHamsterRemovalPosition>>(new Map());
+  const pendingSelectionDirtyReevaluationRef = useRef(false);
   const pendingScrollRequestRef = useRef<PendingScrollRequest | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollRequestSequenceRef = useRef(0);
@@ -137,6 +141,11 @@ export function DashboardSettingsForm({
   }, [hamsters, searchTerm, selectedIdSet, statusFilter]);
   const targetCount = Math.min(limit, hamsters.length);
   const canSave = selectedIds.length === targetCount;
+  const selectionBasisKey = JSON.stringify([boardCount, hamsterIds, selectedHamsterIds]);
+
+  useEffect(() => {
+    removedSelectionPositionsRef.current.clear();
+  }, [selectionBasisKey]);
 
   useEffect(() => {
     if (saveState.submissionId === 0) {
@@ -152,6 +161,8 @@ export function DashboardSettingsForm({
     window.requestAnimationFrame(() => {
       const savedSettings = saveState.savedDashboardSettings;
       if (savedSettings) {
+        removedSelectionPositionsRef.current.clear();
+        pendingSelectionDirtyReevaluationRef.current = false;
         setLimit(savedSettings.dashboardBoardCount);
         setSelectedIds(savedSettings.hamsterIds);
       }
@@ -190,6 +201,11 @@ export function DashboardSettingsForm({
   }, [saveState]);
 
   useLayoutEffect(() => {
+    if (pendingSelectionDirtyReevaluationRef.current) {
+      pendingSelectionDirtyReevaluationRef.current = false;
+      requestFormDirtyReevaluation(formRef.current);
+    }
+
     const previousPositions = pendingOrderPositionsRef.current;
     const pendingScrollRequest = pendingScrollRequestRef.current;
     pendingOrderPositionsRef.current = null;
@@ -288,6 +304,8 @@ export function DashboardSettingsForm({
     const nextLimit = clampBoardCount(event.currentTarget.valueAsNumber || MIN_DASHBOARD_BOARD_COUNT);
 
     // 表示数を減らした場合は、保存可能な件数に収まるよう現在の選択を先頭から残す。
+    removedSelectionPositionsRef.current.clear();
+    pendingSelectionDirtyReevaluationRef.current = true;
     setLimit(nextLimit);
     setSelectedIds(resizeDashboardHamsterIds(hamsterIds, selectedIds, nextLimit));
   }
@@ -297,7 +315,21 @@ export function DashboardSettingsForm({
       return;
     }
 
-    setSelectedIds((current) => toggleDashboardHamsterId(current, hamsterId, limit));
+    const isSelected = selectedIds.includes(hamsterId);
+    const restorePosition = removedSelectionPositionsRef.current.get(hamsterId);
+    const nextIds = toggleDashboardHamsterId(selectedIds, hamsterId, limit, restorePosition);
+
+    if (isSelected) {
+      const removalPosition = getDashboardHamsterRemovalPosition(selectedIds, hamsterId);
+      if (removalPosition) {
+        removedSelectionPositionsRef.current.set(hamsterId, removalPosition);
+      }
+    } else if (nextIds.includes(hamsterId)) {
+      removedSelectionPositionsRef.current.delete(hamsterId);
+    }
+
+    pendingSelectionDirtyReevaluationRef.current = true;
+    setSelectedIds(nextIds);
   }
 
   function updateOrder(

@@ -8,6 +8,11 @@ export const DEFAULT_HAMSTER_SELECTOR_MODE: HamsterSelectorMode = "select";
 
 export type HamsterSelectorMode = (typeof HAMSTER_SELECTOR_MODES)[number];
 export type DashboardDropPosition = "before" | "after";
+export type DashboardHamsterRemovalPosition = {
+  index: number;
+  previousId: string | null;
+  nextId: string | null;
+};
 
 export function normalizeDashboardBoardCount(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -67,13 +72,57 @@ export function resizeDashboardHamsterIds(
 export function toggleDashboardHamsterId(
   selectedIds: readonly string[],
   hamsterId: string,
-  limit: number
+  limit: number,
+  restorePosition?: DashboardHamsterRemovalPosition | null
 ) {
   if (selectedIds.includes(hamsterId)) {
     return selectedIds.filter((id) => id !== hamsterId);
   }
 
-  return selectedIds.length < limit ? [...selectedIds, hamsterId] : [...selectedIds];
+  if (selectedIds.length >= limit) {
+    return [...selectedIds];
+  }
+
+  if (!restorePosition) {
+    return [...selectedIds, hamsterId];
+  }
+
+  const previousIndex = restorePosition.previousId
+    ? selectedIds.indexOf(restorePosition.previousId)
+    : -1;
+  if (previousIndex >= 0) {
+    const nextIds = [...selectedIds];
+    nextIds.splice(previousIndex + 1, 0, hamsterId);
+    return nextIds;
+  }
+
+  const nextIndex = restorePosition.nextId ? selectedIds.indexOf(restorePosition.nextId) : -1;
+  if (nextIndex >= 0) {
+    const nextIds = [...selectedIds];
+    nextIds.splice(nextIndex, 0, hamsterId);
+    return nextIds;
+  }
+
+  const insertIndex = Math.min(Math.max(Math.trunc(restorePosition.index), 0), selectedIds.length);
+  const nextIds = [...selectedIds];
+  nextIds.splice(insertIndex, 0, hamsterId);
+  return nextIds;
+}
+
+export function getDashboardHamsterRemovalPosition(
+  selectedIds: readonly string[],
+  hamsterId: string
+): DashboardHamsterRemovalPosition | null {
+  const index = selectedIds.indexOf(hamsterId);
+  if (index < 0) {
+    return null;
+  }
+
+  return {
+    index,
+    previousId: selectedIds[index - 1] ?? null,
+    nextId: selectedIds[index + 1] ?? null
+  };
 }
 
 export function moveDashboardHamsterId(

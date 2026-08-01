@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   DEFAULT_HAMSTER_SELECTOR_MODE,
   getDashboardDropPosition,
+  getDashboardHamsterRemovalPosition,
   getDashboardHamsterSelectionError,
   moveDashboardHamsterId,
   normalizeDashboardHamsterIds,
@@ -210,6 +211,51 @@ test("上下移動、表示対象の追加・解除、表示数減少は現在�
   );
 });
 
+test("先頭・中央・末尾をOFFからONへ戻すとOFF直前の位置へ復元する", () => {
+  const initialIds = ["A", "B", "C"];
+
+  for (const hamsterId of initialIds) {
+    const removalPosition = getDashboardHamsterRemovalPosition(initialIds, hamsterId);
+    const removedIds = toggleDashboardHamsterId(initialIds, hamsterId, 3);
+
+    assert.ok(removalPosition);
+    assert.deepEqual(toggleDashboardHamsterId(removedIds, hamsterId, 3, removalPosition), initialIds);
+  }
+});
+
+test("OFF前に編集した並び順へ復元し、位置記録のない新規選択は末尾へ追加する", () => {
+  const editedIds = ["A", "C", "B"];
+  const removalPosition = getDashboardHamsterRemovalPosition(editedIds, "B");
+  const removedIds = toggleDashboardHamsterId(editedIds, "B", 3);
+
+  assert.deepEqual(removedIds, ["A", "C"]);
+  assert.deepEqual(toggleDashboardHamsterId(removedIds, "B", 3, removalPosition), editedIds);
+  assert.deepEqual(toggleDashboardHamsterId(["A", "B"], "D", 3), ["A", "B", "D"]);
+});
+
+test("復元時は残っている隣接IDを優先し、両方なければ補正したindexを使う", () => {
+  const middlePosition = getDashboardHamsterRemovalPosition(["A", "B", "C", "D"], "B");
+
+  assert.ok(middlePosition);
+  assert.deepEqual(toggleDashboardHamsterId(["C", "D"], "B", 4, middlePosition), ["B", "C", "D"]);
+  assert.deepEqual(toggleDashboardHamsterId(["C", "A", "D"], "B", 4, middlePosition), ["C", "A", "B", "D"]);
+  assert.deepEqual(toggleDashboardHamsterId(["D"], "B", 4, middlePosition), ["D", "B"]);
+});
+
+test("連続したOFF・ONで重複せず、選択上限を超えて追加しない", () => {
+  const initialIds = ["A", "B", "C"];
+  const removalPosition = getDashboardHamsterRemovalPosition(initialIds, "B");
+  const firstRemovedIds = toggleDashboardHamsterId(initialIds, "B", 3);
+  const firstRestoredIds = toggleDashboardHamsterId(firstRemovedIds, "B", 3, removalPosition);
+  const secondRemovedIds = toggleDashboardHamsterId(firstRestoredIds, "B", 3);
+  const secondPosition = getDashboardHamsterRemovalPosition(firstRestoredIds, "B");
+  const secondRestoredIds = toggleDashboardHamsterId(secondRemovedIds, "B", 3, secondPosition);
+
+  assert.deepEqual(secondRestoredIds, initialIds);
+  assert.equal(new Set(secondRestoredIds).size, secondRestoredIds.length);
+  assert.deepEqual(toggleDashboardHamsterId(initialIds, "D", 3), initialIds);
+});
+
 test("ドラッグ移動は移動元を除外した後の対象位置へbeforeまたはafterで挿入する", () => {
   const ids = ["A", "B", "C", "D"];
 
@@ -234,9 +280,40 @@ test("ポインターが対象行の上半分ならbefore、下半分ならafter
 
 test("並び順一覧は選択済みだけをDOM順に描画し、末尾追加とhidden input順を共有する", () => {
   assert.match(dashboardSettingsFormSource, /const orderedHamsters = useMemo\([\s\S]*selectedIds[\s\S]*hamsterById\.get/);
-  assert.match(dashboardSettingsFormSource, /toggleDashboardHamsterId\(current, hamsterId, limit\)/);
+  assert.match(dashboardSettingsFormSource, /getDashboardHamsterRemovalPosition\(selectedIds, hamsterId\)/);
+  assert.match(
+    dashboardSettingsFormSource,
+    /toggleDashboardHamsterId\(selectedIds, hamsterId, limit, restorePosition\)/
+  );
   assert.match(dashboardSettingsFormSource, /\{orderedHamsters\.map\(\(hamster, index\) =>/);
   assert.match(dashboardSettingsFormSource, /\{selectedIds\.map\(\(id\) =>\s*\(\s*<input key=\{id\} type="hidden" name="hamsterIds"/);
+});
+
+test("選択変更後にhidden input更新を待ってDirtyを再評価し、基準更新時は復元位置を破棄する", () => {
+  assert.match(
+    dashboardSettingsFormSource,
+    /pendingSelectionDirtyReevaluationRef\.current = true;[\s\S]*setSelectedIds\(nextIds\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /useLayoutEffect\(\(\) => \{[\s\S]*pendingSelectionDirtyReevaluationRef\.current[\s\S]*requestFormDirtyReevaluation\(formRef\.current\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /if \(savedSettings\) \{[\s\S]*removedSelectionPositionsRef\.current\.clear\(\)[\s\S]*setSelectedIds\(savedSettings\.hamsterIds\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /if \(!isCommittedSettingsSave\(saveState\)\) \{[\s\S]*requestFormDirtyReevaluation\(form\);[\s\S]*return;[\s\S]*removedSelectionPositionsRef\.current\.clear\(\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /useEffect\(\(\) => \{\s*removedSelectionPositionsRef\.current\.clear\(\);\s*\}, \[selectionBasisKey\]\)/
+  );
+  assert.match(
+    dashboardSettingsFormSource,
+    /function handleLimitChange[\s\S]*removedSelectionPositionsRef\.current\.clear\(\)[\s\S]*resizeDashboardHamsterIds/
+  );
 });
 
 test("並び順操作はPC用ハンドル、全画面幅用の上下ボタン、無効状態と支援技術向け説明を持つ", () => {
