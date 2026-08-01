@@ -71,7 +71,7 @@ Household削除時は履歴もCascade削除されます。アカウント削除�
 - 設定画面で選択したハムスターのカードを表示
 - 表示ボード数は 1〜30 件で設定可能
 - 表示対象数を超えるハムスターがいる場合は、表示するハムスターを選択可能
-- 当日の食事（未実施 / 実施済み）と水替え（未交換 / 交換済み）をカード全体の操作で切り替え
+- 現在のお世話日の食事（未実施 / 実施済み）と水替え（未交換 / 交換済み）をカード全体の操作で切り替え
 - 最新体重を表示
 - トイレ掃除、砂場掃除、床材全交換、ハウス掃除ごとの最新状態を表示
 - 掃除日は「経過日数」と「日付」をクリックまたはタッチで切り替え可能
@@ -245,8 +245,39 @@ Household削除時は履歴もCascade削除されます。アカウント削除�
 - ハムスター選択方式を切り替え
   - コンボボックス式
   - プルダウン式（新規ユーザーの初期値）
+- 表示・ダッシュボード設定と通知設定の間に、Household共有の「お世話日の設定」を独立表示
+- お世話日の切り替え時刻は`type="time"`で分単位に設定し、OWNER / ADMINだけが変更可能
+- MEMBER / VIEWERには現在値を表示するが、入力と保存は無効化
 - 保存ボタンまでスクロールする固定ボタンあり
 - 狭い画面でもメイン UI と固定ボタンが被りにくいように余白を調整
+
+### お世話日の切り替え時刻
+
+食事と水替えで使用する日付境界は、通常のJST 0:00固定ではなく、現在のHouseholdごとに設定できます。設定値はJSTの0:00からの経過分数として`households.care_day_start_minutes`へ保存し、範囲は0〜1439です。初期値は0で、既存Householdと公開デモは従来どおり0:00境界で動作します。個人設定の`app_settings`には保存しません。
+
+例として切り替え時刻を8:00（480分）にした場合、2026-08-01のお世話日は2026-08-01 08:00 JSTから2026-08-02 07:59:59.999 JSTまでです。2026-08-02 07:59 JSTは2026-08-01、08:00 JSTは2026-08-02のお世話日として扱います。
+
+お世話日は定期処理で状態をリセットせず、判定時点の現在時刻と最新の`careDayStartMinutes`から毎回算出します。`src/lib/care-day.ts`で、既定値、不正値の0時への正規化、`HH:mm`と分数の相互変換、JSTのお世話日文字列、`@db.Date`検索用のUTC 00:00 `Date`への変換を共通化しています。計算は「現在時刻をJSTへ移動し、切り替え時刻の分数を差し引いた後のUTC暦日」を使用するため、サーバーOSのローカルタイムゾーンには依存しません。
+
+`src/lib/date.ts`の`todayInputJst()`は通常のカレンダー日付として意味を変更していません。未来日判定、年月表示、体重、衛生記録、誕生日、お迎え日、健康・通院・思い出などには、お世話日の切り替え時刻を適用しません。
+
+適用範囲は次のとおりです。
+
+- ダッシュボードの食事・水替えの検索対象日
+- 食事・水替えを実施済みにしたときの`recordDate`
+- 未実施・未交換へ戻すときの削除対象日
+- 食事・水替えのHousehold Activityへ保存する`recordDate`
+- 食事・水替え通知が未実施記録を確認する`CareNotificationDispatch.targetDate`
+
+`fedAt`と`replacedAt`には操作した実時刻をそのまま保存し、切り替え時刻分をずらしません。ダッシュボードは1リクエスト内で1つの`now`と1つの`careDayStartMinutes`から共通の対象日を算出し、表示対象ハムスターIDを指定して食事・水替えをそれぞれ一括取得します。ハムスターごとのN+1 queryは行いません。
+
+設定画面では「切り替え時刻：08:00」のように現在値を閉じた状態でも確認できます。保存権限はHouseholdのOWNER / ADMINだけです。Server ActionはHousehold単位のtransaction lockを取得し、保存直前に現在の所属・権限・デモHouseholdでないこと・最新設定値を再確認します。変更時はHousehold更新、未完了通知dispatchの無効化、realtime revision更新を同じtransactionで確定し、commit後に既存の安全なpublishとダッシュボード・設定画面のrevalidateを実行します。
+
+設定は保存完了後から即時反映します。現在時刻と変更前後の境界によっては、ダッシュボードの食事・水替えが実施済みから未実施、または未実施から実施済みに変わります。既存の`feeding_records`と`water_replacement_records`の`record_date`は更新・再分類しません。適用予定日時、過去データ再分類バッチ、次回境界からの予約適用も持ちません。
+
+切り替え時刻を変更した場合、そのHouseholdの`CLAIMED`または`RETRYABLE`状態の通知dispatchは同じtransactionで`SKIPPED`へ変更します。`SENT`履歴は変更しません。通知送信処理側でも、送信直前に最新の所属、ユーザー利用状態、デモ判定、通知設定、`careDayStartMinutes`、対象お世話日、食事・水替え記録を再取得し、dispatchの`targetDate`が最新のお世話日と一致しなければ送信せず`SKIPPED`にします。期限切れ候補と再試行候補も全Household共通の日付ではなく、各dispatchに関連するHouseholdの最新境界で検証します。
+
+DB列はmigration `20260801150000_add_care_day_start_minutes`で追加します。既存行には0が設定され、DBにも`BETWEEN 0 AND 1439`のCHECK制約があります。反映後はOWNER / ADMIN、MEMBER / VIEWER、0時・8時境界、月末・年末・うるう年、食事・水替え・Activityの対象日、異なる境界を持つ複数Householdの通知、古いdispatchのskipを確認してください。自動検証には`tests/care-day.test.ts`、`tests/care-day-settings.test.ts`、`tests/feeding.test.tsx`、`tests/water-replacement.test.tsx`、`tests/care-notifications.test.ts`が含まれます。
 
 ## 技術スタック
 
@@ -404,6 +435,7 @@ Auth.js のGoogleログイン callbackは既存のGoogleアカウントIDとメ�
 
 - `id`
 - `name`
+- `careDayStartMinutes`（DB列: `care_day_start_minutes`、0〜1439、初期値0）
 - `createdAt`
 - `updatedAt`
 - `realtimeRevision`
@@ -413,6 +445,8 @@ Auth.js のGoogleログイン callbackは既存のGoogleアカウントIDとメ�
 共有の単位です。新規ログインユーザーに Household がない場合は、`{ユーザー名}のハムスター管理` という個人用 Household を自動作成します。初回表示の並行処理で同じ個人用 Household が二重作成されないよう、ユーザー単位で作成処理を直列化します。
 
 `realtimeRevision` は Household 単位の更新ごとに増える revision です。ポーリング時も更新元を正しく判定できるよう、最新更新の `realtimeActorClientId` と `realtimeActorUserId` も同じ行に保存します。
+
+`careDayStartMinutes`は食事と水替えに適用するJSTのお世話日境界です。Household全体へ即時反映され、個人用の`app_settings`とは分離されています。
 
 ### `household_members`
 
@@ -1302,17 +1336,20 @@ echo $?
 docker compose logs --since=10m app
 ```
 
-予定時刻との完全一致ではなく、予定時刻から60分以内の未送信分を処理します。同じUser・Household・JST対象日・予定時刻はDB一意制約で1件だけ予約し、2分リース後にクラッシュ回復できます。一時失敗は5分後に最大3回再試行します。404/410を返した無効な購読だけ自動削除し、その他の一時失敗では削除しません。一部端末が成功した場合、成功端末への重複を防ぐため配信全体は成功扱いです。
+予定時刻との完全一致ではなく、予定時刻から60分以内の未送信分を処理します。同じUser・Household・対象お世話日・予定時刻はDB一意制約で1件だけ予約し、2分リース後にクラッシュ回復できます。一時失敗は5分後に最大3回再試行します。404/410を返した無効な購読だけ自動削除し、その他の一時失敗では削除しません。一部端末が成功した場合、成功端末への重複を防ぐため配信全体は成功扱いです。
+
+通知設定の取得時に関連Householdの`isDemo`と`careDayStartMinutes`も取得し、Householdごとに対象お世話日を算出して`CareNotificationDispatch.targetDate`へ保存します。再試行・期限切れ判定と送信直前確認でも同じ共通お世話日計算を使用します。通知期限と事前通知分数の既存バリデーションは維持し、通知時刻が日付をまたいで前日へ回り込む新しい指定方法はありません。
 
 ### 動作確認とトラブルシュート
 
-実端末では、テスト用Householdの管理中ハムスターについて当日の食事または水替えを未実施にし、期限と事前分数から算出される予定時刻を現在時刻の直前に設定してCLIを実行します。通知が届いたこと、タップで既存PWAが`/`へ移動して前面化すること、実施済みへ変更してからCLIを実行すると送信されないことを確認してください。本番の個人データや鍵をテストログへ貼り付けないでください。
+実端末では、テスト用Householdの管理中ハムスターについて現在のお世話日の食事または水替えを未実施にし、期限と事前分数から算出される予定時刻を現在時刻の直前に設定してCLIを実行します。通知が届いたこと、タップで既存PWAが`/`へ移動して前面化すること、実施済みへ変更してからCLIを実行すると送信されないことを確認してください。本番の個人データや鍵をテストログへ貼り付けないでください。
 
 届かない場合は次を確認します。
 
 - HTTPS証明書、PWAインストール、端末・ブラウザーの通知許可
 - 設定画面の端末状態が`通知有効`で、対象Householdの通知がONか
-- 対象が管理中で、JST当日の`FeedingRecord` / `WaterReplacementRecord`が本当に未登録か
+- 対象が管理中で、Householdの切り替え時刻から算出した現在のお世話日の`FeedingRecord` / `WaterReplacementRecord`が本当に未登録か
+- `CareNotificationDispatch.targetDate`がHouseholdの最新`careDayStartMinutes`から算出した対象お世話日と一致するか
 - VAPID 3環境変数、cron、appコンテナの時刻、`docker compose logs`の件数・errorId
 - iOSではホーム画面から起動したPWAか、省電力・集中モードなどOS側制限がないか
 
@@ -1320,7 +1357,7 @@ Service Worker更新後はブラウザーの更新検出に時間差があるた
 
 ### デプロイとロールバック
 
-通常どおりDBとuploadsをバックアップし、環境変数を設定してからイメージを再構築します。起動時の`prisma migrate deploy`で通知設定、端末購読、配信履歴のmigrationが適用されます。起動後にhealthcheck、CLI手動実行、cronの順で確認します。
+通常どおりDBとuploadsをバックアップし、環境変数を設定してからイメージを再構築します。起動時の`prisma migrate deploy`で通知設定、端末購読、配信履歴に加えて`20260801150000_add_care_day_start_minutes`が適用されます。起動後にhealthcheck、設定画面の初期値0:00、ダッシュボード、CLI手動実行、cronの順で確認します。
 
 ```bash
 docker compose build app
