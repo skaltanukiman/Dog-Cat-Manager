@@ -12,7 +12,7 @@ import {
   type CareNotificationSettings
 } from "@/lib/care-notifications";
 
-type DeviceState =
+export type DeviceState =
   | "checking"
   | "unsupported"
   | "unselected"
@@ -35,6 +35,22 @@ const DEVICE_MESSAGES: Record<DeviceState, string> = {
   error: "通知端末の処理に失敗しました。しばらくしてから再度お試しください。"
 };
 
+const DEVICE_SUMMARY_LABELS: Record<DeviceState, string> = {
+  checking: "確認中",
+  unsupported: "非対応",
+  unselected: "未選択",
+  denied: "拒否",
+  permittedUnsubscribed: "未登録",
+  browserOnly: "未登録",
+  enabled: "有効",
+  released: "解除済み",
+  error: "エラー"
+};
+
+export function getDeviceNotificationSummaryLabel(state: DeviceState) {
+  return `端末通知：${DEVICE_SUMMARY_LABELS[state]}`;
+}
+
 function supportsWebPush() {
   return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
@@ -56,8 +72,17 @@ async function subscriptionStatus(endpoint: string) {
   return (await response.json()) as { registered: boolean };
 }
 
-function DeviceNotificationControls({ configured, publicKey }: { configured: boolean; publicKey: string | null }) {
-  const [state, setState] = useState<DeviceState>("checking");
+function DeviceNotificationControls({
+  configured,
+  publicKey,
+  state,
+  setState
+}: {
+  configured: boolean;
+  publicKey: string | null;
+  state: DeviceState;
+  setState: (state: DeviceState) => void;
+}) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -84,7 +109,7 @@ function DeviceNotificationControls({ configured, publicKey }: { configured: boo
     return () => {
       active = false;
     };
-  }, []);
+  }, [setState]);
 
   async function enable() {
     if (!configured || !publicKey || !supportsWebPush()) {
@@ -257,18 +282,22 @@ export function NotificationSettingsForm({
   const [feedingNotificationEnabled, setFeedingNotificationEnabled] = useState(settings.feedingNotificationEnabled);
   const [waterNotificationEnabled, setWaterNotificationEnabled] = useState(settings.waterNotificationEnabled);
   const [compactBodyEnabled, setCompactBodyEnabled] = useState(settings.careNotificationCompactBody);
+  const [deviceState, setDeviceState] = useState<DeviceState>("checking");
   const contentId = useId();
-  const summaryLabels = getCareNotificationSummaryLabels({
-    feedingEnabled: feedingNotificationEnabled,
-    waterEnabled: waterNotificationEnabled,
-    compactBodyEnabled
-  });
+  const summaryLabels = [
+    ...getCareNotificationSummaryLabels({
+      feedingEnabled: feedingNotificationEnabled,
+      waterEnabled: waterNotificationEnabled,
+      compactBodyEnabled
+    }),
+    getDeviceNotificationSummaryLabel(deviceState)
+  ];
 
   return (
     <section
       aria-label="通知設定"
       data-settings-section="notifications"
-      className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+      className="min-w-0 overflow-hidden rounded-md border border-moss/30 bg-white shadow-sm"
     >
       <button
         type="button"
@@ -277,42 +306,55 @@ export function NotificationSettingsForm({
         data-notification-settings-toggle
         data-state={isOpen ? "open" : "closed"}
         onClick={() => setIsOpen((current) => !current)}
-        className={`w-full text-left transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-persimmon motion-reduce:transition-none ${SETTINGS_CARD_RESPONSIVE_PADDING} ${
-          isOpen ? "bg-persimmon/10" : "bg-white hover:bg-persimmon/5"
+        className={`min-h-11 w-full text-left transition-colors duration-200 ease-out active:bg-moss/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss motion-reduce:transition-none ${SETTINGS_CARD_RESPONSIVE_PADDING} ${
+          isOpen
+            ? "bg-moss/[0.15] hover:bg-moss/20"
+            : "bg-moss/10 hover:bg-moss/[0.15]"
         }`}
       >
-        <span className="flex min-w-0 flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-6">
-          <span className="flex min-w-0 items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-persimmon/10 text-persimmon">
-              <Bell className="h-5 w-5" aria-hidden />
+        <span className="flex min-w-0 items-start gap-3">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-moss/20 text-moss"
+            data-notification-settings-icon
+          >
+            <Bell className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-base font-bold text-ink" role="heading" aria-level={3}>
+              通知設定
             </span>
-            <span className="min-w-0">
-              <span role="heading" aria-level={3} className="block text-lg font-bold text-ink">通知設定</span>
-              <span className="mt-1 block text-sm leading-6 text-slate-600">現在の共有グループについて、未実施のお世話を期限前に通知します。</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-600">
+              現在の共有グループについて、未実施のお世話を期限前に通知します。
             </span>
           </span>
-          <span className="flex min-w-0 flex-col items-start gap-3 md:max-w-[28rem] md:items-end">
-            <span className="flex max-w-full flex-wrap gap-2 md:justify-end" aria-label="現在の通知設定">
-              {summaryLabels.map((label) => (
-                <span
-                  key={label}
-                  data-notification-settings-summary-chip
-                  className="whitespace-nowrap rounded-full border border-persimmon/20 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700"
-                >
-                  {label}
-                </span>
-              ))}
+        </span>
+
+        <span
+          className="mt-3 flex min-w-0 flex-wrap gap-1.5"
+          aria-label="現在の通知設定"
+          data-notification-settings-summary
+        >
+          {summaryLabels.map((label) => (
+            <span
+              key={label}
+              data-notification-settings-summary-chip
+              className="max-w-full rounded-md border border-moss/20 bg-white px-2 py-1 text-xs font-medium leading-4 text-slate-700"
+            >
+              {label}
             </span>
-            <span data-notification-settings-action className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap text-sm font-bold text-persimmon">
-              {isOpen ? "閉じる" : "設定を変更"}
-              <ChevronDown
-                data-notification-settings-chevron
-                data-state={isOpen ? "open" : "closed"}
-                className={`h-5 w-5 transition-transform duration-200 ease-out motion-reduce:transition-none ${isOpen ? "rotate-180" : ""}`}
-                aria-hidden
-              />
-            </span>
-          </span>
+          ))}
+        </span>
+
+        <span className="mt-3 flex items-center justify-end gap-1 text-sm font-bold text-moss">
+          <span data-notification-settings-action>{isOpen ? "閉じる" : "設定を変更"}</span>
+          <ChevronDown
+            data-notification-settings-chevron
+            data-state={isOpen ? "open" : "closed"}
+            className={`h-5 w-5 shrink-0 transition-transform duration-200 ease-out motion-reduce:transition-none ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          />
         </span>
       </button>
       <div
@@ -391,7 +433,12 @@ export function NotificationSettingsForm({
               </div>
             </form>
             <div className="mt-5">
-              <DeviceNotificationControls configured={vapidConfigured} publicKey={vapidPublicKey} />
+              <DeviceNotificationControls
+                configured={vapidConfigured}
+                publicKey={vapidPublicKey}
+                state={deviceState}
+                setState={setDeviceState}
+              />
             </div>
           </div>
         </div>

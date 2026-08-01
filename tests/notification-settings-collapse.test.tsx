@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import {
   getCareNotificationSummaryLabels,
+  getDeviceNotificationSummaryLabel,
   NotificationSettingsForm
 } from "../src/components/notification-settings-form";
 import type { CareNotificationSettings } from "../src/lib/care-notifications";
@@ -54,12 +55,75 @@ test("通知設定は保存値の概要を表示し、全画面幅で初期状�
   assert.match(markup, /role="heading" aria-level="3"[^>]*>通知設定</);
   assert.match(markup, /現在の共有グループについて、未実施のお世話を期限前に通知します。/);
   assert.match(markup, /<svg[^>]*aria-hidden="true"/);
-  assert.equal(markup.match(/data-notification-settings-summary-chip="true"/g)?.length, 3);
+  assert.equal(markup.match(/data-notification-settings-summary-chip="true"/g)?.length, 4);
   assert.match(markup, /data-notification-settings-summary-chip="true"[^>]*>食事通知：オン</);
   assert.match(markup, /data-notification-settings-summary-chip="true"[^>]*>水替え通知：オフ</);
   assert.match(markup, /data-notification-settings-summary-chip="true"[^>]*>通知本文：簡略</);
+  assert.match(markup, /data-notification-settings-summary-chip="true"[^>]*>端末通知：確認中</);
   assert.match(markup, /data-notification-settings-action="true"[^>]*>設定を変更/);
   assert.match(markup, /data-notification-settings-chevron="true" data-state="closed"/);
+});
+
+test("折りたたみヘッダーは表示設定と同じmoss系の色・形状・余白を使う", () => {
+  const markup = renderNotificationSettings();
+  const source = readSource();
+  const iconStart = markup.indexOf('data-notification-settings-icon="true"');
+  const iconOpeningStart = markup.lastIndexOf("<span", iconStart);
+  const iconEnd = markup.indexOf("</span>", iconStart);
+  const firstChipStart = markup.indexOf('data-notification-settings-summary-chip="true"');
+  const firstChipEnd = markup.indexOf("</span>", firstChipStart);
+
+  assert.match(
+    markup,
+    /<section[^>]*class="min-w-0 overflow-hidden rounded-md border border-moss\/30 bg-white shadow-sm"/
+  );
+  assert.match(
+    markup,
+    /<button[^>]*class="min-h-11 w-full text-left[^\"]*active:bg-moss\/20[^\"]*focus-visible:ring-moss[^\"]*bg-moss\/10 hover:bg-moss\/\[0\.15\]"/
+  );
+  assert.ok(iconOpeningStart >= 0 && iconStart > iconOpeningStart && iconEnd > iconStart);
+  assert.match(markup.slice(iconOpeningStart, iconEnd), /rounded-md bg-moss\/20 text-moss/);
+  assert.doesNotMatch(markup.slice(iconOpeningStart, iconEnd), /rounded-full/);
+  assert.match(markup, /class="block text-base font-bold text-ink" role="heading" aria-level="3">通知設定/);
+  assert.match(
+    markup,
+    /class="mt-0\.5 block text-xs leading-5 text-slate-600">現在の共有グループについて、未実施のお世話を期限前に通知します。/
+  );
+  assert.match(
+    markup,
+    /class="mt-3 flex min-w-0 flex-wrap gap-1\.5" aria-label="現在の通知設定" data-notification-settings-summary="true"/
+  );
+  assert.ok(firstChipStart >= 0 && firstChipEnd > firstChipStart);
+  assert.match(
+    markup.slice(firstChipStart, firstChipEnd),
+    /max-w-full rounded-md border border-moss\/20 bg-white px-2 py-1 text-xs font-medium leading-4 text-slate-700/
+  );
+  assert.doesNotMatch(markup.slice(firstChipStart, firstChipEnd), /rounded-full|px-2\.5|font-semibold/);
+  assert.match(
+    markup,
+    /class="mt-3 flex items-center justify-end gap-1 text-sm font-bold text-moss"><span data-notification-settings-action="true">設定を変更/
+  );
+  assert.match(source, /\? "bg-moss\/\[0\.15\] hover:bg-moss\/20"/);
+  assert.match(source, /: "bg-moss\/10 hover:bg-moss\/\[0\.15\]"/);
+  assert.doesNotMatch(source.slice(source.indexOf('data-settings-section="notifications"'), source.indexOf("data-notification-settings-content")), /persimmon/);
+  assert.doesNotMatch(source, /md:flex-row|md:justify-between|md:max-w-\[/);
+});
+
+test("端末通知の状態を短い概要チップ文言へ変換する", () => {
+  assert.equal(getDeviceNotificationSummaryLabel("checking"), "端末通知：確認中");
+  assert.equal(getDeviceNotificationSummaryLabel("enabled"), "端末通知：有効");
+  assert.equal(getDeviceNotificationSummaryLabel("released"), "端末通知：解除済み");
+  assert.equal(getDeviceNotificationSummaryLabel("denied"), "端末通知：拒否");
+  assert.equal(getDeviceNotificationSummaryLabel("permittedUnsubscribed"), "端末通知：未登録");
+  assert.equal(getDeviceNotificationSummaryLabel("browserOnly"), "端末通知：未登録");
+  assert.equal(getDeviceNotificationSummaryLabel("unsupported"), "端末通知：非対応");
+  assert.equal(getDeviceNotificationSummaryLabel("unselected"), "端末通知：未選択");
+  assert.equal(getDeviceNotificationSummaryLabel("error"), "端末通知：エラー");
+
+  const source = readSource();
+  assert.match(source, /useState<DeviceState>\("checking"\)/);
+  assert.match(source, /getDeviceNotificationSummaryLabel\(deviceState\)/);
+  assert.match(source, /<DeviceNotificationControls[\s\S]*?state=\{deviceState\}[\s\S]*?setState=\{setDeviceState\}/);
 });
 
 test("折りたたみ内容は可変高を200msで遷移し、閉状態では操作対象外になる", () => {
