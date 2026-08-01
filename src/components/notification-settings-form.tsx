@@ -502,7 +502,6 @@ export function NotificationSettingsForm({
                 ) : null}
                 <div className="flex justify-end">
                   <DirtySubmitButton
-                    allowPristineSubmit
                     disabled={isSaving}
                     className="inline-flex min-h-11 items-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
                   >

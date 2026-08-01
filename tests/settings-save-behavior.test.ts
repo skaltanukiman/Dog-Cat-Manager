@@ -31,7 +31,7 @@ test("通常設定と通知設定はURL redirectではなくuseActionStateで結
   for (const form of [dashboardForm, notificationForm]) {
     assert.match(form, /useActionState\(/);
     assert.match(form, /action=\{saveAction\}/);
-    assert.match(form, /allowPristineSubmit/);
+    assert.doesNotMatch(form, /allowPristineSubmit/);
     assert.match(form, /aria-busy=\{isSaving\}/);
     assert.match(form, /data-settings-save-toast/);
     assert.match(form, /fixed inset-x-4 bottom-20/);
@@ -64,10 +64,14 @@ test("保存確定時だけ現在値をDirty基準として再設定する", () 
   assert.match(dashboardForm, /savedSubmissionId=\{saveState\.submissionId\}/);
 });
 
-test("設定画面だけ変更なし送信を許可し、他フォームのDirtySubmitButton既定挙動は維持する", () => {
+test("設定画面を含むDirtySubmitButtonは変更がないとき送信を許可しない", () => {
   const button = source("src/components/dirty-submit-button.tsx");
+  const dashboardForm = source("src/components/dashboard-settings-form.tsx");
+  const notificationForm = source("src/components/notification-settings-form.tsx");
 
-  assert.match(button, /allowPristineSubmit = false/);
-  assert.match(button, /disabled \|\| \(!allowPristineSubmit && !isDirty\)/);
+  assert.doesNotMatch(button, /allowPristineSubmit/);
+  assert.match(button, /disabled \|\| !isDirty/);
   assert.match(button, /data-dirty=\{isDirty \? "true" : "false"\}/);
+  assert.doesNotMatch(dashboardForm, /allowPristineSubmit/);
+  assert.doesNotMatch(notificationForm, /allowPristineSubmit/);
 });

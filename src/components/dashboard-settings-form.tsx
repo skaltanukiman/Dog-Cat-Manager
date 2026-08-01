@@ -859,7 +859,6 @@ export function DashboardSettingsForm({
           ) : null}
           <div className="flex justify-end pr-16 sm:pr-20 xl:pr-0">
             <DirtySubmitButton
-              allowPristineSubmit
               disabled={!canSave || isSaving}
               className="inline-flex items-center gap-2 rounded-md bg-moss px-5 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
             >

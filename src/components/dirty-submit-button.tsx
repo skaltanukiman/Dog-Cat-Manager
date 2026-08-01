@@ -8,20 +8,18 @@ import { REALTIME_LOCAL_SUBMIT_EVENT } from "@/lib/realtime-constants";
 
 type DirtySubmitButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
-  allowPristineSubmit?: boolean;
 };
 
 export function DirtySubmitButton({
   children,
   disabled = false,
-  allowPristineSubmit = false,
   onClick,
   title,
   ...props
 }: DirtySubmitButtonProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isDirty = useButtonFormDirty(buttonRef, disabled);
-  const isDisabled = disabled || (!allowPristineSubmit && !isDirty);
+  const isDisabled = disabled || !isDirty;
 
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
     onClick?.(event);
@@ -45,7 +43,7 @@ export function DirtySubmitButton({
       disabled={isDisabled}
       data-dirty={isDirty ? "true" : "false"}
       onClick={handleClick}
-      title={title ?? (!allowPristineSubmit && !disabled && !isDirty ? "変更すると保存できます" : undefined)}
+      title={title ?? (!disabled && !isDirty ? "変更すると保存できます" : undefined)}
     >
       {children}
     </button>
