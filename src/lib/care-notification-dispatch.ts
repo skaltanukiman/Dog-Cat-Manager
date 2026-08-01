@@ -175,6 +175,7 @@ async function dispatchClaim(dispatch: ClaimedDispatch, now: Date) {
         waterNotificationEnabled: true,
         waterDeadlineMinutes: true,
         waterNotifyBeforeMinutes: true,
+        careNotificationCompactBody: true,
         user: { select: { accessStatus: true } },
         household: { select: { isDemo: true } }
       }
@@ -230,7 +231,11 @@ async function dispatchClaim(dispatch: ClaimedDispatch, now: Date) {
     return { status: "skipped" as const, invalid: 0, temporary: 0 };
   }
 
-  const body = buildCareNotificationBody(feedingNames, waterNames);
+  const body = buildCareNotificationBody(
+    feedingNames,
+    waterNames,
+    setting.careNotificationCompactBody
+  );
   let successCount = 0;
   let invalidCount = 0;
   let temporaryCount = 0;
@@ -304,7 +309,8 @@ export async function dispatchCareNotifications(now = new Date()) {
       feedingNotifyBeforeMinutes: true,
       waterNotificationEnabled: true,
       waterDeadlineMinutes: true,
-      waterNotifyBeforeMinutes: true
+      waterNotifyBeforeMinutes: true,
+      careNotificationCompactBody: true
     }
   });
   summary.settingCount = settings.length;

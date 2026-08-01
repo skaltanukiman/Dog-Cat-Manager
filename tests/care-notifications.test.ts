@@ -36,7 +36,8 @@ const validForm = {
   feedingNotifyBeforeMinutes: 30,
   waterNotificationEnabled: true,
   waterDeadline: "21:00",
-  waterNotifyBeforeMinutes: 30
+  waterNotifyBeforeMinutes: 30,
+  careNotificationCompactBody: true
 };
 
 test("通知設定の初期値は既存ユーザーへ送信しないOFFで安全な分数値を使う", () => {
@@ -46,7 +47,8 @@ test("通知設定の初期値は既存ユーザーへ送信しないOFFで安�
     feedingNotifyBeforeMinutes: 30,
     waterNotificationEnabled: false,
     waterDeadlineMinutes: 1260,
-    waterNotifyBeforeMinutes: 30
+    waterNotifyBeforeMinutes: 30,
+    careNotificationCompactBody: false
   });
   assert.equal(formatMinutesAsTime(1320), "22:00");
   assert.equal(parseTimeInputToMinutes("21:00"), 1260);
@@ -60,7 +62,8 @@ test("通知設定はON/OFF、時刻、事前通知時間の正常値を受け�
     feedingNotifyBeforeMinutes: 30,
     waterNotificationEnabled: true,
     waterDeadlineMinutes: 1260,
-    waterNotifyBeforeMinutes: 30
+    waterNotifyBeforeMinutes: 30,
+    careNotificationCompactBody: true
   });
 });
 
@@ -76,6 +79,7 @@ test("通知設定の同値比較で設定変更なしを判定できる", () =>
   assert.ok(settings);
   assert.equal(careNotificationSettingsEqual(settings, { ...settings }), true);
   assert.equal(careNotificationSettingsEqual(settings, { ...settings, waterNotificationEnabled: false }), false);
+  assert.equal(careNotificationSettingsEqual(settings, { ...settings, careNotificationCompactBody: false }), false);
 });
 
 test("JSTの日付境界をサーバーOSのタイムゾーンに依存せず分へ変換する", () => {
@@ -113,6 +117,12 @@ test("通知本文は未実施種別を分け、個体数が多い場合は省�
   assert.match(body, /水替えが未交換：きなこ/);
   assert.ok(Array.from(body).length <= NOTIFICATION_BODY_MAX_LENGTH);
   assert.doesNotMatch(body, /[\u0000-\u0009\u000b-\u001f\u007f]/);
+});
+
+test("通知本文の簡略表示はハムスター名を含めず未実施のお世話だけを示す", () => {
+  const body = buildCareNotificationBody(["きなこ", "シロ"], ["きなこ"], true);
+  assert.equal(body, "食事が未実施のハムスターがいます\n水替えが未実施のハムスターがいます");
+  assert.doesNotMatch(body, /きなこ|シロ/);
 });
 
 test("PushSubscription入力はHTTPS endpointと鍵の形式・サイズを検証する", () => {
@@ -201,10 +211,13 @@ test("外部送信中はtransactionを保持せず、一時失敗・無効購読
 test("User・Household削除は購読・配信履歴をCascadeし、通知は既存設定で初期OFF", () => {
   const schema = readSource("prisma/schema.prisma");
   const migration = readSource("prisma/migrations/20260731120000_add_care_push_notifications/migration.sql");
+  const compactMigration = readSource("prisma/migrations/20260801120000_add_compact_care_notification_body/migration.sql");
   assert.match(schema, /model WebPushSubscription[\s\S]*?onDelete: Cascade/);
   assert.match(schema, /model CareNotificationDispatch[\s\S]*?user[\s\S]*?onDelete: Cascade[\s\S]*?household[\s\S]*?onDelete: Cascade/);
   assert.match(migration, /feedingNotificationEnabled" BOOLEAN NOT NULL DEFAULT false/);
   assert.match(migration, /waterNotificationEnabled" BOOLEAN NOT NULL DEFAULT false/);
+  assert.match(schema, /careNotificationCompactBody\s+Boolean\s+@default\(false\)/);
+  assert.match(compactMigration, /careNotificationCompactBody" BOOLEAN NOT NULL DEFAULT false/);
 });
 
 test("Service Workerはpush payloadを表示し、不正値を安全な文言へフォールバックする", async () => {
@@ -331,6 +344,9 @@ test("設定UIは非対応・未選択・拒否・未登録・有効・解除・
   assert.match(source, /この端末で通知を有効にする/);
   assert.match(source, /この端末の通知を解除する/);
   assert.match(source, /ホーム画面へ追加したPWA/);
+  assert.match(source, /name="careNotificationCompactBody"/);
+  assert.match(source, /通知内容を簡略表示する/);
+  assert.match(source, /ハムスター名を表示せず/);
 });
 
 test("CLI・Docker・環境変数・READMEに運用経路が揃う", () => {

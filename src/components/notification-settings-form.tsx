@@ -241,6 +241,31 @@ export function NotificationSettingsForm({
       <form action={saveCareNotificationSettings} data-dirty-watch className="mt-5 space-y-4">
         <CareFields prefix="feeding" title="食事通知" enabled={settings.feedingNotificationEnabled} deadlineMinutes={settings.feedingDeadlineMinutes} notifyBeforeMinutes={settings.feedingNotifyBeforeMinutes} />
         <CareFields prefix="water" title="水替え通知" enabled={settings.waterNotificationEnabled} deadlineMinutes={settings.waterDeadlineMinutes} notifyBeforeMinutes={settings.waterNotifyBeforeMinutes} />
+        <fieldset className="rounded-lg border border-slate-200 p-4">
+          <legend className="px-1 font-semibold text-ink">通知本文</legend>
+          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4">
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-slate-700">通知内容を簡略表示する</span>
+              <span id="care-notification-compact-help" className="mt-1 block text-xs leading-5 text-slate-500">
+                ハムスター名を表示せず、未実施のお世話だけを短く通知します。
+              </span>
+            </span>
+            <span className="relative shrink-0">
+              <input
+                name="careNotificationCompactBody"
+                type="checkbox"
+                defaultChecked={settings.careNotificationCompactBody}
+                aria-describedby="care-notification-compact-help"
+                className="peer sr-only"
+              />
+              <span className="block h-7 w-12 rounded-full bg-slate-300 transition-colors peer-checked:bg-moss peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-moss" />
+              <span className="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+            </span>
+          </label>
+          <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+            簡略表示例：食事が未実施のハムスターがいます
+          </p>
+        </fieldset>
         <div className="flex justify-end">
           <DirtySubmitButton className="inline-flex min-h-11 items-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300">
             <Save className="h-4 w-4" aria-hidden />

@@ -158,11 +158,11 @@
 
 ## 食事・水替えのWebプッシュ通知
 
-- **画面またはURL:** `/settings` の独立した通知設定カード。食事・水替えごとのON/OFF、JST期限時刻、事前通知分数と、この端末の購読状態・有効化・解除を扱う。iOS/iPadOSはホーム画面へ追加したPWAからだけ許可操作を行う。
+- **画面またはURL:** `/settings` の独立した通知設定カード。食事・水替えごとのON/OFF、JST期限時刻、事前通知分数、個体名を省く通知本文の簡略表示と、この端末の購読状態・有効化・解除を扱う。iOS/iPadOSはホーム画面へ追加したPWAからだけ許可操作を行う。
 - **Service Worker / API:** `public/sw.js` は `push` と `notificationclick` のみを処理し、通知押下時は既存ウィンドウを `/` へ移動してfocusするか新規に開く。`src/app/api/push/subscriptions/route.ts` と `status/route.ts` は認証中User、利用状態、同一origin、入力サイズ・形式、endpoint所有者を検証する。`/sw.js` と通知アイコンだけを `src/proxy.ts` の公開対象とし、購読APIは公開しない。
-- **データアクセス:** `AppSetting` の通知6項目はUser×Household単位で、既存値はOFF。`WebPushSubscription` はUser×端末endpoint単位でUser削除時Cascade。`CareNotificationDispatch` はUser・Household・JST対象日・予定分の一意制約により配信予約・成功・再試行・不要を保持する。Household/User削除はCascadeし、退出・解除後は送信直前のmembership再確認で配信しない。
+- **データアクセス:** `AppSetting` の通知ON/OFF・時刻・事前通知分数・本文簡略表示はUser×Household単位で、通知と簡略表示の既存値はOFF。`WebPushSubscription` はUser×端末endpoint単位でUser削除時Cascade。`CareNotificationDispatch` はUser・Household・JST対象日・予定分の一意制約により配信予約・成功・再試行・不要を保持する。Household/User削除はCascadeし、退出・解除後は送信直前のmembership再確認で配信しない。
 - **定期CLI:** `scripts/dispatch-care-notifications.ts` / `npm run notifications:dispatch` をVPS cronから毎分呼ぶ。JST当日、予定時刻から60分以内だけを候補にし、管理中の全ハムスター（ダッシュボード非表示を含む）について `FeedingRecord` / `WaterReplacementRecord` を再確認する。2分リースで予約を短く確保してからトランザクション外で送信し、全端末が一時失敗した場合だけ5分間隔・最大3回。一部成功時は成功端末への重複回避を優先して成功扱い、404/410の購読だけ削除する。
-- **セキュリティ・ログ:** VAPID秘密鍵、endpoint、p256dh、auth、メールをレスポンス・画面・ログへ出さない。通知本文は個体名だけを件数付きで短縮する。運用ログは設定・候補・成功・skip・一時失敗・無効購読の件数と内部ID/errorIdだけを扱う。
+- **セキュリティ・ログ:** VAPID秘密鍵、endpoint、p256dh、auth、メールをレスポンス・画面・ログへ出さない。通常の通知本文は個体名だけを件数付きで短縮し、簡略表示では個体名を含めない。運用ログは設定・候補・成功・skip・一時失敗・無効購読の件数と内部ID/errorIdだけを扱う。
 - **関連テスト:** `tests/care-notifications.test.ts`（設定値、JST境界、遅延窓、本文短縮、管理状態・Household・送信直前再確認、重複予約、再試行、購読所有者、無効購読、Service Worker、公開パス、UI状態）。
 
 ## アカウント削除

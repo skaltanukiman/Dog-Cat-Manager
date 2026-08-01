@@ -123,6 +123,7 @@ model AppSetting {
   waterNotificationEnabled   Boolean      @default(false)
   waterDeadlineMinutes       Int          @default(1260)
   waterNotifyBeforeMinutes   Int          @default(30)
+  careNotificationCompactBody Boolean    @default(false)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   dashboardHamsters   DashboardHamster[]

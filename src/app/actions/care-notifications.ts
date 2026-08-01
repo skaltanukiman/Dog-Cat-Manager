@@ -21,7 +21,8 @@ export async function saveCareNotificationSettings(formData: FormData) {
       feedingNotifyBeforeMinutes: formData.get("feedingNotifyBeforeMinutes"),
       waterNotificationEnabled: formData.get("waterNotificationEnabled") === "on",
       waterDeadline: formData.get("waterDeadline"),
-      waterNotifyBeforeMinutes: formData.get("waterNotifyBeforeMinutes")
+      waterNotifyBeforeMinutes: formData.get("waterNotifyBeforeMinutes"),
+      careNotificationCompactBody: formData.get("careNotificationCompactBody") === "on"
     });
     if (!nextSetting) redirect("/settings?status=invalid");
 
@@ -35,7 +36,8 @@ export async function saveCareNotificationSettings(formData: FormData) {
         feedingNotifyBeforeMinutes: true,
         waterNotificationEnabled: true,
         waterDeadlineMinutes: true,
-        waterNotifyBeforeMinutes: true
+        waterNotifyBeforeMinutes: true,
+        careNotificationCompactBody: true
       }
     });
     if (careNotificationSettingsEqual(normalizeCareNotificationSettings(current), nextSetting)) {

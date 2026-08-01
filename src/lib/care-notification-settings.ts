@@ -13,7 +13,8 @@ export const careNotificationSettingsFormSchema = z
     feedingNotifyBeforeMinutes: z.coerce.number().int().min(0).max(MAX_NOTIFY_BEFORE_MINUTES),
     waterNotificationEnabled: z.boolean(),
     waterDeadline: z.string(),
-    waterNotifyBeforeMinutes: z.coerce.number().int().min(0).max(MAX_NOTIFY_BEFORE_MINUTES)
+    waterNotifyBeforeMinutes: z.coerce.number().int().min(0).max(MAX_NOTIFY_BEFORE_MINUTES),
+    careNotificationCompactBody: z.boolean()
   })
   .superRefine((value, context) => {
     const feedingDeadline = parseTimeInputToMinutes(value.feedingDeadline);
@@ -42,7 +43,8 @@ export function parseCareNotificationSettingsForm(input: unknown): CareNotificat
     feedingNotifyBeforeMinutes: result.data.feedingNotifyBeforeMinutes,
     waterNotificationEnabled: result.data.waterNotificationEnabled,
     waterDeadlineMinutes,
-    waterNotifyBeforeMinutes: result.data.waterNotifyBeforeMinutes
+    waterNotifyBeforeMinutes: result.data.waterNotifyBeforeMinutes,
+    careNotificationCompactBody: result.data.careNotificationCompactBody
   };
 }
 

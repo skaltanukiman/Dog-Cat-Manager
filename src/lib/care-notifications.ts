@@ -18,6 +18,7 @@ export type CareNotificationSettings = {
   waterNotificationEnabled: boolean;
   waterDeadlineMinutes: number;
   waterNotifyBeforeMinutes: number;
+  careNotificationCompactBody: boolean;
 };
 
 export type CareKind = "feeding" | "water";
@@ -54,7 +55,8 @@ export function normalizeCareNotificationSettings(
     feedingNotifyBeforeMinutes,
     waterNotificationEnabled: setting?.waterNotificationEnabled === true,
     waterDeadlineMinutes,
-    waterNotifyBeforeMinutes
+    waterNotifyBeforeMinutes,
+    careNotificationCompactBody: setting?.careNotificationCompactBody === true
   };
 }
 
@@ -147,10 +149,18 @@ function compactNames(names: string[], prefix: string, maxLength = 88) {
   return `${prefix}${shown.join("、")}${omitted > 0 ? `、ほか${omitted}匹` : ""}`;
 }
 
-export function buildCareNotificationBody(feedingNames: string[], waterNames: string[]) {
+export function buildCareNotificationBody(
+  feedingNames: string[],
+  waterNames: string[],
+  compactBody = false
+) {
   const lines: string[] = [];
-  if (feedingNames.length > 0) lines.push(compactNames(feedingNames, "食事が未実施："));
-  if (waterNames.length > 0) lines.push(compactNames(waterNames, "水替えが未交換："));
+  if (feedingNames.length > 0) {
+    lines.push(compactBody ? "食事が未実施のハムスターがいます" : compactNames(feedingNames, "食事が未実施："));
+  }
+  if (waterNames.length > 0) {
+    lines.push(compactBody ? "水替えが未実施のハムスターがいます" : compactNames(waterNames, "水替えが未交換："));
+  }
   const body = lines.join("\n") || "お世話の状況をアプリで確認してください。";
   const characters = Array.from(body);
   return characters.length <= NOTIFICATION_BODY_MAX_LENGTH
