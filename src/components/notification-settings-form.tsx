@@ -229,6 +229,8 @@ export function NotificationSettingsForm({
   vapidConfigured: boolean;
   vapidPublicKey: string | null;
 }) {
+  const [compactBodyEnabled, setCompactBodyEnabled] = useState(settings.careNotificationCompactBody);
+
   return (
     <section className={`rounded-lg border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}>
       <div className="flex items-start gap-3">
@@ -243,25 +245,38 @@ export function NotificationSettingsForm({
         <CareFields prefix="water" title="水替え通知" enabled={settings.waterNotificationEnabled} deadlineMinutes={settings.waterDeadlineMinutes} notifyBeforeMinutes={settings.waterNotifyBeforeMinutes} />
         <fieldset className="rounded-lg border border-slate-200 p-4">
           <legend className="px-1 font-semibold text-ink">通知本文</legend>
-          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4">
-            <span className="min-w-0">
-              <span className="block text-sm font-medium text-slate-700">通知内容を簡略表示する</span>
-              <span id="care-notification-compact-help" className="mt-1 block text-xs leading-5 text-slate-500">
-                ハムスター名を表示せず、未実施のお世話だけを短く通知します。
-              </span>
-            </span>
+          <p id="care-notification-compact-label" className="text-sm font-medium text-slate-700">
+            通知内容を簡略表示する
+          </p>
+          <label
+            htmlFor="care-notification-compact-body"
+            className="mt-2 inline-flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 hover:border-slate-300 hover:bg-slate-100"
+          >
             <span className="relative shrink-0">
               <input
+                id="care-notification-compact-body"
                 name="careNotificationCompactBody"
                 type="checkbox"
-                defaultChecked={settings.careNotificationCompactBody}
+                checked={compactBodyEnabled}
+                onChange={(event) => setCompactBodyEnabled(event.currentTarget.checked)}
+                aria-labelledby="care-notification-compact-label care-notification-compact-state"
                 aria-describedby="care-notification-compact-help"
                 className="peer sr-only"
               />
-              <span className="block h-7 w-12 rounded-full bg-slate-300 transition-colors peer-checked:bg-moss peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-moss" />
+              <span className="block h-7 w-12 rounded-full border-2 border-slate-500 bg-white transition-colors peer-checked:border-moss peer-checked:bg-moss peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-moss" />
               <span className="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
             </span>
+            <span
+              id="care-notification-compact-state"
+              className={`text-sm font-semibold ${compactBodyEnabled ? "text-moss" : "text-slate-700"}`}
+              aria-live="polite"
+            >
+              {compactBodyEnabled ? "オン" : "オフ"}
+            </span>
           </label>
+          <p id="care-notification-compact-help" className="mt-2 text-xs leading-5 text-slate-500">
+            ハムスター名を表示せず、未実施のお世話だけを短く通知します。
+          </p>
           <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
             簡略表示例：食事が未実施のハムスターがいます
           </p>

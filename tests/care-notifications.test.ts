@@ -347,6 +347,20 @@ test("設定UIは非対応・未選択・拒否・未登録・有効・解除・
   assert.match(source, /name="careNotificationCompactBody"/);
   assert.match(source, /通知内容を簡略表示する/);
   assert.match(source, /ハムスター名を表示せず/);
+  assert.match(source, /useState\(settings\.careNotificationCompactBody\)/);
+  assert.match(source, /checked=\{compactBodyEnabled\}/);
+  assert.match(source, /setCompactBodyEnabled\(event\.currentTarget\.checked\)/);
+  assert.match(source, /compactBodyEnabled \? "オン" : "オフ"/);
+  assert.match(source, /htmlFor="care-notification-compact-body"[\s\S]*?min-h-11/);
+  assert.match(source, /id="care-notification-compact-body"[\s\S]*?aria-labelledby="care-notification-compact-label care-notification-compact-state"/);
+  assert.match(source, /border-slate-500[\s\S]*?peer-checked:border-moss[\s\S]*?peer-checked:bg-moss/);
+  assert.doesNotMatch(source, /cursor-pointer items-center justify-between/);
+  const compactControlStart = source.indexOf('htmlFor="care-notification-compact-body"');
+  const compactControlEnd = source.indexOf("</label>", compactControlStart);
+  const compactHelpStart = source.indexOf('id="care-notification-compact-help"');
+  assert.ok(compactControlStart >= 0 && compactControlEnd > compactControlStart);
+  assert.ok(compactHelpStart > compactControlEnd);
+  assert.doesNotMatch(source.slice(compactControlStart, compactControlEnd), /ハムスター名を表示せず/);
 });
 
 test("CLI・Docker・環境変数・READMEに運用経路が揃う", () => {
