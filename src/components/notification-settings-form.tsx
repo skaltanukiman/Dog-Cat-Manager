@@ -1,7 +1,7 @@
 "use client";
 
-import { Bell, BellOff, Save, Smartphone } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Bell, BellOff, ChevronDown, Save, Smartphone } from "lucide-react";
+import { useEffect, useId, useState } from "react";
 
 import { saveCareNotificationSettings } from "@/app/actions/care-notifications";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
@@ -190,12 +190,14 @@ function CareFields({
   prefix,
   title,
   enabled,
+  onEnabledChange,
   deadlineMinutes,
   notifyBeforeMinutes
 }: {
   prefix: "feeding" | "water";
   title: string;
   enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
   deadlineMinutes: number;
   notifyBeforeMinutes: number;
 }) {
@@ -203,7 +205,13 @@ function CareFields({
     <fieldset className="rounded-lg border border-slate-200 p-4">
       <legend className="px-1 font-semibold text-ink">{title}</legend>
       <label className="flex min-h-11 items-center gap-3 text-sm font-medium text-slate-700">
-        <input name={`${prefix}NotificationEnabled`} type="checkbox" defaultChecked={enabled} className="h-5 w-5 rounded border-slate-300 text-moss" />
+        <input
+          name={`${prefix}NotificationEnabled`}
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => onEnabledChange(event.currentTarget.checked)}
+          className="h-5 w-5 rounded border-slate-300 text-moss"
+        />
         通知する
       </label>
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -220,6 +228,22 @@ function CareFields({
   );
 }
 
+export function getCareNotificationSummaryLabels({
+  feedingEnabled,
+  waterEnabled,
+  compactBodyEnabled
+}: {
+  feedingEnabled: boolean;
+  waterEnabled: boolean;
+  compactBodyEnabled: boolean;
+}) {
+  return [
+    `食事通知：${feedingEnabled ? "オン" : "オフ"}`,
+    `水替え通知：${waterEnabled ? "オン" : "オフ"}`,
+    `通知本文：${compactBodyEnabled ? "簡略" : "通常"}`
+  ];
+}
+
 export function NotificationSettingsForm({
   settings,
   vapidConfigured,
@@ -229,67 +253,148 @@ export function NotificationSettingsForm({
   vapidConfigured: boolean;
   vapidPublicKey: string | null;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [feedingNotificationEnabled, setFeedingNotificationEnabled] = useState(settings.feedingNotificationEnabled);
+  const [waterNotificationEnabled, setWaterNotificationEnabled] = useState(settings.waterNotificationEnabled);
   const [compactBodyEnabled, setCompactBodyEnabled] = useState(settings.careNotificationCompactBody);
+  const contentId = useId();
+  const summaryLabels = getCareNotificationSummaryLabels({
+    feedingEnabled: feedingNotificationEnabled,
+    waterEnabled: waterNotificationEnabled,
+    compactBodyEnabled
+  });
 
   return (
-    <section className={`rounded-lg border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}>
-      <div className="flex items-start gap-3">
-        <Bell className="mt-0.5 h-5 w-5 shrink-0 text-persimmon" aria-hidden />
-        <div>
-          <h3 className="text-lg font-bold text-ink">通知設定</h3>
-          <p className="mt-1 text-sm leading-6 text-slate-600">現在の共有グループについて、未実施のお世話を期限前に通知します。</p>
-        </div>
-      </div>
-      <form action={saveCareNotificationSettings} data-dirty-watch className="mt-5 space-y-4">
-        <CareFields prefix="feeding" title="食事通知" enabled={settings.feedingNotificationEnabled} deadlineMinutes={settings.feedingDeadlineMinutes} notifyBeforeMinutes={settings.feedingNotifyBeforeMinutes} />
-        <CareFields prefix="water" title="水替え通知" enabled={settings.waterNotificationEnabled} deadlineMinutes={settings.waterDeadlineMinutes} notifyBeforeMinutes={settings.waterNotifyBeforeMinutes} />
-        <fieldset className="rounded-lg border border-slate-200 p-4">
-          <legend className="px-1 font-semibold text-ink">通知本文</legend>
-          <p id="care-notification-compact-label" className="text-sm font-medium text-slate-700">
-            通知内容を簡略表示する
-          </p>
-          <label
-            htmlFor="care-notification-compact-body"
-            className="mt-1 inline-flex min-h-11 cursor-pointer items-center gap-3 py-2"
-          >
-            <span className="relative shrink-0">
-              <input
-                id="care-notification-compact-body"
-                name="careNotificationCompactBody"
-                type="checkbox"
-                checked={compactBodyEnabled}
-                onChange={(event) => setCompactBodyEnabled(event.currentTarget.checked)}
-                aria-labelledby="care-notification-compact-label"
-                aria-describedby="care-notification-compact-help"
-                className="peer sr-only"
+    <section
+      aria-label="通知設定"
+      data-settings-section="notifications"
+      className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+    >
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={contentId}
+        data-notification-settings-toggle
+        data-state={isOpen ? "open" : "closed"}
+        onClick={() => setIsOpen((current) => !current)}
+        className={`w-full text-left transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-persimmon motion-reduce:transition-none ${SETTINGS_CARD_RESPONSIVE_PADDING} ${
+          isOpen ? "bg-persimmon/10" : "bg-white hover:bg-persimmon/5"
+        }`}
+      >
+        <span className="flex min-w-0 flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-6">
+          <span className="flex min-w-0 items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-persimmon/10 text-persimmon">
+              <Bell className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span role="heading" aria-level={3} className="block text-lg font-bold text-ink">通知設定</span>
+              <span className="mt-1 block text-sm leading-6 text-slate-600">現在の共有グループについて、未実施のお世話を期限前に通知します。</span>
+            </span>
+          </span>
+          <span className="flex min-w-0 flex-col items-start gap-3 md:max-w-[28rem] md:items-end">
+            <span className="flex max-w-full flex-wrap gap-2 md:justify-end" aria-label="現在の通知設定">
+              {summaryLabels.map((label) => (
+                <span
+                  key={label}
+                  data-notification-settings-summary-chip
+                  className="whitespace-nowrap rounded-full border border-persimmon/20 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700"
+                >
+                  {label}
+                </span>
+              ))}
+            </span>
+            <span data-notification-settings-action className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap text-sm font-bold text-persimmon">
+              {isOpen ? "閉じる" : "設定を変更"}
+              <ChevronDown
+                data-notification-settings-chevron
+                data-state={isOpen ? "open" : "closed"}
+                className={`h-5 w-5 transition-transform duration-200 ease-out motion-reduce:transition-none ${isOpen ? "rotate-180" : ""}`}
+                aria-hidden
               />
-              <span className="block h-6 w-11 rounded-full border border-slate-500 bg-slate-400 transition-colors duration-200 ease-out peer-checked:border-moss peer-checked:bg-moss peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-moss motion-reduce:transition-none" />
-              <span className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out peer-checked:translate-x-5 motion-reduce:transition-none" />
             </span>
-            <span
-              id="care-notification-compact-state"
-              className={`whitespace-nowrap text-sm font-semibold ${compactBodyEnabled ? "text-moss" : "text-slate-700"}`}
-              aria-hidden="true"
-            >
-              {compactBodyEnabled ? "オン" : "オフ"}
-            </span>
-          </label>
-          <p id="care-notification-compact-help" className="mt-2 text-xs leading-5 text-slate-500">
-            ハムスター名を表示せず、未実施のお世話だけを短く通知します。
-          </p>
-          <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-            簡略表示例：食事が未実施のハムスターがいます
-          </p>
-        </fieldset>
-        <div className="flex justify-end">
-          <DirtySubmitButton className="inline-flex min-h-11 items-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300">
-            <Save className="h-4 w-4" aria-hidden />
-            通知設定を保存
-          </DirtySubmitButton>
+          </span>
+        </span>
+      </button>
+      <div
+        id={contentId}
+        aria-hidden={!isOpen}
+        data-notification-settings-content
+        data-state={isOpen ? "open" : "closed"}
+        className={`grid overflow-hidden transition-[grid-template-rows,opacity,visibility] duration-200 ease-out motion-reduce:transition-none ${
+          isOpen
+            ? "visible grid-rows-[1fr] opacity-100"
+            : "invisible grid-rows-[0fr] opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className={`border-t border-slate-200 ${SETTINGS_CARD_RESPONSIVE_PADDING}`}>
+            <form action={saveCareNotificationSettings} data-dirty-watch className="space-y-4">
+              <CareFields
+                prefix="feeding"
+                title="食事通知"
+                enabled={feedingNotificationEnabled}
+                onEnabledChange={setFeedingNotificationEnabled}
+                deadlineMinutes={settings.feedingDeadlineMinutes}
+                notifyBeforeMinutes={settings.feedingNotifyBeforeMinutes}
+              />
+              <CareFields
+                prefix="water"
+                title="水替え通知"
+                enabled={waterNotificationEnabled}
+                onEnabledChange={setWaterNotificationEnabled}
+                deadlineMinutes={settings.waterDeadlineMinutes}
+                notifyBeforeMinutes={settings.waterNotifyBeforeMinutes}
+              />
+              <fieldset className="rounded-lg border border-slate-200 p-4">
+                <legend className="px-1 font-semibold text-ink">通知本文</legend>
+                <p id="care-notification-compact-label" className="text-sm font-medium text-slate-700">
+                  通知内容を簡略表示する
+                </p>
+                <label
+                  htmlFor="care-notification-compact-body"
+                  className="mt-1 inline-flex min-h-11 cursor-pointer items-center gap-3 py-2"
+                >
+                  <span className="relative shrink-0">
+                    <input
+                      id="care-notification-compact-body"
+                      name="careNotificationCompactBody"
+                      type="checkbox"
+                      checked={compactBodyEnabled}
+                      onChange={(event) => setCompactBodyEnabled(event.currentTarget.checked)}
+                      aria-labelledby="care-notification-compact-label"
+                      aria-describedby="care-notification-compact-help"
+                      className="peer sr-only"
+                    />
+                    <span className="block h-6 w-11 rounded-full border border-slate-500 bg-slate-400 transition-colors duration-200 ease-out peer-checked:border-moss peer-checked:bg-moss peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-moss motion-reduce:transition-none" />
+                    <span className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out peer-checked:translate-x-5 motion-reduce:transition-none" />
+                  </span>
+                  <span
+                    id="care-notification-compact-state"
+                    className={`whitespace-nowrap text-sm font-semibold ${compactBodyEnabled ? "text-moss" : "text-slate-700"}`}
+                    aria-hidden="true"
+                  >
+                    {compactBodyEnabled ? "オン" : "オフ"}
+                  </span>
+                </label>
+                <p id="care-notification-compact-help" className="mt-2 text-xs leading-5 text-slate-500">
+                  ハムスター名を表示せず、未実施のお世話だけを短く通知します。
+                </p>
+                <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                  簡略表示例：食事が未実施のハムスターがいます
+                </p>
+              </fieldset>
+              <div className="flex justify-end">
+                <DirtySubmitButton className="inline-flex min-h-11 items-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300">
+                  <Save className="h-4 w-4" aria-hidden />
+                  通知設定を保存
+                </DirtySubmitButton>
+              </div>
+            </form>
+            <div className="mt-5">
+              <DeviceNotificationControls configured={vapidConfigured} publicKey={vapidPublicKey} />
+            </div>
+          </div>
         </div>
-      </form>
-      <div className="mt-5">
-        <DeviceNotificationControls configured={vapidConfigured} publicKey={vapidPublicKey} />
       </div>
     </section>
   );
