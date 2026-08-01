@@ -65,10 +65,10 @@
 
 - **画面または URL:** `/`。
 - **主なコンポーネント:** `DashboardMemo`、`FeedingToggle`、`WaterReplacementToggle`、`CleaningDateToggle`、`HamsterThumbnail`、`EmptyState`。`FeedingToggle`と`WaterReplacementToggle`は本日の状態とJST実施時刻を表示し、通常画面では押下で状態を切り替え、デモ・VIEWER・管理外では操作不可にする。画像登録済みの `HamsterThumbnail` はクリック・タップで拡大モーダルを表示し、未登録・読込失敗時は操作不可のプレースホルダーになる。
-- **Server Action または API:** `setTodayFeeding`（`src/app/actions/feeding.ts`）と`setTodayWaterReplacement`（`src/app/actions/water-replacement.ts`）が意図する最終状態を受け取り、共通Household更新transactionで当日記録・操作履歴・revisionを確定する。設定更新は `saveSettings`。
-- **データアクセス・Prismaモデル:** `getDashboardData`（`src/lib/queries.ts`）が `Hamster`、`AppSetting` / `DashboardHamster`、本日の `FeedingRecord` / `WaterReplacementRecord`、最新 `WeightRecord`、各種 `CleaningRecord` を Household とユーザー設定で取得する。食事・水替え記録は表示対象ハムスターIDとJST当日を指定した一括queryで取得する。
+- **Server Action または API:** `setTodayFeeding`（`src/app/actions/feeding.ts`）と`setTodayWaterReplacement`（`src/app/actions/water-replacement.ts`）が意図する最終状態を受け取り、共通Household更新transactionで現在のお世話日の記録・操作履歴・revisionを確定する。操作時はtransaction内で最新の `Household.careDayStartMinutes` を再取得する。設定更新は `saveSettings` と `saveCareDaySettings`。
+- **データアクセス・Prismaモデル:** `getDashboardData`（`src/lib/queries.ts`）が `Hamster`、`AppSetting` / `DashboardHamster`、現在のお世話日の `FeedingRecord` / `WaterReplacementRecord`、最新 `WeightRecord`、各種 `CleaningRecord` を Household とユーザー設定で取得する。食事・水替え記録は同一の`now`と`Household.careDayStartMinutes`から算出した対象日、表示対象ハムスターIDを指定した一括queryで取得する。掃除・体重などの通常日付にはお世話日境界を適用しない。
 - **バリデーション:** 表示件数・対象選択は設定の `dashboardSettingsSchema` と `dashboard-settings.ts`。
-- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/feeding.test.tsx` / `tests/water-replacement.test.tsx`（JST日付境界、日単位一意性、同時・冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）。
+- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/care-day.test.ts`、`tests/feeding.test.tsx` / `tests/water-replacement.test.tsx`（Household別のお世話日境界、日単位一意性、同時・冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）。
 - **関連設定:** `src/lib/dashboard-settings.ts`（1〜30件、選択 UI の既定値）。
 - **依存関係:** 表示対象はユーザー・Household ごとの設定。食事・水替え更新後の他メンバー反映は既存Household revision / SSE / revision pollを使う。掃除種別を増減する場合は `getDashboardData` とカード表示を同時に変更する。
 
@@ -155,13 +155,14 @@
 - **関連テスト:** `tests/dashboard-settings.test.ts`（保存順序の正規化、削除・追加・切り詰め、全件表示、管理状態、並び替え操作、サーバー検証、保存・描画経路）、`tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序・各初期表示の差分判定、重複ID検証、フォーム、保存、migration）、`tests/display-settings-section.test.tsx`（スマホ用ディスクロージャー、現在値要約、入力DOM保持、説明切替、`md`以上の常時表示、ダッシュボード設定内の表示順、dirty監視フォーム接続）、`tests/cleaning-mobile-settings.test.tsx`（衛生管理スマホ初期表示）、`tests/account-delete.test.ts`（アカウント削除の確認導線と確認UI）。
 - **関連設定:** `src/lib/dashboard-settings.ts`、`src/components/form-dirty-state.ts`、`src/components/unsaved-changes-guard.tsx`、`src/lib/records.ts`、`src/lib/cleaning-settings.ts`、`src/lib/search.ts`、`AppSetting.recordTimelineDefaultScope`、`AppSetting.cleaningMobileDefaultDateFilter`。
 - **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・各画面の初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。スマホ用ディスクロージャーは閉じてもラジオ入力をアンマウント・無効化せずCSS表示だけを切り替えるため、フォーム送信値と未保存変更検知を維持する。表示名変更は `User.name` だけを更新し、初回作成後の共有グループ名や所有権移譲後の名前とは連動させない。初回Household名だけは `defaultHouseholdName()` で生成する。ダッシュボード対象または順序に変更がある場合だけ全 `DashboardHamster` を削除し、送信順の配列インデックスを `sortOrder` として作り直すため、初期表示だけの変更では対象を作り直さない。保存順に含まれる有効IDを優先し、削除済みIDを除き、新規ハムスターを末尾へ補って表示数で切り詰める。全件表示でも登録順へ置換しない。並び順のDOM更新後は共通dirty再評価イベントでhidden inputの初期スナップショットと現在順を比較し、変更時は画面移動・beforeunload警告を有効化し、初期順へ戻した場合は解除する。順序と上限を Action と UI で一致させる。
+- **お世話日の共有設定:** `CareDaySettingsForm` は表示設定と通知設定の間に独立配置し、`Household.careDayStartMinutes`を`HH:mm`で表示する。OWNER / ADMINだけが編集可能で、保存Actionはtransaction内で最新の所属・権限を再確認し、変更・未完了通知dispatchの無効化・Household revision更新を同時に確定する。保存後は即時反映し、既存の食事・水替え記録日は変更しない。
 
 ## 食事・水替えのWebプッシュ通知
 
 - **画面またはURL:** `/settings` の独立した通知設定カード。食事・水替えごとのON/OFF、JST期限時刻、事前通知分数、個体名を省く通知本文の簡略表示と、この端末の購読状態・有効化・解除を扱う。iOS/iPadOSはホーム画面へ追加したPWAからだけ許可操作を行う。
 - **Service Worker / API:** `public/sw.js` は `push` と `notificationclick` のみを処理し、通知本文のCRLF/CRをLFへ統一してLF以外のC0制御文字とDELを除去する。通知押下時は既存ウィンドウを `/` へ移動してfocusするか新規に開く。`src/app/api/push/subscriptions/route.ts` と `status/route.ts` は認証中User、利用状態、同一origin、入力サイズ・形式、endpoint所有者を検証する。`/sw.js` と通知アイコンだけを `src/proxy.ts` の公開対象とし、購読APIは公開しない。
-- **データアクセス:** `AppSetting` の通知ON/OFF・時刻・事前通知分数・本文簡略表示はUser×Household単位で、通知と簡略表示の既存値はOFF。`WebPushSubscription` はUser×端末endpoint単位でUser削除時Cascade。`CareNotificationDispatch` はUser・Household・JST対象日・予定分の一意制約により配信予約・成功・再試行・不要を保持する。Household/User削除はCascadeし、退出・解除後は送信直前のmembership再確認で配信しない。
-- **定期CLI:** `scripts/dispatch-care-notifications.ts` / `npm run notifications:dispatch` をVPS cronから毎分呼ぶ。JST当日、予定時刻から60分以内だけを候補にし、管理中の全ハムスター（ダッシュボード非表示を含む）について `FeedingRecord` / `WaterReplacementRecord` を再確認する。2分リースで予約を短く確保してからトランザクション外で送信し、全端末が一時失敗した場合だけ5分間隔・最大3回。一部成功時は成功端末への重複回避を優先して成功扱い、404/410の購読だけ削除する。
+- **データアクセス:** `AppSetting` の通知ON/OFF・時刻・事前通知分数・本文簡略表示はUser×Household単位で、通知と簡略表示の既存値はOFF。`WebPushSubscription` はUser×端末endpoint単位でUser削除時Cascade。`CareNotificationDispatch` はUser・Household・対象お世話日・予定分の一意制約により配信予約・成功・再試行・不要を保持する。Household/User削除はCascadeし、退出・解除後は送信直前のmembership再確認で配信しない。
+- **定期CLI:** `scripts/dispatch-care-notifications.ts` / `npm run notifications:dispatch` をVPS cronから毎分呼ぶ。各Householdの `careDayStartMinutes` から現在のお世話日を算出し、予定時刻から60分以内だけを候補にして、管理中の全ハムスター（ダッシュボード非表示を含む）の `FeedingRecord` / `WaterReplacementRecord` を再確認する。送信直前と再試行・期限切れ判定でもdispatchごとに最新境界と対象日を照合する。2分リースで予約を短く確保してからトランザクション外で送信し、全端末が一時失敗した場合だけ5分間隔・最大3回。一部成功時は成功端末への重複回避を優先して成功扱い、404/410の購読だけ削除する。
 - **セキュリティ・ログ:** VAPID秘密鍵、endpoint、p256dh、auth、メールをレスポンス・画面・ログへ出さない。通知本文は食事、水替えの順で`【項目】未実施`を全角縦線`｜`で区切る1行形式とし、通常表示だけ個体名を件数付きで短縮して続ける。簡略表示では個体名を含めない。運用ログは設定・候補・成功・skip・一時失敗・無効購読の件数と内部ID/errorIdだけを扱う。
 - **関連テスト:** `tests/care-notifications.test.ts`（設定値、JST境界、遅延窓、本文短縮、管理状態・Household・送信直前再確認、重複予約、再試行、購読所有者、無効購読、Service Worker、公開パス、UI状態）。
 

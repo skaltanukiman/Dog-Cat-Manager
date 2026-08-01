@@ -1,8 +1,9 @@
 import type { Prisma } from "@prisma/client";
 
-import { canEditHouseholdSharedData } from "@/lib/authorization";
+import { canEditHouseholdSharedData, canManageCareDaySettings } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import { normalizeCareNotificationSettings } from "@/lib/care-notifications";
+import { getCareDayRecordDate, normalizeCareDayStartMinutes } from "@/lib/care-day";
 import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   normalizeDashboardBoardCount,
@@ -11,13 +12,10 @@ import {
   pickDashboardHamsters
 } from "@/lib/dashboard-settings";
 import { monthDateRange, parseDateInput, toDateInputValue } from "@/lib/date";
-import { getTodayFeedingRecordDate, todayFeedingRecordsByHamster } from "@/lib/feeding";
+import { todayFeedingRecordsByHamster } from "@/lib/feeding";
 import { prisma } from "@/lib/prisma";
 import { normalizeRecordScope } from "@/lib/records";
-import {
-  getTodayWaterReplacementRecordDate,
-  todayWaterReplacementRecordsByHamster
-} from "@/lib/water-replacement";
+import { todayWaterReplacementRecordsByHamster } from "@/lib/water-replacement";
 import { getAppliedWeightChartRange } from "@/lib/weight-chart-filter";
 
 export const WEIGHT_HISTORY_PAGE_SIZE = 20;
@@ -68,6 +66,8 @@ export async function getDashboardData() {
   const dashboardHamsters = pickDashboardHamsters(hamsters, boardCount, selectedIds);
   const dashboardHamsterIds = dashboardHamsters.map((hamster) => hamster.id);
   const now = new Date();
+  const careDayStartMinutes = normalizeCareDayStartMinutes(context.household.careDayStartMinutes);
+  const careDayRecordDate = getCareDayRecordDate(now, careDayStartMinutes);
 
   // 本日の食事・水替えと、主要な掃除タスクごとの最終実施日だけをダッシュボード用に取得する。
   const [
@@ -82,7 +82,7 @@ export async function getDashboardData() {
     prisma.feedingRecord.findMany({
       where: {
         hamsterId: { in: dashboardHamsterIds },
-        recordDate: getTodayFeedingRecordDate(now)
+        recordDate: careDayRecordDate
       },
       select: { id: true, hamsterId: true, recordDate: true, fedAt: true }
     }),
@@ -90,7 +90,7 @@ export async function getDashboardData() {
     prisma.waterReplacementRecord.findMany({
       where: {
         hamsterId: { in: dashboardHamsterIds },
-        recordDate: getTodayWaterReplacementRecordDate(now)
+        recordDate: careDayRecordDate
       },
       select: { id: true, hamsterId: true, recordDate: true, replacedAt: true }
     }),
@@ -123,8 +123,12 @@ export async function getDashboardData() {
       orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
     })
   ]);
-  const feedingByHamster = todayFeedingRecordsByHamster(feedingRecords, now);
-  const waterReplacementByHamster = todayWaterReplacementRecordsByHamster(waterReplacementRecords, now);
+  const feedingByHamster = todayFeedingRecordsByHamster(feedingRecords, now, careDayStartMinutes);
+  const waterReplacementByHamster = todayWaterReplacementRecordsByHamster(
+    waterReplacementRecords,
+    now,
+    careDayStartMinutes
+  );
   const toiletCleaningByHamster = latestRecordByHamster(toiletCleaningRecords);
   const bathCleaningByHamster = latestRecordByHamster(bathCleaningRecords);
   const flooringAllCleaningByHamster = latestRecordByHamster(flooringAllCleaningRecords);
@@ -499,6 +503,8 @@ export async function getDashboardSettingsPageData() {
     recordTimelineDefaultScope,
     cleaningMobileDefaultDateFilter,
     careNotificationSettings,
+    careDayStartMinutes: normalizeCareDayStartMinutes(context.household.careDayStartMinutes),
+    canManageCareDaySettings: canManageCareDaySettings(context.membership.role),
     hamsters,
     selectedHamsterIds
   };

@@ -15,7 +15,7 @@ import {
   NOTIFICATION_RETRY_DELAY_MINUTES,
   NOTIFICATION_TITLE
 } from "@/lib/care-notifications";
-import { todayInputJst, toDateInputValue } from "@/lib/date";
+import { toDateInputValue } from "@/lib/date";
 import { writeServerLog } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import {
@@ -153,16 +153,12 @@ async function finishDispatch(
 }
 
 async function dispatchClaim(dispatch: ClaimedDispatch, now: Date) {
-  const today = todayInputJst(now);
-  if (
-    toDateInputValue(dispatch.targetDate) !== today ||
-    !isWithinNotificationWindow(getJstMinuteOfDay(now), dispatch.scheduledMinute)
-  ) {
+  if (!isWithinNotificationWindow(getJstMinuteOfDay(now), dispatch.scheduledMinute)) {
     await finishDispatch(dispatch, "SKIPPED", now);
     return { status: "skipped" as const, invalid: 0, temporary: 0 };
   }
 
-  // 外部送信の直前に所属、設定、管理中個体、当日の実施記録をまとめて取り直す。
+  // 外部送信の直前に所属、利用状態、設定、Householdのお世話日境界を取り直す。
   const [membership, rawSetting] = await Promise.all([
     prisma.householdMember.findUnique({
       where: {
@@ -183,11 +179,25 @@ async function dispatchClaim(dispatch: ClaimedDispatch, now: Date) {
         waterNotifyBeforeMinutes: true,
         careNotificationCompactBody: true,
         user: { select: { accessStatus: true } },
-        household: { select: { isDemo: true } }
+        household: { select: { isDemo: true, careDayStartMinutes: true } }
       }
     })
   ]);
-  if (!membership || !rawSetting || rawSetting.user?.accessStatus !== "ACTIVE" || rawSetting.household?.isDemo) {
+  if (
+    !membership ||
+    !rawSetting ||
+    rawSetting.user?.accessStatus !== "ACTIVE" ||
+    !rawSetting.household ||
+    rawSetting.household.isDemo
+  ) {
+    await finishDispatch(dispatch, "SKIPPED", now);
+    return { status: "skipped" as const, invalid: 0, temporary: 0 };
+  }
+  const latestTargetDate = notificationTargetDate(
+    now,
+    rawSetting.household.careDayStartMinutes
+  );
+  if (toDateInputValue(dispatch.targetDate) !== toDateInputValue(latestTargetDate)) {
     await finishDispatch(dispatch, "SKIPPED", now);
     return { status: "skipped" as const, invalid: 0, temporary: 0 };
   }
@@ -281,23 +291,40 @@ async function dispatchClaim(dispatch: ClaimedDispatch, now: Date) {
 export async function dispatchCareNotifications(now = new Date()) {
   configureWebPush();
   const summary = createSummary();
-  const targetDate = notificationTargetDate(now);
   const nowMinute = getJstMinuteOfDay(now);
 
-  await prisma.careNotificationDispatch.updateMany({
-    where: {
-      status: { in: ["CLAIMED", "RETRYABLE"] },
-      OR: [
-        { targetDate: { lt: targetDate } },
-        {
-          targetDate,
-          scheduledMinute: { lt: Math.max(0, nowMinute - NOTIFICATION_LATE_WINDOW_MINUTES) },
-          OR: [{ status: "RETRYABLE" }, { status: "CLAIMED", leaseExpiresAt: { lte: now } }]
-        }
-      ]
-    },
-    data: { status: "SKIPPED", nextAttemptAt: null, leaseExpiresAt: now }
+  // Householdごとにお世話日が異なるため、未完了dispatchを1件ずつ関連Householdの最新境界で検証する。
+  const pendingDispatches = await prisma.careNotificationDispatch.findMany({
+    where: { status: { in: ["CLAIMED", "RETRYABLE"] } },
+    select: {
+      id: true,
+      targetDate: true,
+      scheduledMinute: true,
+      status: true,
+      attemptCount: true,
+      leaseExpiresAt: true,
+      nextAttemptAt: true,
+      household: { select: { isDemo: true, careDayStartMinutes: true } }
+    }
   });
+  const earliestValidMinute = Math.max(0, nowMinute - NOTIFICATION_LATE_WINDOW_MINUTES);
+  for (const pending of pendingDispatches) {
+    const currentTargetDate = notificationTargetDate(
+      now,
+      pending.household.careDayStartMinutes
+    );
+    const targetDateMatches =
+      toDateInputValue(pending.targetDate) === toDateInputValue(currentTargetDate);
+    const expiredWindow =
+      pending.scheduledMinute < earliestValidMinute &&
+      (pending.status === "RETRYABLE" || pending.leaseExpiresAt <= now);
+    if (!pending.household.isDemo && targetDateMatches && !expiredWindow) continue;
+
+    await prisma.careNotificationDispatch.updateMany({
+      where: { id: pending.id, status: { in: ["CLAIMED", "RETRYABLE"] } },
+      data: { status: "SKIPPED", nextAttemptAt: null, leaseExpiresAt: now }
+    });
+  }
 
   const settings = await prisma.appSetting.findMany({
     where: {
@@ -316,14 +343,16 @@ export async function dispatchCareNotifications(now = new Date()) {
       waterNotificationEnabled: true,
       waterDeadlineMinutes: true,
       waterNotifyBeforeMinutes: true,
-      careNotificationCompactBody: true
+      careNotificationCompactBody: true,
+      household: { select: { isDemo: true, careDayStartMinutes: true } }
     }
   });
   summary.settingCount = settings.length;
   const claims: ClaimedDispatch[] = [];
   for (const rawSetting of settings) {
-    if (!rawSetting.userId || !rawSetting.householdId) continue;
+    if (!rawSetting.userId || !rawSetting.householdId || !rawSetting.household) continue;
     const dueMinutes = dueNotificationMinutes(normalizeCareNotificationSettings(rawSetting), now);
+    const targetDate = notificationTargetDate(now, rawSetting.household.careDayStartMinutes);
     summary.candidateCount += dueMinutes.length;
     for (const scheduledMinute of dueMinutes) {
       const claim = await reserveNewDispatch(
@@ -337,20 +366,21 @@ export async function dispatchCareNotifications(now = new Date()) {
     }
   }
 
-  const retryCandidates = await prisma.careNotificationDispatch.findMany({
-    where: {
-      targetDate,
-      scheduledMinute: {
-        gte: Math.max(0, nowMinute - NOTIFICATION_LATE_WINDOW_MINUTES),
-        lte: nowMinute
-      },
-      attemptCount: { lt: NOTIFICATION_MAX_ATTEMPTS },
-      OR: [
-        { status: "RETRYABLE", nextAttemptAt: { lte: now } },
-        { status: "CLAIMED", leaseExpiresAt: { lte: now } }
-      ]
-    },
-    select: { id: true }
+  const retryCandidates = pendingDispatches.filter((candidate) => {
+    if (candidate.household.isDemo || candidate.attemptCount >= NOTIFICATION_MAX_ATTEMPTS) {
+      return false;
+    }
+    const targetDate = notificationTargetDate(
+      now,
+      candidate.household.careDayStartMinutes
+    );
+    if (toDateInputValue(candidate.targetDate) !== toDateInputValue(targetDate)) return false;
+    if (candidate.scheduledMinute < earliestValidMinute || candidate.scheduledMinute > nowMinute) {
+      return false;
+    }
+    return candidate.status === "RETRYABLE"
+      ? candidate.nextAttemptAt !== null && candidate.nextAttemptAt <= now
+      : candidate.leaseExpiresAt <= now;
   });
   for (const candidate of retryCandidates) {
     const claim = await reclaimDispatch(candidate.id, now);

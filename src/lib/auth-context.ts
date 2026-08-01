@@ -25,6 +25,7 @@ export type CurrentHouseholdContext = {
   household: {
     id: string;
     name: string;
+    careDayStartMinutes: number;
   };
   membership: {
     id: string;
@@ -170,7 +171,8 @@ export async function getRequiredHouseholdContext(): Promise<CurrentHouseholdCon
     user: sessionUser,
     household: {
       id: membership.household.id,
-      name: membership.household.name
+      name: membership.household.name,
+      careDayStartMinutes: membership.household.careDayStartMinutes
     },
     membership: {
       id: membership.id,
@@ -214,7 +216,11 @@ export async function getHouseholdContextForRoute(): Promise<CurrentHouseholdCon
 
   return {
     user: sessionUser,
-    household: { id: membership.household.id, name: membership.household.name },
+    household: {
+      id: membership.household.id,
+      name: membership.household.name,
+      careDayStartMinutes: membership.household.careDayStartMinutes
+    },
     membership: { id: membership.id, role: membership.role, createdAt: membership.createdAt }
   };
 }

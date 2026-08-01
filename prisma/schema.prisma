@@ -249,6 +249,7 @@ model Household {
   name                  String
   isDemo                Boolean               @default(false) @map("is_demo")
   demoSlug              String?               @unique @map("demo_slug")
+  careDayStartMinutes   Int                   @default(0) @map("care_day_start_minutes")
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
   realtimeRevision      BigInt                @default(0) @map("realtime_revision")

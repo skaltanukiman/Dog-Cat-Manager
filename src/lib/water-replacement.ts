@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
-import { parseDateInput, todayInputJst, toDateInputValue } from "@/lib/date";
+import { getCareDayDateInputJst, getCareDayRecordDate } from "@/lib/care-day";
+import { toDateInputValue } from "@/lib/date";
 
 export type WaterReplacementState = "marked" | "unmarked";
 
@@ -11,14 +12,14 @@ type WaterReplacementRecordForToday = {
   replacedAt: Date;
 };
 
-export function getTodayWaterReplacementRecordDate(now = new Date()) {
-  return parseDateInput(todayInputJst(now));
+export function getTodayWaterReplacementRecordDate(now = new Date(), careDayStartMinutes = 0) {
+  return getCareDayRecordDate(now, careDayStartMinutes);
 }
 
 export function todayWaterReplacementRecordsByHamster<
   T extends { hamsterId: string; recordDate: Date }
->(records: T[], now = new Date()) {
-  const today = todayInputJst(now);
+>(records: T[], now = new Date(), careDayStartMinutes = 0) {
+  const today = getCareDayDateInputJst(now, careDayStartMinutes);
   const recordsByHamster = new Map<string, T>();
 
   for (const record of records) {
@@ -36,15 +37,17 @@ export async function setTodayWaterReplacementState(
     hamsterId,
     createdByUserId,
     state,
-    now = new Date()
+    now = new Date(),
+    careDayStartMinutes = 0
   }: {
     hamsterId: string;
     createdByUserId: string;
     state: WaterReplacementState;
     now?: Date;
+    careDayStartMinutes?: number;
   }
-): Promise<{ changed: boolean; record: WaterReplacementRecordForToday | null }> {
-  const recordDate = getTodayWaterReplacementRecordDate(now);
+): Promise<{ changed: boolean; record: WaterReplacementRecordForToday | null; recordDate: Date }> {
+  const recordDate = getTodayWaterReplacementRecordDate(now, careDayStartMinutes);
 
   if (state === "marked") {
     const created = await tx.waterReplacementRecord.createMany({
@@ -75,7 +78,7 @@ export async function setTodayWaterReplacementState(
       throw new Error("Water replacement record was not found after marking.");
     }
 
-    return { changed: created.count === 1, record };
+    return { changed: created.count === 1, record, recordDate };
   }
 
   const deleted = await tx.waterReplacementRecord.deleteMany({
@@ -85,5 +88,5 @@ export async function setTodayWaterReplacementState(
     }
   });
 
-  return { changed: deleted.count > 0, record: null };
+  return { changed: deleted.count > 0, record: null, recordDate };
 }

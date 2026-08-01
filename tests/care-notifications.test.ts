@@ -13,6 +13,7 @@ import {
   isWithinNotificationWindow,
   MAX_NOTIFY_BEFORE_MINUTES,
   normalizeCareNotificationSettings,
+  notificationTargetDate,
   NOTIFICATION_BODY_MAX_LENGTH,
   NOTIFICATION_LATE_WINDOW_MINUTES,
   parseTimeInputToMinutes
@@ -107,6 +108,21 @@ test("JSTの日付境界をサーバーOSのタイムゾーンに依存せず分
   assert.equal(getJstMinuteOfDay(new Date("2026-07-31T14:59:00.000Z")), 23 * 60 + 59);
   assert.equal(getJstMinuteOfDay(new Date("2026-07-31T15:00:00.000Z")), 0);
   assert.equal(getJstMinuteOfDay(new Date("2026-07-31T15:30:00.000Z")), 30);
+});
+
+test("通知対象日は0時設定で従来どおり、8時設定では7:59と8:00で切り替わる", () => {
+  const beforeEight = new Date("2026-08-01T22:59:59.999Z");
+  const atEight = new Date("2026-08-01T23:00:00.000Z");
+
+  assert.equal(notificationTargetDate(beforeEight, 0).toISOString(), "2026-08-02T00:00:00.000Z");
+  assert.equal(notificationTargetDate(beforeEight, 480).toISOString(), "2026-08-01T00:00:00.000Z");
+  assert.equal(notificationTargetDate(atEight, 480).toISOString(), "2026-08-02T00:00:00.000Z");
+});
+
+test("同じ現在時刻でもHouseholdごとの切り替え時刻から異なる通知対象日を算出できる", () => {
+  const now = new Date("2026-08-01T22:59:59.999Z");
+  const householdDates = [0, 480].map((minutes) => notificationTargetDate(now, minutes).toISOString());
+  assert.deepEqual(householdDates, ["2026-08-02T00:00:00.000Z", "2026-08-01T00:00:00.000Z"]);
 });
 
 test("予定時刻の直前は対象外、同時刻とcron遅延は対象、許容範囲超過は対象外", () => {
@@ -232,6 +248,25 @@ test("送信直前に所属・設定・当日記録を再確認し、完了種�
   assert.match(source, /feedingRecords\.length === 0/);
   assert.match(source, /waterReplacementRecords\.length === 0/);
   assert.match(source, /feedingNames\.length === 0 && waterNames\.length === 0/);
+  assert.match(source, /household: \{ select: \{ isDemo: true, careDayStartMinutes: true \} \}/);
+  assert.match(source, /rawSetting\.user\?\.accessStatus !== "ACTIVE"/);
+  assert.match(source, /latestTargetDate = notificationTargetDate\([\s\S]*rawSetting\.household\.careDayStartMinutes/);
+  assert.match(source, /toDateInputValue\(dispatch\.targetDate\) !== toDateInputValue\(latestTargetDate\)/);
+});
+
+test("新規予約、期限切れ、再試行は全世帯共通targetDateを使わずHouseholdごとに検証する", () => {
+  const source = readSource("src/lib/care-notification-dispatch.ts");
+
+  assert.doesNotMatch(source, /const targetDate = notificationTargetDate\(now\);/);
+  assert.match(source, /pendingDispatches = await prisma\.careNotificationDispatch\.findMany/);
+  assert.match(source, /pending\.household\.careDayStartMinutes/);
+  assert.match(source, /rawSetting\.household\.careDayStartMinutes/);
+  assert.match(source, /retryCandidates = pendingDispatches\.filter/);
+  assert.match(source, /candidate\.household\.careDayStartMinutes/);
+  assert.doesNotMatch(
+    source,
+    /careNotificationDispatch\.updateMany\(\{[\s\S]*targetDate: \{ lt: targetDate \}/
+  );
 });
 
 test("重複予約はDB一意制約、短いリース、条件付き更新で競合を抑える", () => {

@@ -43,6 +43,10 @@ export function canUpdateHouseholdName(role: HouseholdRole) {
   return role === "OWNER";
 }
 
+export function canManageCareDaySettings(role: HouseholdRole) {
+  return role === "OWNER" || role === "ADMIN";
+}
+
 export function memberRemovalDenial({
   actorRole,
   actorUserId,

@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
-import { parseDateInput, todayInputJst, toDateInputValue } from "@/lib/date";
+import { getCareDayDateInputJst, getCareDayRecordDate } from "@/lib/care-day";
+import { toDateInputValue } from "@/lib/date";
 
 export type FeedingState = "marked" | "unmarked";
 
@@ -11,15 +12,16 @@ type FeedingRecordForToday = {
   fedAt: Date;
 };
 
-export function getTodayFeedingRecordDate(now = new Date()) {
-  return parseDateInput(todayInputJst(now));
+export function getTodayFeedingRecordDate(now = new Date(), careDayStartMinutes = 0) {
+  return getCareDayRecordDate(now, careDayStartMinutes);
 }
 
 export function todayFeedingRecordsByHamster<T extends { hamsterId: string; recordDate: Date }>(
   records: T[],
-  now = new Date()
+  now = new Date(),
+  careDayStartMinutes = 0
 ) {
-  const today = todayInputJst(now);
+  const today = getCareDayDateInputJst(now, careDayStartMinutes);
   const recordsByHamster = new Map<string, T>();
 
   for (const record of records) {
@@ -37,15 +39,17 @@ export async function setTodayFeedingState(
     hamsterId,
     createdByUserId,
     state,
-    now = new Date()
+    now = new Date(),
+    careDayStartMinutes = 0
   }: {
     hamsterId: string;
     createdByUserId: string;
     state: FeedingState;
     now?: Date;
+    careDayStartMinutes?: number;
   }
-): Promise<{ changed: boolean; record: FeedingRecordForToday | null }> {
-  const recordDate = getTodayFeedingRecordDate(now);
+): Promise<{ changed: boolean; record: FeedingRecordForToday | null; recordDate: Date }> {
+  const recordDate = getTodayFeedingRecordDate(now, careDayStartMinutes);
 
   if (state === "marked") {
     // 同時操作でも一意制約違反でtransaction全体を失敗させず、最初の1件だけを作成する。
@@ -77,7 +81,7 @@ export async function setTodayFeedingState(
       throw new Error("Feeding record was not found after marking.");
     }
 
-    return { changed: created.count === 1, record };
+    return { changed: created.count === 1, record, recordDate };
   }
 
   const deleted = await tx.feedingRecord.deleteMany({
@@ -87,5 +91,5 @@ export async function setTodayFeedingState(
     }
   });
 
-  return { changed: deleted.count > 0, record: null };
+  return { changed: deleted.count > 0, record: null, recordDate };
 }

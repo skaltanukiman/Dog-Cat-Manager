@@ -90,6 +90,35 @@ test("本日の食事日付はUTCではなくJSTの日付境界で切り替わ�
   assert.equal(toDateInputValue(getTodayFeedingRecordDate(new Date("2026-07-28T15:00:00.000Z"))), "2026-07-29");
 });
 
+test("8時境界の直前は前日、8時ちょうどは当日のお世話日へ食事を登録・取消する", async () => {
+  const database = createFakeTransaction();
+  const common = { hamsterId: "hamster-1", createdByUserId: "user-1", careDayStartMinutes: 480 };
+  const beforeBoundary = new Date("2026-08-01T22:59:59.999Z");
+  const atBoundary = new Date("2026-08-01T23:00:00.000Z");
+
+  const previousDay = await setTodayFeedingState(database.tx, {
+    ...common,
+    state: "marked",
+    now: beforeBoundary
+  });
+  assert.equal(toDateInputValue(previousDay.recordDate), "2026-08-01");
+  assert.equal(previousDay.record?.fedAt.toISOString(), beforeBoundary.toISOString());
+  const cancelled = await setTodayFeedingState(database.tx, {
+    ...common,
+    state: "unmarked",
+    now: beforeBoundary
+  });
+  assert.equal(cancelled.changed, true);
+  assert.equal(database.rows.size, 0);
+
+  const currentDay = await setTodayFeedingState(database.tx, {
+    ...common,
+    state: "marked",
+    now: atBoundary
+  });
+  assert.equal(toDateInputValue(currentDay.recordDate), "2026-08-02");
+});
+
 test("実施済み化と取消を冪等に処理し、同日レコードを重複作成しない", async () => {
   const database = createFakeTransaction();
   const input = {
@@ -129,6 +158,8 @@ test("Server Actionは共通認可、所属・管理状態確認、履歴、revi
 
   assert.match(action, /getRequiredHouseholdMutationContext\("\/"\)/);
   assert.match(action, /tx\.hamster\.findUnique/);
+  assert.match(action, /tx\.householdMember\.findUnique/);
+  assert.match(action, /careDayStartMinutes: membership\.household\.careDayStartMinutes/);
   assert.match(action, /belongsToCurrentHousehold\(hamster\.householdId, context\.household\.id\)/);
   assert.match(action, /if \(!hamster\.isActive\) redirect\("\/\?status=locked"\)/);
   assert.match(action, /commitHouseholdMutation\(\{/);
@@ -136,6 +167,7 @@ test("Server Actionは共通認可、所属・管理状態確認、履歴、revi
   assert.match(action, /FEEDING_MARKED/);
   assert.match(action, /FEEDING_UNMARKED/);
   assert.match(action, /category: "CARE_RECORD"/);
+  assert.match(action, /details: \{ recordDate: toDateInputValue\(result\.recordDate\) \}/);
   assert.match(action, /publishHouseholdChangeSafely\(change\)/);
   assert.match(action, /revalidatePathsSafely\(/);
   assert.match(action, /redirect\("\/"\)/);
@@ -161,8 +193,10 @@ test("ダッシュボードは表示対象IDの本日分を一括取得して紐
 
   assert.match(
     queries,
-    /prisma\.feedingRecord\.findMany\([\s\S]*hamsterId: \{ in: dashboardHamsterIds \}[\s\S]*recordDate: getTodayFeedingRecordDate/
+    /prisma\.feedingRecord\.findMany\([\s\S]*hamsterId: \{ in: dashboardHamsterIds \}[\s\S]*recordDate: careDayRecordDate/
   );
+  assert.match(queries, /const now = new Date\(\)/);
+  assert.match(queries, /const careDayRecordDate = getCareDayRecordDate\(now, careDayStartMinutes\)/);
   assert.match(queries, /todayFeeding: feedingByHamster\.get\(hamster\.id\) \?\? null/);
 });
 

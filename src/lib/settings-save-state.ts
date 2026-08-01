@@ -1,6 +1,7 @@
 export type SettingsSaveStatus =
   | "saved"
   | "notificationSaved"
+  | "careDaySaved"
   | "unchanged"
   | "invalid"
   | "profileNameTooLong"
@@ -15,6 +16,7 @@ export type SettingsSaveState = {
   errorId?: string;
   savedName?: string;
   savedCareNotificationSettings?: CareNotificationSettings;
+  savedCareDayStartMinutes?: number;
   savedDashboardSettings?: {
     dashboardBoardCount: number;
     hamsterSelectorMode: "combobox" | "select";
@@ -34,7 +36,11 @@ export function createSettingsSaveState(
   status: SettingsSaveStatus,
   options: Pick<
     SettingsSaveState,
-    "errorId" | "savedName" | "savedCareNotificationSettings" | "savedDashboardSettings"
+    | "errorId"
+    | "savedName"
+    | "savedCareNotificationSettings"
+    | "savedCareDayStartMinutes"
+    | "savedDashboardSettings"
   > = {}
 ): SettingsSaveState {
   return {
@@ -45,6 +51,11 @@ export function createSettingsSaveState(
 }
 
 export function isCommittedSettingsSave(state: SettingsSaveState) {
-  return state.status === "saved" || state.status === "notificationSaved" || state.status === "unchanged";
+  return (
+    state.status === "saved" ||
+    state.status === "notificationSaved" ||
+    state.status === "careDaySaved" ||
+    state.status === "unchanged"
+  );
 }
 import type { CareNotificationSettings } from "@/lib/care-notifications";

@@ -1,5 +1,6 @@
 import { AccountDeleteEntryForm } from "@/components/account-delete-entry-form";
 import { ContactSupportEntry } from "@/components/contact-support-entry";
+import { CareDaySettingsForm } from "@/components/care-day-settings-form";
 import { DashboardSettingsForm } from "@/components/dashboard-settings-form";
 import { NotificationSettingsForm } from "@/components/notification-settings-form";
 import { StatusMessage } from "@/components/status-message";
@@ -25,6 +26,8 @@ export default async function SettingsPage({
     recordTimelineDefaultScope,
     cleaningMobileDefaultDateFilter,
     careNotificationSettings,
+    careDayStartMinutes,
+    canManageCareDaySettings,
     hamsters,
     selectedHamsterIds
   } = await getDashboardSettingsPageData();
@@ -50,6 +53,12 @@ export default async function SettingsPage({
         cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
         hamsters={hamsters}
         selectedHamsterIds={selectedHamsterIds}
+      />
+
+      <CareDaySettingsForm
+        key={`care-day-${careDayStartMinutes}-${canManageCareDaySettings}`}
+        careDayStartMinutes={careDayStartMinutes}
+        canManage={canManageCareDaySettings}
       />
 
       <NotificationSettingsForm

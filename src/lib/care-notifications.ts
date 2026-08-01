@@ -1,4 +1,9 @@
-import { parseDateInput, todayInputJst } from "@/lib/date";
+import {
+  getCareDayRecordDate,
+  isMinuteOfDay
+} from "@/lib/care-day";
+
+export { formatMinutesAsTime, isMinuteOfDay, parseTimeInputToMinutes } from "@/lib/care-day";
 
 export const DEFAULT_FEEDING_DEADLINE_MINUTES = 22 * 60;
 export const DEFAULT_WATER_DEADLINE_MINUTES = 21 * 60;
@@ -22,10 +27,6 @@ export type CareNotificationSettings = {
 };
 
 export type CareKind = "feeding" | "water";
-
-export function isMinuteOfDay(value: unknown): value is number {
-  return Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) <= 1439;
-}
 
 export function normalizeCareNotificationSettings(
   setting: Partial<CareNotificationSettings> | null | undefined
@@ -58,20 +59,6 @@ export function normalizeCareNotificationSettings(
     waterNotifyBeforeMinutes,
     careNotificationCompactBody: setting?.careNotificationCompactBody === true
   };
-}
-
-export function parseTimeInputToMinutes(value: string) {
-  const match = /^(\d{2}):(\d{2})$/.exec(value);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (hours > 23 || minutes > 59) return null;
-  return hours * 60 + minutes;
-}
-
-export function formatMinutesAsTime(value: number) {
-  const safeValue = isMinuteOfDay(value) ? value : 0;
-  return `${String(Math.floor(safeValue / 60)).padStart(2, "0")}:${String(safeValue % 60).padStart(2, "0")}`;
 }
 
 export function getJstMinuteOfDay(now: Date) {
@@ -168,8 +155,8 @@ export function buildCareNotificationBody(
     : `${characters.slice(0, NOTIFICATION_BODY_MAX_LENGTH - 1).join("")}…`;
 }
 
-export function notificationTargetDate(now: Date) {
-  return parseDateInput(todayInputJst(now));
+export function notificationTargetDate(now: Date, careDayStartMinutes = 0) {
+  return getCareDayRecordDate(now, careDayStartMinutes);
 }
 
 export function addMinutes(date: Date, minutes: number) {

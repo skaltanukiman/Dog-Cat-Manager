@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 
-import { belongsToCurrentHousehold } from "@/lib/authorization";
+import { belongsToCurrentHousehold, canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdMutationContext } from "@/lib/auth-context";
-import { todayInputJst } from "@/lib/date";
+import { toDateInputValue } from "@/lib/date";
 import { setTodayFeedingState } from "@/lib/feeding";
 import { activityActorName } from "@/lib/household-activity";
 import { commitHouseholdMutation, getRealtimeActorId, publishHouseholdChangeSafely } from "@/lib/realtime";
@@ -28,11 +28,29 @@ export async function setTodayFeeding(formData: FormData) {
       actorUserId: context.user.id,
       actorNameSnapshot: activityActorName(context.user),
       mutate: async (tx) => {
-        // クライアントのIDを信用せず、更新transaction内でも現在のHousehold所属と管理状態を確定する。
-        const hamster = await tx.hamster.findUnique({
-          where: { id: parsed.data.hamsterId },
-          select: { householdId: true, isActive: true, name: true }
-        });
+        // クライアントのIDを信用せず、更新transaction内でも最新の所属・設定・管理状態を確定する。
+        const [membership, hamster] = await Promise.all([
+          tx.householdMember.findUnique({
+            where: {
+              householdId_userId: {
+                householdId: context.household.id,
+                userId: context.user.id
+              }
+            },
+            select: {
+              role: true,
+              household: { select: { careDayStartMinutes: true, isDemo: true } }
+            }
+          }),
+          tx.hamster.findUnique({
+            where: { id: parsed.data.hamsterId },
+            select: { householdId: true, isActive: true, name: true }
+          })
+        ]);
+        if (!membership || !canEditHouseholdSharedData(membership.role)) {
+          redirect("/?status=viewerForbidden");
+        }
+        if (membership.household.isDemo) redirect("/?status=invalid");
         if (!hamster || !belongsToCurrentHousehold(hamster.householdId, context.household.id)) {
           redirect("/?status=invalid");
         }
@@ -42,7 +60,8 @@ export async function setTodayFeeding(formData: FormData) {
           hamsterId: parsed.data.hamsterId,
           createdByUserId: context.user.id,
           state: parsed.data.state,
-          now
+          now,
+          careDayStartMinutes: membership.household.careDayStartMinutes
         });
         return { ...feeding, hamsterName: hamster.name };
       },
@@ -54,7 +73,7 @@ export async function setTodayFeeding(formData: FormData) {
               targetType: "HAMSTER",
               targetId: parsed.data.hamsterId,
               targetNameSnapshot: result.hamsterName,
-              details: { recordDate: todayInputJst(now) }
+              details: { recordDate: toDateInputValue(result.recordDate) }
             }
           : null
     });
