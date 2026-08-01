@@ -235,8 +235,10 @@ test("notificationclickは既存ウィンドウをダッシュボードへ移動
   let navigated = "";
   let focused = false;
   let opened = false;
+  let message: unknown;
   const client = {
     url: "https://app.example/settings",
+    postMessage: (value: unknown) => { message = value; },
     navigate: async (url: string) => { navigated = url; return client; },
     focus: async () => { focused = true; return client; }
   };
@@ -256,9 +258,38 @@ test("notificationclickは既存ウィンドウをダッシュボードへ移動
     waitUntil: (promise: Promise<unknown>) => { pending = promise; }
   });
   await pending;
-  assert.equal(navigated, "/");
+  assert.equal(navigated, "https://app.example/");
+  assert.equal(JSON.stringify(message), JSON.stringify({ type: "HAMSTER_CARE_NOTIFICATION_CLICK", url: "/" }));
   assert.equal(focused, true);
   assert.equal(opened, false);
+});
+
+test("notificationclickはnavigate失敗時もページ側フォールバックへ通知してfocusする", async () => {
+  const source = readSource("public/sw.js");
+  const listeners = new Map<string, ServiceWorkerTestListener>();
+  let focused = false;
+  let message: unknown;
+  const client = {
+    url: "https://app.example/settings",
+    postMessage: (value: unknown) => { message = value; },
+    navigate: async () => { throw new Error("navigation failed"); },
+    focus: async () => { focused = true; return client; }
+  };
+  const self = {
+    addEventListener: (type: string, listener: ServiceWorkerTestListener) => listeners.set(type, listener),
+    registration: {},
+    clients: { matchAll: async () => [client], openWindow: async () => undefined },
+    location: { origin: "https://app.example" }
+  };
+  vm.runInNewContext(source, { self, URL });
+  let pending: Promise<unknown> = Promise.resolve();
+  listeners.get("notificationclick")?.({
+    notification: { close() {} },
+    waitUntil: (promise: Promise<unknown>) => { pending = promise; }
+  });
+  await pending;
+  assert.equal(JSON.stringify(message), JSON.stringify({ type: "HAMSTER_CARE_NOTIFICATION_CLICK", url: "/" }));
+  assert.equal(focused, true);
 });
 
 test("notificationclickは既存ウィンドウがなければダッシュボードを開く", async () => {
@@ -286,6 +317,8 @@ test("Service Workerだけを公開し購読APIは認証対象のままにする
   assert.match(proxy, /"\/sw\.js"/);
   assert.doesNotMatch(proxy, /PUBLIC_(?:PATHS|PREFIXES)[\s\S]*?\/api\/push/);
   assert.match(readSource("src/components/service-worker-registration.tsx"), /register\("\/sw\.js", \{ scope: "\/" \}\)/);
+  assert.match(readSource("src/components/service-worker-registration.tsx"), /addEventListener\("message", handleServiceWorkerMessage\)/);
+  assert.match(readSource("src/components/service-worker-registration.tsx"), /message\.url !== "\/"/);
   assert.doesNotMatch(readSource("public/sw.js"), /addEventListener\("fetch"/);
 });
 

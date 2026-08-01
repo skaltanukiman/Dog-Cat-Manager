@@ -3,6 +3,8 @@ const FALLBACK_TITLE = "ハムスターのお世話を確認してください";
 const FALLBACK_BODY = "お世話の状況をアプリで確認してください。";
 const MAX_TITLE_LENGTH = 80;
 const MAX_BODY_LENGTH = 200;
+const DASHBOARD_PATH = "/";
+const NOTIFICATION_CLICK_MESSAGE = "HAMSTER_CARE_NOTIFICATION_CLICK";
 
 function safeText(value, fallback, maxLength) {
   if (typeof value !== "string") return fallback;
@@ -41,10 +43,25 @@ self.addEventListener("notificationclick", (event) => {
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clients) => {
       const existing = clients.find((client) => new URL(client.url).origin === self.location.origin);
       if (existing) {
-        if ("navigate" in existing) await existing.navigate("/");
+        const targetUrl = new URL(DASHBOARD_PATH, self.location.origin).href;
+
+        // Edgeを含む一部の環境ではWindowClient.navigate()が成功扱いでも、
+        // 開いているNext.js画面へ遷移が反映されないことがある。ページ側にも
+        // 同一オリジンの固定パスを通知し、location.assign()をフォールバックにする。
+        existing.postMessage({ type: NOTIFICATION_CLICK_MESSAGE, url: DASHBOARD_PATH });
+
+        try {
+          if ("navigate" in existing) {
+            const navigated = await existing.navigate(targetUrl);
+            return (navigated ?? existing).focus();
+          }
+        } catch {
+          // ページ側のmessageハンドラーで遷移を継続する。
+        }
+
         return existing.focus();
       }
-      return self.clients.openWindow("/");
+      return self.clients.openWindow(DASHBOARD_PATH);
     })
   );
 });
