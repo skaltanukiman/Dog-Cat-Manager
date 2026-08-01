@@ -64,6 +64,16 @@ test("通知設定は保存値の概要を表示し、全画面幅で初期状�
   assert.match(markup, /data-notification-settings-chevron="true" data-state="closed"/);
 });
 
+test("簡略表示例は食事と水替えを全角縦線で区切って表示する", () => {
+  const markup = renderNotificationSettings();
+
+  assert.match(
+    markup,
+    /簡略表示例：<\/span><span class="mt-1 block break-words">【食事】未実施｜【水替え】未実施<\/span>/
+  );
+  assert.doesNotMatch(markup, /食事が未実施のハムスターがいます|水替えが未交換/);
+});
+
 test("折りたたみヘッダーは表示設定と同じmoss系の色・形状・余白を使う", () => {
   const markup = renderNotificationSettings();
   const source = readSource();

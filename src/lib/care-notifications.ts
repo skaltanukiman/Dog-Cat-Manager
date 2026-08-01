@@ -156,12 +156,12 @@ export function buildCareNotificationBody(
 ) {
   const lines: string[] = [];
   if (feedingNames.length > 0) {
-    lines.push(compactBody ? "食事が未実施のハムスターがいます" : compactNames(feedingNames, "食事が未実施："));
+    lines.push(compactBody ? "【食事】未実施" : compactNames(feedingNames, "【食事】未実施："));
   }
   if (waterNames.length > 0) {
-    lines.push(compactBody ? "水替えが未実施のハムスターがいます" : compactNames(waterNames, "水替えが未交換："));
+    lines.push(compactBody ? "【水替え】未実施" : compactNames(waterNames, "【水替え】未実施："));
   }
-  const body = lines.join("\n") || "お世話の状況をアプリで確認してください。";
+  const body = lines.join("｜") || "お世話の状況をアプリで確認してください。";
   const characters = Array.from(body);
   return characters.length <= NOTIFICATION_BODY_MAX_LENGTH
     ? body

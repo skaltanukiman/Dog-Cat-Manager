@@ -6,9 +6,15 @@ const MAX_BODY_LENGTH = 200;
 const DASHBOARD_PATH = "/";
 const NOTIFICATION_CLICK_MESSAGE = "HAMSTER_CARE_NOTIFICATION_CLICK";
 
-function safeText(value, fallback, maxLength) {
+function safeText(value, fallback, maxLength, preserveLineBreaks = false) {
   if (typeof value !== "string") return fallback;
-  const cleaned = value.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  let cleaned = value.replace(/\r\n?/g, "\n");
+  cleaned = preserveLineBreaks
+    ? cleaned
+        .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "")
+        .replace(/\n(?:[^\S\n]*\n)+/g, "\n")
+        .trim()
+    : cleaned.replace(/[\u0000-\u001f\u007f]/g, "").trim();
   if (!cleaned) return fallback;
   return Array.from(cleaned).slice(0, maxLength).join("");
 }
@@ -22,7 +28,7 @@ self.addEventListener("push", (event) => {
     payload = {};
   }
   const title = safeText(payload.title, FALLBACK_TITLE, MAX_TITLE_LENGTH);
-  const body = safeText(payload.body, FALLBACK_BODY, MAX_BODY_LENGTH);
+  const body = safeText(payload.body, FALLBACK_BODY, MAX_BODY_LENGTH, true);
   const icon = typeof payload.icon === "string" && payload.icon.startsWith("/icons/")
     ? payload.icon
     : "/icons/pwa-192.png";

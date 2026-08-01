@@ -487,7 +487,10 @@ export function NotificationSettingsForm({
                   ハムスター名を表示せず、未実施のお世話だけを短く通知します。
                 </p>
                 <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-                  簡略表示例：食事が未実施のハムスターがいます
+                  <span className="block font-medium">簡略表示例：</span>
+                  <span className="mt-1 block break-words">
+                    【食事】未実施｜【水替え】未実施
+                  </span>
                 </p>
               </fieldset>
               <div>

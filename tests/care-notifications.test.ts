@@ -30,6 +30,27 @@ type ServiceWorkerTestEvent = {
 };
 type ServiceWorkerTestListener = (event: ServiceWorkerTestEvent) => void;
 
+async function showPushNotification(payload: unknown) {
+  const source = readSource("public/sw.js");
+  const listeners = new Map<string, ServiceWorkerTestListener>();
+  const shown: unknown[][] = [];
+  const self = {
+    addEventListener: (type: string, listener: ServiceWorkerTestListener) => listeners.set(type, listener),
+    registration: { showNotification: async (...args: unknown[]) => shown.push(args) },
+    clients: {},
+    location: { origin: "https://app.example" }
+  };
+  vm.runInNewContext(source, { self, URL });
+  let pending: Promise<unknown> = Promise.resolve();
+  listeners.get("push")?.({
+    data: { json: () => payload },
+    waitUntil: (promise: Promise<unknown>) => { pending = promise; }
+  });
+  await pending;
+  assert.equal(shown.length, 1);
+  return shown[0] as [string, { body: string }];
+}
+
 const validForm = {
   feedingNotificationEnabled: true,
   feedingDeadline: "22:00",
@@ -109,20 +130,47 @@ test("食事と水替えが同じ予定時刻なら1つの配信候補へまと�
   assert.deepEqual(dueCareKinds(setting, 1290), ["feeding", "water"]);
 });
 
-test("通知本文は未実施種別を分け、個体数が多い場合は省略して最大長を守る", () => {
-  const names = Array.from({ length: 40 }, (_, index) => `とても長いハムスター名${index + 1}`);
-  const body = buildCareNotificationBody(names, ["きなこ"]);
-  assert.match(body, /^食事が未実施：/);
-  assert.match(body, /ほか\d+匹/);
-  assert.match(body, /水替えが未交換：きなこ/);
+test("簡略通知本文は対象項目だけを食事、水替えの順で全角縦線区切りにする", () => {
+  assert.equal(buildCareNotificationBody(["A"], [], true), "【食事】未実施");
+  assert.equal(buildCareNotificationBody([], ["B"], true), "【水替え】未実施");
+  assert.equal(
+    buildCareNotificationBody(["A"], ["B"], true),
+    "【食事】未実施｜【水替え】未実施"
+  );
+  assert.doesNotMatch(buildCareNotificationBody(["きなこ"], ["シロ"], true), /きなこ|シロ/);
+});
+
+test("通常通知本文は簡略表示と同じ項目構造で対象名を読点区切りにする", () => {
+  assert.equal(buildCareNotificationBody(["A"], []), "【食事】未実施：A");
+  assert.equal(buildCareNotificationBody([], ["B"]), "【水替え】未実施：B");
+  assert.equal(
+    buildCareNotificationBody(["A", "C"], ["B"]),
+    "【食事】未実施：A、C｜【水替え】未実施：B"
+  );
+});
+
+test("通常通知本文は名前を安全化し、多い場合はほかN匹で省略して最大長を守る", () => {
+  const longNames = ["A", "B", "C", "D", "E"].map((value) => value.repeat(30));
+  const body = buildCareNotificationBody(longNames, ["きなこ\u0000\t\n"]);
+
+  assert.match(body, /^【食事】未実施：A{30}、B{30}、ほか3匹｜/);
+  assert.match(body, /【水替え】未実施：きなこ/);
   assert.ok(Array.from(body).length <= NOTIFICATION_BODY_MAX_LENGTH);
+  assert.doesNotMatch(body, /[\r\n]/);
   assert.doesNotMatch(body, /[\u0000-\u0009\u000b-\u001f\u007f]/);
 });
 
-test("通知本文の簡略表示はハムスター名を含めず未実施のお世話だけを示す", () => {
-  const body = buildCareNotificationBody(["きなこ", "シロ"], ["きなこ"], true);
-  assert.equal(body, "食事が未実施のハムスターがいます\n水替えが未実施のハムスターがいます");
-  assert.doesNotMatch(body, /きなこ|シロ/);
+test("通知本文は対象なしのフォールバックとコードポイント単位の末尾省略を維持する", () => {
+  const source = readSource("src/lib/care-notifications.ts");
+  const longNames = Array.from({ length: 40 }, (_, index) => `とても長いハムスター名${index + 1}`);
+  const body = buildCareNotificationBody(longNames, longNames);
+
+  assert.equal(buildCareNotificationBody([], []), "お世話の状況をアプリで確認してください。");
+  assert.ok(Array.from(body).length <= NOTIFICATION_BODY_MAX_LENGTH);
+  assert.match(
+    source,
+    /Array\.from\(body\)[\s\S]*?characters\.slice\(0, NOTIFICATION_BODY_MAX_LENGTH - 1\)[\s\S]*?…/
+  );
 });
 
 test("PushSubscription入力はHTTPS endpointと鍵の形式・サイズを検証する", () => {
@@ -243,6 +291,37 @@ test("Service Workerはpush payloadを表示し、不正値を安全な文言へ
   assert.equal((shown[0][1] as { body: string }).body, "お世話の状況をアプリで確認してください。");
 });
 
+test("Service Workerは本文のLFを維持し、CRLFとCRをLFへ統一する", async () => {
+  const [, lfOptions] = await showPushNotification({
+    title: "通知",
+    body: "【食事】未実施\n【水替え】未実施"
+  });
+  const [, crOptions] = await showPushNotification({
+    title: "通知",
+    body: "【食事】未実施\r\n【水替え】未実施\r確認"
+  });
+
+  assert.equal(lfOptions.body, "【食事】未実施\n【水替え】未実施");
+  assert.equal(crOptions.body, "【食事】未実施\n【水替え】未実施\n確認");
+});
+
+test("Service Workerは過剰な改行とLF以外の制御文字を除去する", async () => {
+  const [, options] = await showPushNotification({
+    title: "通知",
+    body: "\u0000\t【食事】未実施\n \n\n\u000b【水替え】未実施\u000c\u007f"
+  });
+
+  assert.equal(options.body, "【食事】未実施\n【水替え】未実施");
+  assert.doesNotMatch(options.body, /[\u0000-\u0009\u000b-\u001f\u007f]/);
+});
+
+test("Service Workerはサロゲートペアを壊さず本文最大文字数を適用する", async () => {
+  const [, options] = await showPushNotification({ title: "通知", body: "🐹".repeat(205) });
+
+  assert.equal(Array.from(options.body).length, 200);
+  assert.equal(options.body, "🐹".repeat(200));
+});
+
 test("notificationclickは既存ウィンドウをダッシュボードへ移動してfocusする", async () => {
   const source = readSource("public/sw.js");
   const listeners = new Map<string, ServiceWorkerTestListener>();
@@ -348,6 +427,10 @@ test("設定UIは非対応・未選択・拒否・未登録・有効・解除・
   assert.match(source, /name="careNotificationCompactBody"/);
   assert.match(source, /通知内容を簡略表示する/);
   assert.match(source, /ハムスター名を表示せず/);
+  assert.match(source, /簡略表示例：/);
+  assert.match(source, /【食事】未実施/);
+  assert.match(source, /【水替え】未実施/);
+  assert.match(source, /簡略表示例：[\s\S]*?className="mt-1 block break-words"[\s\S]*?【食事】未実施｜【水替え】未実施/);
   assert.match(source, /useState\(settings\.careNotificationCompactBody\)/);
   assert.match(source, /checked=\{compactBodyEnabled\}/);
   assert.match(source, /setCompactBodyEnabled\(event\.currentTarget\.checked\)/);
