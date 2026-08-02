@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useId, useRef, useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 export type MemoryHamsterOption = {
   id: string;
@@ -120,27 +121,33 @@ export function MemoryHamsterSelector({
         ref={detailsRef}
         open={hasError || isOpen}
         onToggle={(event) => setIsOpen(event.currentTarget.open)}
-        className={`rounded-md border bg-slate-50 px-3 py-1 ${hasError ? "border-red-300" : "border-slate-200"}`}
+        className={`group rounded-md border bg-slate-50 px-3 py-1 ${hasError ? "border-red-300" : "border-slate-200"}`}
       >
-        <summary className="min-h-11 cursor-pointer py-2 text-sm text-slate-700 marker:text-xs marker:text-slate-500 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2">
-          <span className="ml-1 inline-flex max-w-[calc(100%_-_1.5rem)] min-w-0 flex-col gap-0.5 align-middle sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
-            <span className="font-semibold text-slate-700">対象ハムスター（複数選択可）</span>
-            <span className="min-w-0 break-words leading-6 text-slate-600" aria-live="polite">
-              {summary.visibleHamsters.length > 0 ? (
-                summary.visibleHamsters.map((hamster, index) => (
-                  <Fragment key={hamster.id}>
-                    {index > 0 ? "、" : null}
-                    <span className="font-semibold text-ink">
-                      {hamster.name}
-                      {hamster.id === summary.effectiveRepresentativeId ? "（代表）" : null}
-                    </span>
-                  </Fragment>
-                ))
-              ) : (
-                <span className="font-semibold text-red-700">未選択</span>
-              )}
-              {summary.additionalCount > 0 ? `、ほか${summary.additionalCount}匹` : null}
-              <span className="whitespace-nowrap text-slate-500">・{summary.selectedCount}匹選択中</span>
+        <summary className="min-h-11 cursor-pointer list-none py-2 text-sm text-slate-700 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+          <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2">
+            <ChevronRight
+              className="mt-0.5 h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-90"
+              aria-hidden
+            />
+            <span className="min-w-0 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2">
+              <span className="block font-semibold text-slate-700">対象ハムスター（複数選択可）</span>
+              <span className="mt-0.5 block min-w-0 break-words leading-6 text-slate-600 sm:mt-0" aria-live="polite">
+                {summary.visibleHamsters.length > 0 ? (
+                  summary.visibleHamsters.map((hamster, index) => (
+                    <Fragment key={hamster.id}>
+                      {index > 0 ? "、" : null}
+                      <span className="font-semibold text-ink">
+                        {hamster.name}
+                        {hamster.id === summary.effectiveRepresentativeId ? "（代表）" : null}
+                      </span>
+                    </Fragment>
+                  ))
+                ) : (
+                  <span className="font-semibold text-red-700">未選択</span>
+                )}
+                {summary.additionalCount > 0 ? `、ほか${summary.additionalCount}匹` : null}
+                <span className="whitespace-nowrap text-slate-500">・{summary.selectedCount}匹選択中</span>
+              </span>
             </span>
           </span>
         </summary>

@@ -98,6 +98,36 @@ test("新規2〜4匹はdetailsが開き、新規5匹以上と編集は閉じて�
   assert.doesNotMatch(collapsedMarkup, /<button|>変更<|>閉じる/);
 });
 
+test("独自マーカーは見出しへ上揃えし、スマホは本文列を2段、640px以上は横並びにする", () => {
+  const markup = renderToStaticMarkup(
+    <MemoryHamsterSelector
+      hamsters={hamsters}
+      selectedIds={["h1", "h2", "h3"]}
+      representativeId="h1"
+      lockRepresentative
+    />
+  );
+  const summaryMarkup = markup.match(/<summary[^>]*>[\s\S]*?<\/summary>/)?.[0];
+
+  assert.ok(summaryMarkup);
+  assert.match(summaryMarkup, /\bmin-h-11\b/);
+  assert.match(summaryMarkup, /\blist-none\b/);
+  assert.match(summaryMarkup, /webkit-details-marker/);
+  assert.match(summaryMarkup, /lucide-chevron-right/);
+  assert.match(summaryMarkup, /aria-hidden="true"/);
+  assert.match(summaryMarkup, /group-open:rotate-90/);
+  assert.match(
+    summaryMarkup,
+    /<span class="grid min-w-0 grid-cols-\[auto_minmax\(0,1fr\)\] items-start gap-x-2">[\s\S]*?<svg[\s\S]*?<span class="min-w-0 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2">/
+  );
+  assert.match(
+    summaryMarkup,
+    /<span class="min-w-0 sm:flex[^>]*">\s*<span class="block font-semibold[^>]*">対象ハムスター（複数選択可）<\/span>\s*<span class="mt-0\.5 block min-w-0 break-words[^>]*">[\s\S]*きなこ（代表）[\s\S]*もなか[\s\S]*ほか1匹[\s\S]*3匹選択中/
+  );
+  assert.doesNotMatch(summaryMarkup, /grid-cols-\[auto_minmax\(0,1fr\)\][^">]*items-center/);
+  assert.doesNotMatch(summaryMarkup, /<button/);
+});
+
 test("折りたたみ時もチェックボックスとhamsterIdsをDOMに保持する", () => {
   const markup = renderToStaticMarkup(
     <MemoryHamsterSelector hamsters={hamsters} selectedIds={["h1", "h2"]} representativeId="h1" lockRepresentative />

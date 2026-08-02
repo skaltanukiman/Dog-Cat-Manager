@@ -456,6 +456,11 @@ test("デモの思い出対象は通常版の要約付き選択UIを操作不可
   assert.match(markup, /きなこ[\s\S]*代表/);
   assert.match(markup, /1匹選択中/);
   assert.match(markup, /<details[\s\S]*<summary/);
+  assert.match(markup, /<summary[^>]*\blist-none\b[^>]*webkit-details-marker/);
+  assert.match(markup, /lucide-chevron-right/);
+  assert.match(markup, /group-open:rotate-90/);
+  assert.match(markup, /grid-cols-\[auto_minmax\(0,1fr\)\] items-start/);
+  assert.match(markup, /min-w-0 sm:flex sm:flex-wrap sm:items-baseline/);
   assert.doesNotMatch(markup, /<details[^>]*open=""|>変更<|>閉じる/);
   assert.match(markup, /管理外/);
   assert.doesNotMatch(markup, /name="hamsterIds"/);
