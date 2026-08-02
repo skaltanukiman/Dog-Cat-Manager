@@ -106,21 +106,23 @@ export function CareDaySettingsForm({
             <form ref={formRef} action={saveAction} data-dirty-watch aria-busy={isSaving}>
               <label className="block text-sm font-medium text-slate-700">
                 お世話日の切り替え時刻
-                <input
-                  name="careDayStartTime"
-                  type="time"
-                  required
-                  step={60}
-                  disabled={!canManage || isSaving}
-                  defaultValue={formatMinutesAsTime(careDayStartMinutes)}
-                  className="mt-1 block min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-ink disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 sm:max-w-xs"
-                />
+                <span className="mt-1 block w-full sm:max-w-md">
+                  <input
+                    name="careDayStartTime"
+                    type="time"
+                    required
+                    step={60}
+                    disabled={!canManage || isSaving}
+                    defaultValue={formatMinutesAsTime(careDayStartMinutes)}
+                    className="block min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-ink disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                  />
+                </span>
               </label>
               <div className="mt-2 max-w-3xl space-y-1 text-sm leading-6 text-slate-600">
                 <p>設定した時刻になると、食事と水替えが新しいお世話日に切り替わります。</p>
                 <p>例：8:00に設定した場合、翌日の7:59までは同じお世話日として扱います。</p>
               </div>
-              <div className="mt-4 max-w-3xl rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+              <div className="mt-4 w-full max-w-4xl rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
                 <div className="space-y-1">
                   <p>変更内容は、保存後すぐに反映されます。</p>
                   <p>
