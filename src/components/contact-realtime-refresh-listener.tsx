@@ -160,7 +160,7 @@ export function ContactRealtimeRefreshListener({
         markSyncSuccess();
         processChange(payload);
       } catch {
-        // Ignore malformed process-local events; the DB revision poll remains authoritative.
+        // 壊れたプロセス内イベントは無視し、正しい状態はDB revisionのpollで追従する。
       }
     }
 

@@ -66,6 +66,7 @@ async function reserveNewDispatch(
   now: Date
 ): Promise<ClaimedDispatch | null> {
   const claimToken = randomUUID();
+  // 複数の定期実行が重なっても、DBの複合一意制約を競合判定にして1件だけ予約する。
   const created = await prisma.careNotificationDispatch.createMany({
     data: {
       userId,
@@ -102,6 +103,7 @@ async function reserveNewDispatch(
 
 async function reclaimDispatch(id: string, now: Date): Promise<ClaimedDispatch | null> {
   const claimToken = randomUUID();
+  // 期限切れリースまたは再試行可能な行だけを条件付き更新し、同じdispatchの再取得を直列化する。
   const claimed = await prisma.careNotificationDispatch.updateMany({
     where: {
       id,
@@ -140,6 +142,7 @@ async function finishDispatch(
   status: "SENT" | "RETRYABLE" | "SKIPPED",
   now: Date
 ) {
+  // claimTokenをフェンスにし、リースを失った古い実行プロセスが新しい処理結果を上書きしない。
   return prisma.careNotificationDispatch.updateMany({
     where: { id: dispatch.id, claimToken: dispatch.claimToken, status: "CLAIMED" },
     data: {
@@ -389,6 +392,7 @@ export async function dispatchCareNotifications(now = new Date()) {
   summary.claimedCount = claims.length;
 
   for (const claim of claims) {
+    // 候補の処理中に通知窓やお世話日境界をまたぐ可能性があるため、予約時刻ではなく直前時刻で再検証する。
     const result = await dispatchClaim(claim, new Date());
     summary.invalidSubscriptionCount += result.invalid;
     summary.temporaryFailureCount += result.temporary;

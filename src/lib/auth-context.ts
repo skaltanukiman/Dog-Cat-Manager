@@ -60,6 +60,7 @@ export async function getRequiredSessionUser(): Promise<SessionUser> {
     redirect("/login");
   }
 
+  // Session内の権限・利用状態は発行後に変わり得るため、認可に使うユーザー情報はDBから取り直す。
   const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
     select: { id: true, appRole: true, accessStatus: true, name: true, email: true, image: true }

@@ -63,6 +63,7 @@ export function calculateHouseholdActivityCutoffDate(now: Date, retentionDays: n
 export function householdActivityCleanupWhere(cutoffDate: Date): CleanupWhere {
   return {
     createdAt: {
+      // 保持期間ちょうどの行は残し、基準より古い履歴だけを削除する。
       lt: cutoffDate
     }
   };

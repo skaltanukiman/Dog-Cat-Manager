@@ -12,6 +12,7 @@ import {
 } from "../src/lib/public-demo";
 
 function relativeDate(days: number, today = todayInputJst()) {
+  // デモの暦日は実行環境のタイムゾーンではなく、JSTの実行日をUTC 00:00表現へ固定して組み立てる。
   const value = parseDateInput(today);
   value.setUTCDate(value.getUTCDate() + days);
   return value;
@@ -51,6 +52,7 @@ function feedingRow(
   hourJst: number,
   minute: number
 ): Prisma.FeedingRecordCreateWithoutHamsterInput {
+  // recordDateは日付のみ、fedAtはUTC timestampなので、JST時刻から9時間戻して別々に保存する。
   const fedAt = relativeDate(0);
   fedAt.setUTCHours(hourJst - 9, minute, 0, 0);
 
@@ -66,6 +68,7 @@ function waterReplacementRow(
   hourJst: number,
   minute: number
 ): Prisma.WaterReplacementRecordCreateWithoutHamsterInput {
+  // recordDateは日付のみ、replacedAtはUTC timestampなので、JST時刻から9時間戻して別々に保存する。
   const replacedAt = relativeDate(0);
   replacedAt.setUTCHours(hourJst - 9, minute, 0, 0);
 
@@ -851,6 +854,7 @@ function demoHamsters(): Prisma.HamsterCreateWithoutHouseholdInput[] {
 
 export async function rebuildPublicDemoData(client: PrismaClient) {
   await client.$transaction(async (tx) => {
+    // 固定IDやslugを通常Householdが使用中なら削除せず中止し、デモだけを原子的に再構築する。
     const [slugTarget, idTarget] = await Promise.all([
       tx.household.findUnique({
         where: { demoSlug: PUBLIC_DEMO_SLUG },
@@ -909,6 +913,7 @@ export async function rebuildPublicDemoData(client: PrismaClient) {
       where: { recordType: "MEMORY", hamster: { householdId: PUBLIC_DEMO_HOUSEHOLD_ID } },
       select: { id: true, hamsterId: true }
     });
+    // nested createで作った代表個体に加え、共同の思い出を中間テーブルへ同じtransaction内で補完する。
     await tx.memoryRecordHamster.createMany({
       data: memoryRecords.flatMap((record) => [
         { hamsterRecordId: record.id, hamsterId: record.hamsterId, sortOrder: 0 },

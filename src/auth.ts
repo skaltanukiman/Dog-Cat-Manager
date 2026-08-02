@@ -12,6 +12,7 @@ const baseAdapter = PrismaAdapter(prisma);
 const suspensionAwareAdapter = {
   ...baseAdapter,
   async getSessionAndUser(sessionToken: string) {
+    // signIn callbackだけでは停止前に発行済みのDB Sessionを拒否できないため、Session参照時にも最新状態を確認する。
     const result = await baseAdapter.getSessionAndUser?.(sessionToken);
     if (!result) return null;
 

@@ -42,7 +42,7 @@ export function ScrollPreservingLink({
       try {
         window.sessionStorage.removeItem(SCROLL_POSITION_STORAGE_KEY);
       } catch {
-        // Ignore unavailable storage and fall back to Next.js's scroll behavior.
+        // storageが使えない環境では、Next.js標準のスクロール挙動へフォールバックする。
       }
     }
 
@@ -70,7 +70,7 @@ export function ScrollPreservingLink({
     try {
       window.sessionStorage.setItem(SCROLL_POSITION_STORAGE_KEY, JSON.stringify(stored));
     } catch {
-      // Storage unavailable environments still retain Next.js's scroll={false} behavior.
+      // storageが使えなくてもscroll={false}は有効なので、画面遷移自体はそのまま継続する。
     }
   }
 

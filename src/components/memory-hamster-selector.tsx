@@ -32,6 +32,7 @@ export function getMemoryHamsterSelectionSummary({
 }) {
   const selectedIdSet = new Set(selectedIds);
   const selectedHamsters = hamsters.filter((hamster) => selectedIdSet.has(hamster.id));
+  // 代表が選択から外れた場合は選択一覧の先頭を新しい代表とし、要約表示と保存時の業務ルールを揃える。
   const effectiveRepresentativeId = selectedIdSet.has(representativeId)
     ? representativeId
     : selectedHamsters[0]?.id ?? null;

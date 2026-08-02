@@ -13,7 +13,7 @@ export function ensureRealtimeClientId() {
     const existingClientId = window.sessionStorage.getItem(REALTIME_CLIENT_STORAGE_KEY);
     if (existingClientId) return existingClientId;
   } catch {
-    // Restricted browser modes can disable sessionStorage; keep using an in-memory id.
+    // 制限付きブラウザーでsessionStorageが無効でも、メモリ上のIDで同一画面の自己更新抑止を続ける。
   }
 
   const clientId = createRealtimeClientId();
@@ -21,7 +21,7 @@ export function ensureRealtimeClientId() {
   try {
     window.sessionStorage.setItem(REALTIME_CLIENT_STORAGE_KEY, clientId);
   } catch {
-    // Restricted browser modes can disable sessionStorage; keep using the generated id.
+    // 保存できない環境でも生成済みIDは利用できるため、同期機能全体は失敗扱いにしない。
   }
 
   return clientId;

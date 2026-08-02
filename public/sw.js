@@ -1,4 +1,4 @@
-/* Push notifications only. This worker intentionally has no fetch handler or offline cache. */
+/* 通知専用。アプリ本体の更新を妨げないようfetchハンドラーやオフラインキャッシュは持たない。 */
 const FALLBACK_TITLE = "ハムスターのお世話を確認してください";
 const FALLBACK_BODY = "お世話の状況をアプリで確認してください。";
 const MAX_TITLE_LENGTH = 80;

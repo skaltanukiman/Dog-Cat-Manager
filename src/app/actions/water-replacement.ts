@@ -28,6 +28,7 @@ export async function setTodayWaterReplacement(formData: FormData) {
       actorUserId: context.user.id,
       actorNameSnapshot: activityActorName(context.user),
       mutate: async (tx) => {
+        // クライアントのIDを信用せず、更新transaction内でも最新の所属・設定・管理状態を確定する。
         const [membership, hamster] = await Promise.all([
           tx.householdMember.findUnique({
             where: {

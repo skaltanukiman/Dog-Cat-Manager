@@ -620,6 +620,7 @@ export async function updateMemoryRecord(formData: FormData) {
     const removeImage = formData.get("removeImage") === "true";
     const oldImage = record.memoryDetail.images[0]?.fileName ?? null;
     const currentHamsterIds = record.memoryDetail.hamsters.map((entry) => entry.hamsterId);
+    // 代表個体を外した場合も共同の思い出は残し、送信された選択順の先頭へ代表を引き継ぐ。
     const representativeHamsterId = result.data.hamsterIds.includes(record.hamsterId)
       ? record.hamsterId
       : result.data.hamsterIds[0];

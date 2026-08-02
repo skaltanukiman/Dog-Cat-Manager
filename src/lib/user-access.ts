@@ -136,6 +136,7 @@ export async function suspendUserAccess(
   if (!reason) return "invalidReason";
 
   return execute(async (repository) => {
+    // SUPER_ADMINの停止・権限変更・削除と同じlockで直列化し、同時操作でも最後の利用可能者を残す。
     await repository.lockSuperAdminState();
     const actor = await repository.findUser(input.actorUserId);
     if (!actor || actor.appRole !== "SUPER_ADMIN" || actor.accessStatus !== "ACTIVE") return "forbidden";
@@ -159,6 +160,7 @@ export async function suspendUserAccess(
     });
     if (!updated) return "stateChanged";
 
+    // 状態更新とSession失効を同じtransactionに含め、停止済みなのに既存Sessionだけ有効な状態を作らない。
     await repository.deleteSessions(target.id);
     await repository.createAction({ actionType: "SUSPENDED", actor, target, reason, createdAt: now });
     return "suspended";
@@ -210,6 +212,7 @@ export async function isSuspendedUserForSignIn(
   reader: SuspendedSignInReader = suspendedSignInReader
 ) {
   const identities: Prisma.UserWhereInput[] = [];
+  // OAuth初回処理ではDB上のUser IDがまだ確定しない場合があるため、既存利用者はメールでも照合する。
   if (identity.id) identities.push({ id: identity.id });
   if (identity.email) identities.push({ email: identity.email });
   if (identities.length === 0) return false;

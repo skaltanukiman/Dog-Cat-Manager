@@ -24,6 +24,7 @@ export async function registerPushSubscription(
   subscription: NonNullable<ReturnType<typeof parsePushSubscription>>,
   userAgent: string | null
 ) {
+  // endpointは端末側の購読識別子。既存所有者を上書きすると別ユーザーへ通知が届くため付け替えない。
   const existing = await prisma.webPushSubscription.findUnique({
     where: { endpoint: subscription.endpoint },
     select: { id: true, userId: true }
@@ -53,6 +54,7 @@ export async function registerPushSubscription(
     return "registered" as const;
   } catch (error) {
     if (!isPrismaUniqueConstraintError(error)) throw error;
+    // 事前確認後に別リクエストが作成した競合だけを再読込し、同じユーザーなら冪等成功とする。
     const raced = await prisma.webPushSubscription.findUnique({
       where: { endpoint: subscription.endpoint },
       select: { userId: true }

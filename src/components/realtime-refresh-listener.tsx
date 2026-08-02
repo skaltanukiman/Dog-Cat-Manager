@@ -63,6 +63,7 @@ export function RealtimeRefreshListener({ currentUserId, householdId }: Realtime
     const eventSource = new EventSource(`/api/realtime/household?householdId=${encodeURIComponent(householdId)}`);
 
     function ensureActorField(form: HTMLFormElement) {
+      // Server Actionへタブ固有IDを渡し、commit後に返るSSE/pollの更新元を識別できるようにする。
       if (isGetForm(form)) {
         return;
       }
@@ -288,6 +289,7 @@ export function RealtimeRefreshListener({ currentUserId, householdId }: Realtime
     // プロセス内SSEで届かない更新も拾えるよう、DB revisionのpollを常時併用する。
     void checkRevision(true);
 
+    // App Routerのrefreshや条件描画で後から追加・置換されるformにも、同じ識別子を継続して付与する。
     const observer = new MutationObserver(syncActorFields);
     observer.observe(document.body, { childList: true, subtree: true });
 

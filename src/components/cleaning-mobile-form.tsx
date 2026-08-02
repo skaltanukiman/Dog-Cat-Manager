@@ -52,6 +52,7 @@ export function CleaningMobileDayFilter({
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
 
   function handleDateChange(value: string) {
+    // 日付ナビと編集formは別コンポーネントなので、同じ選択日を維持するため画面内イベントで同期する。
     setSelectedDate(value);
     window.dispatchEvent(new CustomEvent(CLEANING_MOBILE_DAY_FILTER_EVENT, { detail: value }));
   }

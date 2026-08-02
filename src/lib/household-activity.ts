@@ -39,6 +39,7 @@ export async function createHouseholdActivity(
     actorNameSnapshot: string;
   }
 ) {
+  // User削除後も履歴を読めるよう表示名をsnapshotで保持し、メールなど不要な個人情報は保存しない。
   return tx.householdActivity.create({
     data: {
       householdId: input.householdId,
@@ -212,6 +213,7 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
       default: return fallback;
     }
   } catch {
+    // 過去行のJSON形式が変わっても履歴画面全体を壊さず、機密値を展開しない固定文言へ退避する。
     return fallback;
   }
 }

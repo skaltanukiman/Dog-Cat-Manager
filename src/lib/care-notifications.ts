@@ -9,6 +9,7 @@ export const DEFAULT_FEEDING_DEADLINE_MINUTES = 22 * 60;
 export const DEFAULT_WATER_DEADLINE_MINUTES = 21 * 60;
 export const DEFAULT_NOTIFY_BEFORE_MINUTES = 30;
 export const MAX_NOTIFY_BEFORE_MINUTES = 12 * 60;
+// 定期実行の遅延を1時間まで許容し、送信処理は短いリースで確保して一時失敗時だけ再試行する。
 export const NOTIFICATION_LATE_WINDOW_MINUTES = 60;
 export const NOTIFICATION_RETRY_DELAY_MINUTES = 5;
 export const NOTIFICATION_CLAIM_LEASE_MINUTES = 2;
@@ -80,6 +81,7 @@ export function isWithinNotificationWindow(
 
 export function dueNotificationMinutes(setting: CareNotificationSettings, now: Date) {
   const nowMinute = getJstMinuteOfDay(now);
+  // 食事と水替えが同じ予定時刻なら、1件のdispatchにまとめて通知の重複を避ける。
   const due = new Set<number>();
   if (setting.feedingNotificationEnabled) {
     const minute = getNotificationScheduledMinute(

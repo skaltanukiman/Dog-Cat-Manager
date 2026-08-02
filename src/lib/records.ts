@@ -19,6 +19,7 @@ export const DEFAULT_RECORD_SCOPE: RecordScope = "hamster";
 export type RecordCreateKind = "health" | "medical" | "memory";
 
 export function recordCreateKindForHamsterStatus(currentKind: RecordCreateKind, hamsterIsActive: boolean): RecordCreateKind {
+  // 管理外の個体には新しい健康・通院記録を追加できないが、過去の思い出は引き続き残せる。
   return hamsterIsActive ? currentKind : "memory";
 }
 
@@ -199,6 +200,7 @@ export function buildRecordKeywordWhere(keyword: string): Prisma.HamsterRecordWh
     .map<Prisma.HamsterRecordWhereInput>((conditions) => ({ OR: conditions }));
 
   if (groups.length === 0) return undefined;
+  // 通常語と#タグは互いにAND、各表記ゆれはORにし、両方を指定した検索の意図を保つ。
   return groups.length === 1 ? groups[0] : { AND: groups };
 }
 
@@ -211,6 +213,7 @@ export function buildRecordScopeWhere(
     hamster: { householdId },
     ...(scope === "hamster"
       ? {
+          // 思い出は代表hamsterIdではなく中間テーブルを検索し、共同の思い出を各対象個体から辿れるようにする。
           OR: [
             { recordType: { in: ["HEALTH", "MEDICAL"] }, hamsterId: selectedHamsterId },
             {
@@ -249,6 +252,7 @@ export function planMemoryRecordsForHamsterDeletion(
 ): MemoryRecordDeletionPlan[] {
   const deletingIds = new Set(deletingHamsterIds);
   return records.map((record) => {
+    // 対象個体が残る共同の思い出は保持し、代表だけを削除する場合は残存順の先頭へ引き継ぐ。
     const remainingHamsterIds = record.hamsterIds.filter((hamsterId) => !deletingIds.has(hamsterId));
     if (remainingHamsterIds.length === 0) {
       return {
@@ -310,6 +314,7 @@ export function buildRecordListWhere({
 
 export function collectRecordTagSuggestions(rows: ReadonlyArray<{ tags: string[] }>) {
   const tagsByNormalizedValue = new Map<string, string>();
+  // 全角半角などの表記ゆれは正規化して重複排除し、画面には最初に保存された表記を残す。
   for (const { tags } of rows) {
     for (const tag of tags) {
       const normalized = normalizeTagStorageValue(tag);

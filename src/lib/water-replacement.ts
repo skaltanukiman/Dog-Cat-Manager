@@ -50,6 +50,7 @@ export async function setTodayWaterReplacementState(
   const recordDate = getTodayWaterReplacementRecordDate(now, careDayStartMinutes);
 
   if (state === "marked") {
+    // 同時操作でも一意制約違反でtransaction全体を失敗させず、最初の1件だけを作成する。
     const created = await tx.waterReplacementRecord.createMany({
       data: {
         hamsterId,

@@ -41,6 +41,7 @@ export function CareDaySettingsForm({
     }
 
     window.requestAnimationFrame(() => {
+      // Actionが正規化して確定した値をDOMのdefault値にも反映し、次のdirty判定の基準を保存後へ進める。
       const input = formRef.current?.elements.namedItem("careDayStartTime");
       if (input instanceof HTMLInputElement && saveState.savedCareDayStartMinutes !== undefined) {
         const value = formatMinutesAsTime(saveState.savedCareDayStartMinutes);

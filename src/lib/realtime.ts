@@ -171,7 +171,7 @@ export async function commitHouseholdMutation<T>(
   transactionExecutor: TransactionExecutor = executeTransaction
 ) {
   return transactionExecutor(async (tx) => {
-    // 業務データとrevisionを同時commitし、通知だけが先行する状態を作らない。
+    // 業務データ・指定された操作履歴・revisionを同時commitし、いずれかだけが残る状態を作らない。
     const result = await mutate(tx);
     const activityInput = typeof activity === "function" ? activity(result) : activity;
     if (activityInput) {

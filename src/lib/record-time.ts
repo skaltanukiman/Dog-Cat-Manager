@@ -12,6 +12,10 @@ export function formatRecordTime(minutes: number | null | undefined) {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
+/**
+ * 日付のみのrecordDateとJST壁時計の分数を比較する。
+ * UTC timestampへ変換しないことで、DBに保存した記録日の暦日を維持する。
+ */
 export function isFutureRecordTime(recordDate: string, minutes: number | null, now = new Date()) {
   if (minutes === null) return false;
 

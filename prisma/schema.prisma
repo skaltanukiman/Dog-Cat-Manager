@@ -250,9 +250,12 @@ model Household {
   name                       String
   isDemo                     Boolean                    @default(false) @map("is_demo")
   demoSlug                   String?                    @unique @map("demo_slug")
+  // JSTの0時からの分数。食事・水替え・通知が共有するHousehold固有のお世話日境界として扱う。
   careDayStartMinutes        Int                        @default(0) @map("care_day_start_minutes")
   createdAt                  DateTime                   @default(now()) @map("created_at")
   updatedAt                  DateTime                   @updatedAt @map("updated_at")
+  // 業務更新と同じtransactionで増分し、SSEを受け取れないクライアントがpollで変更を検出する。
+  // actor列は直近の更新元を保持し、クライアント側が自己更新かどうかを判定できるようにする。
   realtimeRevision           BigInt                     @default(0) @map("realtime_revision")
   realtimeActorClientId      String?                    @map("realtime_actor_client_id") @db.VarChar(128)
   realtimeActorUserId        String?                    @map("realtime_actor_user_id")
@@ -270,6 +273,7 @@ model Household {
 model WebPushSubscription {
   id            String    @id @default(cuid())
   userId        String    @map("user_id")
+  // endpointはブラウザー購読を一意に表すため、別ユーザーへの付け替えを許可しない。
   endpoint      String    @unique @db.Text
   p256dh        String    @db.Text
   auth          String    @db.Text
@@ -291,6 +295,7 @@ model CareNotificationDispatch {
   scheduledMinute Int                            @map("scheduled_minute")
   status          CareNotificationDispatchStatus @default(CLAIMED)
   attemptCount    Int                            @default(1) @map("attempt_count")
+  // リース再取得後に古い実行プロセスが結果を上書きしないよう、確定更新の照合にも使う。
   claimToken      String                         @map("claim_token")
   claimedAt       DateTime                       @default(now()) @map("claimed_at")
   leaseExpiresAt  DateTime                       @map("lease_expires_at")
@@ -302,6 +307,7 @@ model CareNotificationDispatch {
   user            User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
   household       Household                      @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
+  // 定期処理が重複起動しても、同じ利用者・Household・お世話日・時刻には1回だけ予約する。
   @@unique([userId, householdId, targetDate, scheduledMinute])
   @@index([status, nextAttemptAt])
   @@index([status, leaseExpiresAt])
@@ -453,6 +459,7 @@ model ContactInquiry {
   updatedAt                 DateTime                @updatedAt @map("updated_at")
   resolvedAt                DateTime?               @map("resolved_at")
   closedAt                  DateTime?               @map("closed_at")
+  // Household同期とは独立したrevision。問い合わせ単位の認可と再取得にだけ使用する。
   realtimeRevision          BigInt                  @default(0) @map("realtime_revision")
   realtimeActorClientId     String?                 @map("realtime_actor_client_id") @db.VarChar(128)
   realtimeActorUserId       String?                 @map("realtime_actor_user_id")
@@ -512,6 +519,7 @@ model HamsterRecord {
   hamster           Hamster             @relation(fields: [hamsterId], references: [id], onDelete: Cascade)
   recordType        HamsterRecordType   @map("record_type")
   recordDate        DateTime            @map("record_date") @db.Date
+  // 記録時刻はUTC timestampではなく、記録日のJST壁時計を0時からの分数で保持する。
   recordTimeMinutes Int?                @map("record_time_minutes") @db.SmallInt
   title             String
   memo              String?             @db.Text

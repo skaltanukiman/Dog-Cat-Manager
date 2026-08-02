@@ -278,6 +278,7 @@ export async function createContactInquiry(
 ): Promise<CreateContactInquiryResult> {
   const now = input.now ?? new Date();
   return execute(async (repository) => {
+    // 作成上限はUser単位なので、Householdに関係なく同じ利用者の同時送信を直列化してから再計算する。
     await repository.lock(`contact-create:${input.actorUserId}`);
     const actor = await repository.findUser(input.actorUserId);
     if (!actor || actor.accessStatus !== "ACTIVE") return { status: "forbidden" };
@@ -345,6 +346,7 @@ export async function addUserContactReply(
 ): Promise<UserContactReplyResult> {
   const now = input.now ?? new Date();
   return execute(async (repository) => {
+    // 返信・状態・担当者を問い合わせ単位で直列化し、同じ旧状態を見た更新の取りこぼしを防ぐ。
     await repository.lock(`contact-inquiry:${input.publicId}`);
     const actor = await repository.findUser(input.actorUserId);
     if (!actor || actor.accessStatus !== "ACTIVE") return { status: "forbidden" };
@@ -448,6 +450,7 @@ export async function updateContactInquiryByAdmin(
         return { status: "invalidAssignee" };
       }
     } else if (input.body && !inquiry.assignedAdminUserId) {
+      // 未担当の問い合わせへ最初に返信した管理者を自動設定し、返信者と担当表示を一致させる。
       assignee = actor;
     }
 

@@ -212,6 +212,7 @@ export function DashboardSettingsForm({
     pendingScrollRequestRef.current = null;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // 並べ替え前後の座標差から移動を描画する。DOM順は先に確定しているため、保存値や読み上げ順には影響しない。
     if (previousPositions && !reducedMotion) {
       orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]").forEach((row) => {
         const hamsterId = row.dataset.dashboardHamsterOrderId;

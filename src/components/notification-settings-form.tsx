@@ -145,6 +145,7 @@ function DeviceNotificationControls({
         body: JSON.stringify({ subscription: subscription.toJSON() })
       });
       if (!response.ok) {
+        // 今回作ったブラウザー購読だけを補償解除し、サーバー未登録の購読を端末に残さない。
         if (wasCreated) await subscription.unsubscribe();
         throw new Error("register failed");
       }
@@ -166,6 +167,7 @@ function DeviceNotificationControls({
         setState("released");
         return;
       }
+      // サーバー登録を先に消し、API失敗時はブラウザー購読を残して再試行できる状態を保つ。
       const response = await fetch("/api/push/subscriptions", {
         method: "DELETE",
         headers: { "content-type": "application/json" },
@@ -315,6 +317,7 @@ export function NotificationSettingsForm({
     if (isCommittedSettingsSave(saveState)) {
       const savedSettings = saveState.savedCareNotificationSettings;
       window.requestAnimationFrame(() => {
+        // Actionが正規化した値をstateとDOMのdefault値へ戻し、保存後の値をdirty比較の新しい基準にする。
         const form = formRef.current;
         if (form && savedSettings) {
           setFeedingNotificationEnabled(savedSettings.feedingNotificationEnabled);

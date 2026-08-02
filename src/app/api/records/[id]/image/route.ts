@@ -61,6 +61,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       }
     });
   } catch {
+    // 物理ファイルの有無や読込失敗を権限外と区別せず、保存先の内部状態をレスポンスへ出さない。
     return notFound();
   }
 }
