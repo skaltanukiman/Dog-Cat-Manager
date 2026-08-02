@@ -121,17 +121,17 @@ export function MemoryHamsterSelector({
         ref={detailsRef}
         open={hasError || isOpen}
         onToggle={(event) => setIsOpen(event.currentTarget.open)}
-        className={`group rounded-md border bg-slate-50 px-3 py-1 ${hasError ? "border-red-300" : "border-slate-200"}`}
+        className={`group rounded-md border bg-slate-50 px-3 py-2 ${hasError ? "border-red-300" : "border-slate-200"}`}
       >
-        <summary className="min-h-11 cursor-pointer list-none py-2 text-sm text-slate-700 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
-          <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2">
+        <summary className="cursor-pointer list-none text-sm text-slate-700 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2">
             <ChevronRight
-              className="mt-0.5 h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-90"
+              className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-open:rotate-90"
               aria-hidden
             />
-            <span className="min-w-0 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2">
-              <span className="block font-semibold text-slate-700">対象ハムスター（複数選択可）</span>
-              <span className="mt-0.5 block min-w-0 break-words leading-6 text-slate-600 sm:mt-0" aria-live="polite">
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 leading-5">
+              <span className="font-semibold text-slate-700">対象ハムスター（複数選択可）</span>
+              <span className="min-w-0 break-words text-slate-600" aria-live="polite">
                 {summary.visibleHamsters.length > 0 ? (
                   summary.visibleHamsters.map((hamster, index) => (
                     <Fragment key={hamster.id}>

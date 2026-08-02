@@ -98,7 +98,7 @@ test("新規2〜4匹はdetailsが開き、新規5匹以上と編集は閉じて�
   assert.doesNotMatch(collapsedMarkup, /<button|>変更<|>閉じる/);
 });
 
-test("独自マーカーは見出しへ上揃えし、スマホは本文列を2段、640px以上は横並びにする", () => {
+test("独自マーカーと文字列を中央に揃え、選択内容を同じ行から自然に折り返す", () => {
   const markup = renderToStaticMarkup(
     <MemoryHamsterSelector
       hamsters={hamsters}
@@ -110,7 +110,6 @@ test("独自マーカーは見出しへ上揃えし、スマホは本文列を2�
   const summaryMarkup = markup.match(/<summary[^>]*>[\s\S]*?<\/summary>/)?.[0];
 
   assert.ok(summaryMarkup);
-  assert.match(summaryMarkup, /\bmin-h-11\b/);
   assert.match(summaryMarkup, /\blist-none\b/);
   assert.match(summaryMarkup, /webkit-details-marker/);
   assert.match(summaryMarkup, /lucide-chevron-right/);
@@ -118,13 +117,13 @@ test("独自マーカーは見出しへ上揃えし、スマホは本文列を2�
   assert.match(summaryMarkup, /group-open:rotate-90/);
   assert.match(
     summaryMarkup,
-    /<span class="grid min-w-0 grid-cols-\[auto_minmax\(0,1fr\)\] items-start gap-x-2">[\s\S]*?<svg[\s\S]*?<span class="min-w-0 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2">/
+    /<span class="flex min-w-0 items-center gap-2">[\s\S]*?<svg[^>]*class="[^"]*h-3\.5 w-3\.5[^"]*"[^>]*>[\s\S]*?<span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0\.5 leading-5">/
   );
   assert.match(
     summaryMarkup,
-    /<span class="min-w-0 sm:flex[^>]*">\s*<span class="block font-semibold[^>]*">対象ハムスター（複数選択可）<\/span>\s*<span class="mt-0\.5 block min-w-0 break-words[^>]*">[\s\S]*きなこ（代表）[\s\S]*もなか[\s\S]*ほか1匹[\s\S]*3匹選択中/
+    /<span class="flex min-w-0 flex-1 flex-wrap[^>]*">\s*<span class="font-semibold[^>]*">対象ハムスター（複数選択可）<\/span>\s*<span class="min-w-0 break-words text-slate-600"[^>]*>[\s\S]*きなこ（代表）[\s\S]*もなか[\s\S]*ほか1匹[\s\S]*3匹選択中/
   );
-  assert.doesNotMatch(summaryMarkup, /grid-cols-\[auto_minmax\(0,1fr\)\][^">]*items-center/);
+  assert.doesNotMatch(summaryMarkup, /\bitems-start\b|\bmt-0\.5\b/);
   assert.doesNotMatch(summaryMarkup, /<button/);
 });
 
