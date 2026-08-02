@@ -11,6 +11,7 @@ import {
   demoPreviewControlClass,
   demoPreviewFieldClass
 } from "@/components/demo-registration-preview";
+import { MemoryHamsterSelector } from "@/components/memory-hamster-selector";
 import {
   HEALTH_AMOUNT_CONDITIONS,
   HEALTH_EXCRETION_CONDITIONS,
@@ -292,19 +293,15 @@ function MemoryPreview({
       aria-labelledby="demo-record-preview-tab-memory"
       className="mt-5 grid gap-4"
     >
-      <fieldset className="grid gap-2" aria-disabled="true">
-        <legend className="text-sm font-semibold text-slate-700">対象ハムスター（複数選択可）</legend>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {hamsters.map((hamster) => (
-            <label key={hamster.id} className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${hamster.id === selectedHamsterId ? "border-moss bg-moss/5 font-semibold text-ink" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
-              <input type="checkbox" checked={hamster.id === selectedHamsterId} disabled aria-disabled="true" title={DEMO_PREVIEW_DISABLED_TITLE} readOnly />
-              <span className="min-w-0 flex-1 truncate">{hamster.name}</span>
-              {hamster.id === selectedHamsterId ? <span className="rounded-full bg-moss/10 px-2 py-0.5 text-[11px] font-bold text-moss">代表</span> : null}
-              {!hamster.isActive ? <span className="text-[11px] text-slate-500">管理外</span> : null}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {hamsters.length > 0 ? (
+        <MemoryHamsterSelector
+          hamsters={hamsters}
+          selectedIds={[selectedHamsterId]}
+          representativeId={selectedHamsterId}
+          lockRepresentative
+          readOnly
+        />
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
         <label className={demoPreviewFieldClass}>
           記録日

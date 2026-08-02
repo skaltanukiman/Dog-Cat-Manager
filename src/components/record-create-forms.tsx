@@ -208,7 +208,14 @@ export function RecordCreateForms({ hamsterId, hamsterIsActive, hamsters, today,
             <input type="hidden" name="hamsterId" value={hamsterId} />
             <RecordCreateError error={submitErrors.memory} />
             {submitSuccesses.memory ? <AutoDismissSuccessMessage message="記録を登録しました。" /> : null}
-            <MemoryHamsterSelector key={hamsterId} hamsters={hamsters} selectedIds={[hamsterId]} representativeId={hamsterId} lockRepresentative />
+            <MemoryHamsterSelector
+              key={hamsterId}
+              hamsters={hamsters}
+              selectedIds={[hamsterId]}
+              representativeId={hamsterId}
+              lockRepresentative
+              hasError={submitErrors.memory?.field === "hamsterIds"}
+            />
             <div className="grid gap-3 sm:grid-cols-[180px_1fr]"><label className={fieldClass}>日付<input type="date" name="recordDate" defaultValue={today} max={today} required /></label><label className={fieldClass}>タイトル<input name="title" maxLength={100} required placeholder="初めて手の上で寝てくれた" /></label></div>
             <label className={fieldClass}>内容<textarea name="content" maxLength={5000} required /></label>
             <MemoryTagInput savedTags={savedMemoryTags} />

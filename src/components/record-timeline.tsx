@@ -206,6 +206,7 @@ function RecordEditForm({
           hamsters={hamsters}
           selectedIds={record.memoryDetail.hamsters.map((hamster) => hamster.id)}
           representativeId={record.hamster.id}
+          isEditing
         />
         <div className="grid gap-3 sm:grid-cols-[180px_1fr]"><label className={fieldClass}>日付<input type="date" name="recordDate" defaultValue={record.recordDate} max={today} required /></label><label className={fieldClass}>タイトル<input name="title" defaultValue={record.title} maxLength={100} required /></label></div>
         <label className={fieldClass}>内容<textarea name="content" defaultValue={record.memo ?? ""} maxLength={5000} required /></label>

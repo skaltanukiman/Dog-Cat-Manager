@@ -59,6 +59,7 @@ export type RecordCreateActionResult = {
   success: false;
   errorMessage: string;
   errorId?: string;
+  field?: "hamsterIds";
 };
 
 export type SavedMemoryTagDeleteActionResult = {
@@ -82,8 +83,12 @@ const recordCreateErrorMessages: Record<RecordCreateErrorStatus, string> = {
   recordImageInvalid: "思い出の写真を読み込めませんでした。別の画像を選択してください。"
 };
 
-function recordCreateError(status: RecordCreateErrorStatus): RecordCreateActionResult {
-  return { success: false, errorMessage: recordCreateErrorMessages[status] };
+function recordCreateError(status: RecordCreateErrorStatus, field?: "hamsterIds"): RecordCreateActionResult {
+  return {
+    success: false,
+    errorMessage: recordCreateErrorMessages[status],
+    ...(field ? { field } : {})
+  };
 }
 
 function unexpectedRecordCreateError(
@@ -315,7 +320,12 @@ export async function createMemoryRecord(formData: FormData): Promise<RecordCrea
   try {
     const context = await getRequiredHouseholdMutationContext("/records");
     const result = createMemoryRecordSchema.safeParse(parseMemoryForm(formData));
-    if (!result.success) return recordCreateError(validationStatus(result.error.issues));
+    if (!result.success) {
+      const field = result.error.issues.some((issue) => issue.path[0] === "hamsterIds")
+        ? "hamsterIds"
+        : undefined;
+      return recordCreateError(validationStatus(result.error.issues), field);
+    }
     if (isFutureDateInput(result.data.recordDate)) return recordCreateError("future");
     await getMutationHamster(result.data.hamsterId, context.household.id, true);
     const imageFile = getOptionalRecordImageFile(formData.get("image"));
@@ -377,7 +387,7 @@ export async function createMemoryRecord(formData: FormData): Promise<RecordCrea
     publishAndRevalidate(change, context.household.id, "records.memory.create");
     return { success: true };
   } catch (error) {
-    if (error instanceof InvalidMemoryHamstersError) return recordCreateError("invalid");
+    if (error instanceof InvalidMemoryHamstersError) return recordCreateError("invalid", "hamsterIds");
     if (error instanceof RecordImageError) {
       return recordCreateError(imageValidationStatus(error));
     }

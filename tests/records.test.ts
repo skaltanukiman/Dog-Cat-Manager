@@ -847,21 +847,29 @@ test("思い出フォームは保存済みタグの再利用と同時保存に�
   assert.doesNotMatch(tagInput, /<details[^>]*\sopen(?:=|\s|>)/);
 });
 
-test("思い出登録・編集フォームはスマホ向けチェックボックスで全Household候補と管理外を表示する", () => {
+test("思い出登録・編集フォームは要約付き折りたたみで全Household候補と管理外を表示する", () => {
   const page = source("src/app/(app)/records/page.tsx");
   const forms = source("src/components/record-create-forms.tsx");
   const timeline = source("src/components/record-timeline.tsx");
   const selector = source("src/components/memory-hamster-selector.tsx");
+  const actions = source("src/app/actions/records.ts");
   assert.match(page, /hamsters=\{data\.hamsters\}/);
-  assert.match(forms, /<MemoryHamsterSelector key=\{hamsterId\} hamsters=\{hamsters\} selectedIds=\{\[hamsterId\]\} representativeId=\{hamsterId\} lockRepresentative \/>/);
+  assert.match(forms, /<MemoryHamsterSelector[\s\S]*selectedIds=\{\[hamsterId\]\}[\s\S]*lockRepresentative[\s\S]*hasError=\{submitErrors\.memory\?\.field === "hamsterIds"\}/);
   assert.match(timeline, /selectedIds=\{record\.memoryDetail\.hamsters\.map\(\(hamster\) => hamster\.id\)\}/);
+  assert.match(timeline, /representativeId=\{record\.hamster\.id\}[\s\S]*isEditing/);
   assert.match(selector, /対象ハムスター（複数選択可）/);
-  assert.match(selector, /grid gap-2 sm:grid-cols-2 lg:grid-cols-3/);
-  assert.match(selector, /type="checkbox"[\s\S]*name="hamsterIds"/);
+  assert.match(selector, /max-h-64 gap-2 overflow-y-auto overscroll-contain pr-1 sm:max-h-none sm:grid-cols-2 lg:grid-cols-3/);
+  assert.match(selector, /type="checkbox"[\s\S]*name=\{readOnly \? undefined : "hamsterIds"\}/);
   assert.match(selector, /現在選択中のハムスターを代表/);
   assert.match(selector, /管理外/);
   assert.doesNotMatch(selector, /<select|multiple/);
-  assert.match(selector, /required=\{selectedCount === 0 && index === 0\}/);
+  assert.match(selector, /required=\{!readOnly && summary\.selectedCount === 0 && index === 0\}/);
+  assert.match(selector, /type="button"[\s\S]*aria-expanded=\{expanded\}[\s\S]*aria-controls=\{selectionRegionId\}/);
+  assert.match(selector, /expanded \? "閉じる" : "変更"/);
+  assert.match(selector, /onInvalid=\{\(\) => setIsExpanded\(true\)\}/);
+  assert.match(selector, /className=\{`\$\{expanded \? "mt-3" : "hidden"\}`\}/);
+  assert.match(actions, /issue\.path\[0\] === "hamsterIds"/);
+  assert.match(actions, /recordCreateError\("invalid", "hamsterIds"\)/);
 });
 
 test("思い出画像APIは代表だけでなく対象関連のHousehold所属で認可する", () => {
