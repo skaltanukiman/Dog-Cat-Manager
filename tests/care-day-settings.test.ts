@@ -86,8 +86,8 @@ test("設定画面は表示設定、お世話日設定、通知設定の順で�
   assert.match(component, /type="time"/);
   assert.match(component, /step=\{60\}/);
   assert.match(component, /切り替え時刻：\{formatMinutesAsTime\(savedMinutes\)\}/);
-  assert.match(component, /変更内容は保存後すぐに反映されます/);
-  assert.match(component, /実施済みから未実施、または未実施から実施済み/);
+  assert.match(component, /<div className="mt-2 max-w-3xl space-y-1 text-sm leading-6 text-slate-600">[\s\S]*<p>設定した時刻になると、食事と水替えが新しいお世話日に切り替わります。<\/p>[\s\S]*<p>例：8:00に設定した場合、翌日の7:59までは同じお世話日として扱います。<\/p>/);
+  assert.match(component, /<div className="space-y-1">[\s\S]*<p>変更内容は、保存後すぐに反映されます。<\/p>[\s\S]*<p>[\s\S]*食事・水替えの表示が「実施済み」から「未実施」、または「未実施」から「実施済み」に変わる場合があります。[\s\S]*<\/p>[\s\S]*<p>既存記録の日付は変更されません。<\/p>/);
   assert.match(component, /既存記録の日付は変更されません/);
   assert.match(component, /共有グループのオーナーまたは管理者のみ変更できます/);
   assert.match(component, /disabled=\{!canManage \|\| isSaving\}/);

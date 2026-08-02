@@ -116,13 +116,18 @@ export function CareDaySettingsForm({
                   className="mt-1 block min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-ink disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 sm:max-w-xs"
                 />
               </label>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                指定した時刻になると、食事と水替えが新しいお世話日に切り替わります。
-                例：8:00の場合、翌日の7:59までは同じお世話日として扱います。
-              </p>
-              <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-                変更内容は保存後すぐに反映されます。現在時刻や変更前の設定によっては、現在の食事・水替え表示が
-                実施済みから未実施、または未実施から実施済みに変わることがあります。既存記録の日付は変更されません。
+              <div className="mt-2 max-w-3xl space-y-1 text-sm leading-6 text-slate-600">
+                <p>設定した時刻になると、食事と水替えが新しいお世話日に切り替わります。</p>
+                <p>例：8:00に設定した場合、翌日の7:59までは同じお世話日として扱います。</p>
+              </div>
+              <div className="mt-4 max-w-3xl rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                <div className="space-y-1">
+                  <p>変更内容は、保存後すぐに反映されます。</p>
+                  <p>
+                    現在時刻や変更前の設定によっては、食事・水替えの表示が「実施済み」から「未実施」、または「未実施」から「実施済み」に変わる場合があります。
+                  </p>
+                  <p>既存記録の日付は変更されません。</p>
+                </div>
               </div>
               {!canManage ? (
                 <p className="mt-4 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700">
