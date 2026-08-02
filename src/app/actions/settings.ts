@@ -26,6 +26,12 @@ import {
   type SettingsSaveState
 } from "@/lib/settings-save-state";
 
+/**
+ * 利用者プロフィールと現在のHousehold向け表示設定を一括保存するServer Action。
+ *
+ * 表示名の変更は全所属Householdのrevisionを進め、個人設定だけの変更は現在の
+ * Householdだけを更新する。戻り値には画面側が未保存判定の基準にする保存済み値を含む。
+ */
 export async function saveSettings(previousState: SettingsSaveState, formData: FormData): Promise<SettingsSaveState> {
   try {
     const context = await getRequiredHouseholdContext();

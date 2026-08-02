@@ -16,6 +16,12 @@ import {
   type SettingsSaveState
 } from "@/lib/settings-save-state";
 
+/**
+ * 現在ユーザー・Household組み合わせのお世話通知設定を保存するServer Action。
+ *
+ * 共有データではないためVIEWERも変更できるが、保存直前に所属継続を再確認する。
+ * Web Push端末の購読登録は別APIの責務で、このActionでは変更しない。
+ */
 export async function saveCareNotificationSettings(
   previousState: SettingsSaveState,
   formData: FormData

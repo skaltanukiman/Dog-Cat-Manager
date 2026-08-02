@@ -26,6 +26,12 @@ export class WebPushConfigurationError extends Error {
   }
 }
 
+/**
+ * Web Push設定一式を検証し、クライアントへ公開可能な情報だけを返す。
+ *
+ * private keyやsubjectも含めて有効な場合にだけ`configured`が`true`になり、
+ * private key自体は戻り値へ含めない。
+ */
 export function getPublicVapidConfiguration() {
   const publicKey = process.env.WEB_PUSH_VAPID_PUBLIC_KEY?.trim() ?? "";
   const privateKey = process.env.WEB_PUSH_VAPID_PRIVATE_KEY?.trim() ?? "";
@@ -39,6 +45,11 @@ export function getPublicVapidConfiguration() {
   return { configured: valid, publicKey: valid ? publicKey : null };
 }
 
+/**
+ * 環境変数のVAPID設定を、プロセス内の`web-push`クライアントへ適用する。
+ *
+ * @throws 必須設定が不足している、または形式が不正な場合
+ */
 export function configureWebPush() {
   const configuration = getPublicVapidConfiguration();
   const privateKey = process.env.WEB_PUSH_VAPID_PRIVATE_KEY?.trim();
@@ -49,6 +60,12 @@ export function configureWebPush() {
   webPush.setVapidDetails(subject, configuration.publicKey, privateKey);
 }
 
+/**
+ * 保存済み端末へお世話通知を送信する。
+ *
+ * 外部Pushサービスへの通信を伴い、配信失敗時は`web-push`由来の例外をrejectする。
+ * 呼び出し側は404/410を購読失効として扱う。
+ */
 export async function sendCareWebPush(
   subscription: StoredPushSubscription,
   payload: { title: string; body: string }
@@ -75,6 +92,11 @@ export function isInvalidPushSubscriptionError(error: unknown) {
   return statusCode === 404 || statusCode === 410;
 }
 
+/**
+ * 状態変更APIが同一originから送られたことを`Origin`と`Host`で検証する。
+ *
+ * いずれかのheaderが欠ける場合や`Origin`をURLとして解釈できない場合も拒否する。
+ */
 export function isSameOriginMutationRequest(request: Request) {
   const origin = request.headers.get("origin");
   const host = request.headers.get("host");
@@ -86,6 +108,11 @@ export function isSameOriginMutationRequest(request: Request) {
   }
 }
 
+/**
+ * `Content-Length`が提示されたリクエストをPush APIの上限と照合する。
+ *
+ * headerがない場合は本文読取前の判定ができないため`true`を返す。
+ */
 export function requestBodyIsWithinLimit(request: Request) {
   const rawLength = request.headers.get("content-length");
   if (!rawLength) return true;

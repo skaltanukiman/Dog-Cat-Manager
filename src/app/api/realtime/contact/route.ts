@@ -15,6 +15,12 @@ function encodeSse(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+/**
+ * 閲覧権限を確認した問い合わせについて、同一Node.jsプロセス内の変更をSSE配信する。
+ *
+ * public IDだけではアクセスを許可せず、利用者本人または管理者の条件でDB照合する。
+ * durableな配送は保証しないため、クライアントはrevision pollingを併用する。
+ */
 export async function GET(request: NextRequest) {
   const publicId = request.nextUrl.searchParams.get("publicId");
 

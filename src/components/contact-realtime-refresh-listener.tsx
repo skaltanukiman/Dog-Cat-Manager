@@ -35,6 +35,12 @@ type ContactRevisionPayload = ContactChangePayload & {
 
 const REMOTE_REFRESH_DEBOUNCE_MS = 150;
 
+/**
+ * 問い合わせ更新をSSEとDB revision pollingで監視し、表示中のServer Componentを更新する。
+ *
+ * 自タブの更新と古いrevisionは無視し、未保存フォームがある場合は自動refreshを保留する。
+ * 一時的な同期失敗は再試行し、一定時間継続した場合だけ警告を表示する。
+ */
 export function ContactRealtimeRefreshListener({
   publicId,
   initialRevision

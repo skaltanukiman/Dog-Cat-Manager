@@ -8,6 +8,12 @@ import { logUnexpectedError } from "@/lib/server-errors";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+/**
+ * 認証済みメンバーへ、Householdの永続化された最新revisionと更新元を返す。
+ *
+ * SSEで届かない別プロセスの更新や一時切断を補完するpolling用APIであり、
+ * membershipをHousehold IDとの複合キーで検証する。
+ */
 export async function GET(request: NextRequest) {
   const householdId = request.nextUrl.searchParams.get("householdId");
   try {

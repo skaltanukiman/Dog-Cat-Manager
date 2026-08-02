@@ -128,6 +128,12 @@ export type UserAccessMutationResult =
   | "invalidReason"
   | "invalidNote";
 
+/**
+ * SUPER_ADMINだけが実行できる利用停止を、Session失効と監査履歴を含めて原子的に確定する。
+ *
+ * 全SUPER_ADMIN操作と共通のlock内で最新権限を再確認し、自己停止と最後の
+ * 有効SUPER_ADMINの停止を拒否する。業務上の拒否・競合は例外ではなくstatusで返す。
+ */
 export async function suspendUserAccess(
   input: { actorUserId: string; targetUserId: string; reason: unknown },
   execute: UserAccessMutationExecutor = executePrismaUserAccessMutation
@@ -167,6 +173,11 @@ export async function suspendUserAccess(
   });
 }
 
+/**
+ * SUPER_ADMINだけが実行できる利用再開を、監査履歴と同一transactionで確定する。
+ *
+ * lock取得後に権限と対象状態を再確認し、競合や既に有効な状態はstatusで返す。
+ */
 export async function restoreUserAccess(
   input: { actorUserId: string; targetUserId: string; note: unknown },
   execute: UserAccessMutationExecutor = executePrismaUserAccessMutation
@@ -207,6 +218,12 @@ const suspendedSignInReader: SuspendedSignInReader = {
   findFirst: (args) => prisma.user.findFirst(args) as Promise<{ accessStatus: UserAccessStatus } | null>
 };
 
+/**
+ * Auth.jsのサインイン処理中に、既存利用者が停止中かを判定する。
+ *
+ * OAuth初回処理ではUser IDが未確定になり得るため、IDとメールの少なくとも一方を渡す。
+ * どちらもない場合は停止対象と判定しない。
+ */
 export async function isSuspendedUserForSignIn(
   identity: { id?: string | null; email?: string | null },
   reader: SuspendedSignInReader = suspendedSignInReader

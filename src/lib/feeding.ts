@@ -33,6 +33,14 @@ export function todayFeedingRecordsByHamster<T extends { hamsterId: string; reco
   return recordsByHamster;
 }
 
+/**
+ * transaction内で、現在のお世話日に対する給餌済み状態を冪等に設定する。
+ *
+ * 同一個体・お世話日は1件だけとし、`changed`はDBに実変更があった場合だけ`true`になる。
+ * `recordDate`はtimestampではなく日付専用の`Date`である。
+ *
+ * @throws marked後のレコードを取得できず、更新結果を確定できない場合
+ */
 export async function setTodayFeedingState(
   tx: Pick<Prisma.TransactionClient, "feedingRecord">,
   {

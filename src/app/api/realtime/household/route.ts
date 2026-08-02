@@ -13,6 +13,12 @@ function encodeSse(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+/**
+ * 認証済みのHouseholdメンバーへ、同一Node.jsプロセス内の変更をSSE配信する。
+ *
+ * durableな配送は保証しないため、クライアントはrevision APIのpollingを常時併用する。
+ * 切断時はheartbeat timerとプロセス内購読を必ず解除する。
+ */
 export async function GET(request: NextRequest) {
   const householdId = request.nextUrl.searchParams.get("householdId");
   try {

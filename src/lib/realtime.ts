@@ -62,6 +62,12 @@ function getRealtimeBus() {
   return globalForRealtime.__hamsterRealtimeBus;
 }
 
+/**
+ * 現在のNode.jsプロセス内でHousehold変更を購読する。
+ *
+ * 複数プロセス間の配送保証はないため、永続化されたrevisionのpollingを併用する必要がある。
+ * @returns 購読を解除する関数
+ */
 export function subscribeHouseholdChanges(listener: HouseholdChangeListener) {
   const bus = getRealtimeBus();
   bus.listeners.add(listener);
@@ -71,6 +77,12 @@ export function subscribeHouseholdChanges(listener: HouseholdChangeListener) {
   };
 }
 
+/**
+ * commit済みのHousehold変更を、現在のNode.jsプロセス内の購読者へ同期通知する。
+ *
+ * DBのrevisionは更新しない。listenerの例外を許容したい呼び出し側は
+ * `publishHouseholdChangeSafely`を使用する。
+ */
 export function publishHouseholdChange({
   householdId,
   source,
@@ -109,6 +121,11 @@ export function getRealtimeActorId(formData: FormData | undefined) {
 
 const executeTransaction: TransactionExecutor = (operation) => prisma.$transaction(operation);
 
+/**
+ * 業務更新と同じPrisma transaction内でHouseholdのrevisionを進める。
+ *
+ * 戻り値はcommit後のプロセス内通知に使う情報であり、この関数自体は通知しない。
+ */
 export async function updateHouseholdRevision(
   tx: Prisma.TransactionClient,
   householdId: string,
@@ -150,6 +167,13 @@ export async function updateHouseholdRevisions(
   );
 }
 
+/**
+ * 業務データ、任意の操作履歴、リアルタイムrevisionを同一transactionで確定する。
+ *
+ * プロセス内通知とcache再検証は行わない。呼び出し側はcommit成功後に
+ * 戻り値の`change`を公開し、必要な画面を再検証する。
+ * `transactionExecutor`は同じ原子性を提供する実装に限り差し替えられる。
+ */
 export async function commitHouseholdMutation<T>(
   {
     householdId,
@@ -171,7 +195,6 @@ export async function commitHouseholdMutation<T>(
   transactionExecutor: TransactionExecutor = executeTransaction
 ) {
   return transactionExecutor(async (tx) => {
-    // 業務データ・指定された操作履歴・revisionを同時commitし、いずれかだけが残る状態を作らない。
     const result = await mutate(tx);
     const activityInput = typeof activity === "function" ? activity(result) : activity;
     if (activityInput) {
@@ -189,13 +212,18 @@ export async function commitHouseholdMutation<T>(
   });
 }
 
+/**
+ * commit済みの変更をプロセス内購読者へ通知する。
+ *
+ * 通知失敗で確定済みのDB更新を失敗扱いにせず、記録後はrevision pollingへ委ねる。
+ * @returns 通知に成功した場合は`true`
+ */
 export function publishHouseholdChangeSafely(
   change: CommittedHouseholdChange,
   publisher: (change: CommittedHouseholdChange) => void = publishHouseholdChange,
   reportError: typeof logUnexpectedError = logUnexpectedError
 ) {
   try {
-    // commit後のプロセス内通知失敗はDB更新を巻き戻せないため、記録してpoll側の追従に委ねる。
     publisher(change);
     return true;
   } catch (error) {

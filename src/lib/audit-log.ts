@@ -20,6 +20,12 @@ export const ACCOUNT_AUDIT_EVENTS = {
 export type HouseholdAuditEvent = (typeof HOUSEHOLD_AUDIT_EVENTS)[keyof typeof HOUSEHOLD_AUDIT_EVENTS];
 export type AccountAuditEvent = (typeof ACCOUNT_AUDIT_EVENTS)[keyof typeof ACCOUNT_AUDIT_EVENTS];
 
+/**
+ * 完了済みのHousehold管理操作をサーバーログへ記録する。
+ *
+ * DB監査テーブルではなくcommit後の運用ログであり、書込失敗は共通logger内で吸収される。
+ * `context`にはtokenなどの秘密情報を含めないこと。
+ */
 export function writeHouseholdAuditLog(
   event: HouseholdAuditEvent,
   context: Record<string, string>,
@@ -37,6 +43,12 @@ export function writeHouseholdAuditLog(
   );
 }
 
+/**
+ * 完了済みのアカウント削除をサーバーログへ記録する。
+ *
+ * User削除後の補助処理なので、ログ書込失敗で削除結果を失敗扱いにしない。
+ * `context`には削除済みIDと件数など、再構成不能な情報だけを渡す。
+ */
 export function writeAccountAuditLog(
   event: AccountAuditEvent,
   context: Record<string, string>,

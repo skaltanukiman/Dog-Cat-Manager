@@ -70,6 +70,12 @@ export function getAccountDeleteDisposition({
   return "leaveHousehold";
 }
 
+/**
+ * 削除確認画面で取得した全Household状態を、順序に依存しない検証tokenへ変換する。
+ *
+ * 実行時に再計算して一致を確認することで、画面表示後の所属・権限変更を検出する。
+ * tokenは認証情報ではなく、最新状態の再検証と必ず組み合わせる。
+ */
 export function createAccountDeleteStateToken(states: AccountDeleteHouseholdState[]) {
   const canonicalState = states
     .map((state) => ({
@@ -142,6 +148,12 @@ async function findAccountDeleteHouseholdStates(
   });
 }
 
+/**
+ * アカウント削除前に、Householdごとの退出・移譲・削除要件と状態tokenを返す。
+ *
+ * 表示用の事前確認であり、実行時の認可・競合検証は`deleteUserAccount`が改めて行う。
+ * @returns ユーザーが既に存在しない場合は`null`
+ */
 export async function getAccountDeletePreview(userId: string): Promise<AccountDeletePreview | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -266,6 +278,13 @@ function mapLeaveFailure(
   return abortAccountDelete("stateChanged");
 }
 
+/**
+ * 全所属Householdからの退出・必要なOWNER移譲・単独Household削除・User削除を原子的に行う。
+ *
+ * User、SUPER_ADMIN状態、対象Householdを一定順でlockし、最後のSUPER_ADMINや画面表示後の
+ * 状態変化を拒否する。成功後の画像削除・リアルタイム通知・Cookie削除は呼び出し側の責務。
+ * 業務上の拒否・既知の競合は例外ではなくstatusで返す。
+ */
 export async function deleteUserAccount(
   input: {
     actorUserId: string;

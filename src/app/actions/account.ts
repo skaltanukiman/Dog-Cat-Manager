@@ -43,6 +43,12 @@ function redirectAccountDeleteFailure(status: string): never {
   redirect(`/settings/account/delete?status=${status}`);
 }
 
+/**
+ * 確認画面の状態tokenを検証して、現在ユーザーのアカウント削除を実行するServer Action。
+ *
+ * DB commit後にだけHousehold画像、プロセス内通知、認証Cookieを後処理する。
+ * これら補助処理の失敗で、確定済みのUser削除を取り消した扱いにはしない。
+ */
 export async function deleteCurrentUserAccount(formData: FormData) {
   try {
     const confirmationText = formData.get("confirmationText");

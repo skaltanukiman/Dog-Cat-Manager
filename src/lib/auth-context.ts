@@ -52,6 +52,12 @@ async function getPreferredHouseholdId() {
   return cookieStore.get(CURRENT_HOUSEHOLD_COOKIE)?.value;
 }
 
+/**
+ * 認証済みかつ利用中のユーザーを、認可に使える最新DB状態で返す。
+ *
+ * Session内の権限は信用せずDBから再取得する。未認証・削除済み・停止中の場合は
+ * loginへredirectし、Householdの自動作成は行わない。
+ */
 export async function getRequiredSessionUser(): Promise<SessionUser> {
   const session = await auth();
   const sessionUser = session?.user;
@@ -60,7 +66,6 @@ export async function getRequiredSessionUser(): Promise<SessionUser> {
     redirect("/login");
   }
 
-  // Session内の権限・利用状態は発行後に変わり得るため、認可に使うユーザー情報はDBから取り直す。
   const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
     select: { id: true, appRole: true, accessStatus: true, name: true, email: true, image: true }
@@ -164,6 +169,11 @@ export async function ensureUserHouseholdMembership(user: SessionUser, preferred
   return (await ensureUserHouseholdMembershipWithOutcome(user, preferredHouseholdId)).membership;
 }
 
+/**
+ * 現在ユーザーのHousehold文脈を返し、所属がなければ初期Householdを原子的に作成する。
+ *
+ * 選択cookieは実在する所属に一致する場合だけ採用し、未設定時は共有Householdを優先する。
+ */
 export async function getRequiredHouseholdContext(): Promise<CurrentHouseholdContext> {
   const sessionUser = await getRequiredSessionUser();
   const membership = await ensureUserHouseholdMembership(sessionUser, await getPreferredHouseholdId());
@@ -183,6 +193,12 @@ export async function getRequiredHouseholdContext(): Promise<CurrentHouseholdCon
   };
 }
 
+/**
+ * 共有データを変更するServer Action向けに、編集可能なHousehold文脈を返す。
+ *
+ * VIEWERは指定画面へredirectする。ただし権限は待機中に変わり得るため、重要な更新では
+ * transaction内でもmembershipを再確認する必要がある。
+ */
 export async function getRequiredHouseholdMutationContext(pathname: string): Promise<CurrentHouseholdContext> {
   const context = await getRequiredHouseholdContext();
   if (!canEditHouseholdSharedData(context.membership.role)) {
@@ -192,7 +208,11 @@ export async function getRequiredHouseholdMutationContext(pathname: string): Pro
   return context;
 }
 
-// Route Handler向け。未認証時にHTMLへredirectせず、呼び出し側が401/404を返せるようnullで返す。
+/**
+ * Route Handler向けに、redirectや初期Household作成をせず現在の所属を取得する。
+ *
+ * 未認証・停止中・所属なしは`null`で返し、呼び出し側が401/404を選択できるようにする。
+ */
 export async function getHouseholdContextForRoute(): Promise<CurrentHouseholdContext | null> {
   const session = await auth();
   const user = session?.user;
@@ -293,6 +313,11 @@ export function hasAppRole(role: AppRole, allowedRoles: AppRole[]) {
   return allowedRoles.includes(role);
 }
 
+/**
+ * 指定したアプリ管理者権限を、最新のDB状態で再確認して返す。
+ *
+ * 権限不足・停止中・削除済みの場合はトップへredirectする。
+ */
 export async function getRequiredAppAdminUser(allowedRoles: AppRole[] = ["ADMIN", "SUPER_ADMIN"]) {
   const sessionUser = await getRequiredSessionUser();
   const user = await prisma.user.findUnique({

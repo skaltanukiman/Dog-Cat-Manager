@@ -32,6 +32,14 @@ export function formatMinutesAsTime(value: unknown) {
   return `${pad(Math.floor(safeValue / 60))}:${pad(safeValue % 60)}`;
 }
 
+/**
+ * 指定時刻を、Householdに設定された日替わり時刻基準のお世話日へ変換する。
+ *
+ * JSTの0時ではなく`careDayStartMinutes`を境界とし、境界前は前日のお世話日になる。
+ * 範囲外の境界値は既定の0:00として扱う。
+ *
+ * @returns `YYYY-MM-DD`形式のお世話日
+ */
 export function getCareDayDateInputJst(
   now = new Date(),
   careDayStartMinutes: unknown = DEFAULT_CARE_DAY_START_MINUTES
@@ -45,6 +53,11 @@ export function getCareDayDateInputJst(
   return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}`;
 }
 
+/**
+ * お世話日を、日付のみを表すUTC 00:00の`Date`として返す。
+ *
+ * timestampではないため、表示時にJSTへ変換せず`toDateInputValue`と組み合わせて扱う。
+ */
 export function getCareDayRecordDate(
   now = new Date(),
   careDayStartMinutes: unknown = DEFAULT_CARE_DAY_START_MINUTES

@@ -12,6 +12,12 @@ import { waterReplacementStateSchema } from "@/lib/schemas";
 import { handleServerActionError } from "@/lib/server-errors";
 import { setTodayWaterReplacementState } from "@/lib/water-replacement";
 
+/**
+ * 現在のお世話日に対する水替え状態を更新するServer Action。
+ *
+ * transaction内で所属・編集権限・管理中状態・日替わり時刻を再取得し、
+ * 記録、操作履歴、revisionを原子的に確定してから通知・cache再検証を行う。
+ */
 export async function setTodayWaterReplacement(formData: FormData) {
   const submittedHamsterId = formData.get("hamsterId");
 

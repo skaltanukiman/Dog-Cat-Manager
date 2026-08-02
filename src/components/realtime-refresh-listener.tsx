@@ -43,6 +43,12 @@ function isGetForm(form: HTMLFormElement) {
   return form.method.toLowerCase() === "get" && !form.hasAttribute("data-dirty-watch");
 }
 
+/**
+ * Household更新をSSEとDB revision pollingの両方で監視し、Server Componentを再取得する。
+ *
+ * 更新フォームにはタブ固有IDを付与し、同じタブまたは同じユーザー由来の更新を抑止する。
+ * 未保存フォームがある間は自動refreshを保留し、入力を破棄せず利用者へ手動更新を促す。
+ */
 export function RealtimeRefreshListener({ currentUserId, householdId }: RealtimeRefreshListenerProps) {
   const router = useRouter();
   const clientIdRef = useRef<string>(createRealtimeClientId());

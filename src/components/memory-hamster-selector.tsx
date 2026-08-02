@@ -60,6 +60,12 @@ export function updateMemoryHamsterSelection(
   return next;
 }
 
+/**
+ * 共同の思い出に紐づくハムスターを複数選択し、代表個体も一貫して送信する。
+ *
+ * 編集時に`lockRepresentative`を指定すると既存の代表を解除不可にする。
+ * 代表が選択外になれる新規作成では、選択順の先頭を有効な代表として扱う。
+ */
 export function MemoryHamsterSelector({
   hamsters,
   selectedIds,

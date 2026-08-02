@@ -443,6 +443,12 @@ export async function deleteWeightRecords(formData: FormData) {
   }
 }
 
+/**
+ * 外部体重計形式のCSVから、登録可能な行だけを新規取込するServer Action。
+ *
+ * 行ごとの検証エラーは他の有効行を妨げず、DB既存行とCSV内重複はskipとして集計する。
+ * 作成が1件以上ある場合だけ操作履歴とrevisionを更新する。
+ */
 export async function importGasWeightRecordsCsv(
   _previousState: WeightCsvImportState,
   formData: FormData
@@ -576,6 +582,12 @@ export async function importGasWeightRecordsCsv(
   }
 }
 
+/**
+ * アプリ出力形式のCSVを、新規追加と既存更新を含む一括編集として適用するServer Action。
+ *
+ * 1行でも不正・競合があれば部分適用せず全件を差し戻す。全検証通過後に変更行と
+ * 操作履歴、revisionを同一transactionで確定する。
+ */
 export async function importAppWeightRecordsCsv(
   _previousState: WeightCsvImportState,
   formData: FormData

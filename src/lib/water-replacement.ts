@@ -31,6 +31,14 @@ export function todayWaterReplacementRecordsByHamster<
   return recordsByHamster;
 }
 
+/**
+ * transaction内で、現在のお世話日に対する水替え済み状態を冪等に設定する。
+ *
+ * 同一個体・お世話日は1件だけとし、`changed`はDBに実変更があった場合だけ`true`になる。
+ * `recordDate`はtimestampではなく日付専用の`Date`である。
+ *
+ * @throws marked後のレコードを取得できず、更新結果を確定できない場合
+ */
 export async function setTodayWaterReplacementState(
   tx: Pick<Prisma.TransactionClient, "waterReplacementRecord">,
   {

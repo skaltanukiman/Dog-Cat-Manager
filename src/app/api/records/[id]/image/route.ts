@@ -9,6 +9,12 @@ function notFound() {
   return new Response(null, { status: 404, headers: { "Cache-Control": "private, no-store" } });
 }
 
+/**
+ * 現在のHouseholdから参照できる思い出の先頭画像だけを非公開配信する。
+ *
+ * DB上の関連と保存先をともに検証し、権限外・欠損・読込失敗は同じ404にして
+ * 内部状態を開示しない。レスポンスは共有cacheへ保存させない。
+ */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const context = await getHouseholdContextForRoute();
   if (!context) {

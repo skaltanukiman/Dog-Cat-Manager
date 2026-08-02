@@ -106,6 +106,12 @@ export function createSystemErrorUrl(pathname: string, errorId: string, currentP
   return `${pathname}?${params.toString()}`;
 }
 
+/**
+ * Server Actionの想定外例外を安全に記録し、追跡ID付きのエラー画面へredirectする。
+ *
+ * Next.jsの`redirect`など制御フロー用例外は変換せず再throwするため、Action全体の
+ * `catch`から呼び出せる。この関数は正常復帰しない。
+ */
 export function handleServerActionError(
   error: unknown,
   options: UnexpectedErrorLogOptions & {
@@ -114,7 +120,6 @@ export function handleServerActionError(
     logger?: Logger;
   }
 ): never {
-  // redirect() などNext.jsが制御フローに使う内部例外は、通常の障害として記録・変換しない。
   unstable_rethrow(error);
   const errorId = logUnexpectedError(error, options, options.logger);
   redirect(createSystemErrorUrl(options.pathname, errorId, options.searchParams));

@@ -7,12 +7,17 @@ type RevalidateTarget = {
   type?: "layout" | "page";
 };
 
+/**
+ * commit後のcache再検証を、対象ごとに独立して試行する。
+ *
+ * 再検証失敗で確定済みの業務更新を失敗扱いにせず、エラーを記録して残りも続行する。
+ * DB transaction内では呼び出さないこと。
+ */
 export function revalidatePathsSafely(
   targets: RevalidateTarget[],
   operation: string,
   context?: Record<string, string | number | boolean | null | undefined>
 ) {
-  // DB commit後のcache無効化失敗は業務更新を失敗扱いにせず、個別に記録して残りも試行する。
   for (const target of targets) {
     try {
       if (target.type) {

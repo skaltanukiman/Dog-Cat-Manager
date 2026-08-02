@@ -282,6 +282,12 @@ export async function revokeHouseholdInvitation(formData: FormData) {
   }
 }
 
+/**
+ * fragmentから受け渡された招待tokenを消費し、Household参加を原子的に確定するServer Action。
+ *
+ * アカウント削除・Household削除と共通のlock内で招待の有効性を再確認し、membership、
+ * 個人設定、操作履歴、revisionを更新する。現在Household cookieはcommit後の補助処理である。
+ */
 export async function acceptHouseholdInvitation(formData: FormData) {
   try {
     const token = formData.get("token");

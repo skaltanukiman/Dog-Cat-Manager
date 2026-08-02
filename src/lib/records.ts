@@ -178,6 +178,12 @@ export function getRecordSearchVariants(value: string) {
   return Array.from(new Set([original, nfkc, hiragana, toKatakana(hiragana)].filter(Boolean)));
 }
 
+/**
+ * 記録検索語をPrismaの条件へ変換する。
+ *
+ * 通常語と`#`付きタグはAND、各語の全半角・かな表記の候補はORで検索する。
+ * 条件を生成できない空入力では`undefined`を返す。
+ */
 export function buildRecordKeywordWhere(keyword: string): Prisma.HamsterRecordWhereInput | undefined {
   const terms = parseRecordSearchTerms(keyword);
   const keywordConditions = terms
@@ -200,10 +206,15 @@ export function buildRecordKeywordWhere(keyword: string): Prisma.HamsterRecordWh
     .map<Prisma.HamsterRecordWhereInput>((conditions) => ({ OR: conditions }));
 
   if (groups.length === 0) return undefined;
-  // 通常語と#タグは互いにAND、各表記ゆれはORにし、両方を指定した検索の意図を保つ。
   return groups.length === 1 ? groups[0] : { AND: groups };
 }
 
+/**
+ * 記録一覧をHouseholdと選択個体の範囲へ制限するPrisma条件を返す。
+ *
+ * 健康・通院は代表`hamsterId`、共同の思い出は中間テーブルの参加個体で判定する。
+ * Household条件は常に含まれるため、呼び出し側で省略しないこと。
+ */
 export function buildRecordScopeWhere(
   scope: RecordScope,
   householdId: string,
@@ -213,7 +224,6 @@ export function buildRecordScopeWhere(
     hamster: { householdId },
     ...(scope === "hamster"
       ? {
-          // 思い出は代表hamsterIdではなく中間テーブルを検索し、共同の思い出を各対象個体から辿れるようにする。
           OR: [
             { recordType: { in: ["HEALTH", "MEDICAL"] }, hamsterId: selectedHamsterId },
             {
@@ -246,13 +256,18 @@ export type MemoryRecordDeletionPlan = {
   imageFileNamesToDelete: string[];
 };
 
+/**
+ * ハムスター削除時に、関連する共同の思い出を保持・移譲・削除する計画を作る。
+ *
+ * 対象個体が残る思い出は保持し、代表だけが消える場合は残存順の先頭へ移す。
+ * 画像削除対象は思い出自体を削除する場合にだけ返す。
+ */
 export function planMemoryRecordsForHamsterDeletion(
   records: readonly MemoryRecordDeletionCandidate[],
   deletingHamsterIds: readonly string[]
 ): MemoryRecordDeletionPlan[] {
   const deletingIds = new Set(deletingHamsterIds);
   return records.map((record) => {
-    // 対象個体が残る共同の思い出は保持し、代表だけを削除する場合は残存順の先頭へ引き継ぐ。
     const remainingHamsterIds = record.hamsterIds.filter((hamsterId) => !deletingIds.has(hamsterId));
     if (remainingHamsterIds.length === 0) {
       return {

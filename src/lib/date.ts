@@ -34,16 +34,28 @@ export function isValidYearMonthInput(value: string) {
   return year >= 1 && month >= 1 && month <= 12;
 }
 
+/**
+ * `YYYY-MM-DD`形式の日付を、日付専用のUTC 00:00の`Date`へ変換する。
+ *
+ * ブラウザやサーバーのローカルタイムゾーンによる暦日のずれを避けるため、
+ * この戻り値をtimestampとしてJST変換しないこと。
+ *
+ * @throws 入力が厳密な形式でない、または実在しない日付の場合
+ */
 export function parseDateInput(value: string) {
   if (!isValidDateInput(value)) {
     throw new Error(`Invalid date input: ${value}`);
   }
 
-  // DBは日付のみを扱うため、ブラウザやサーバーのローカルタイムゾーンで日付がずれないようUTC 00:00で固定する。
   const [year, month, day] = value.split("-").map(Number);
   return createUtcDate(year, month - 1, day);
 }
 
+/**
+ * 日付専用の`Date`を`YYYY-MM-DD`へ戻す。
+ *
+ * `parseDateInput`やPrismaの日付専用フィールドを前提とし、JSTへの時刻変換は行わない。
+ */
 export function toDateInputValue(date: Date) {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
@@ -88,8 +100,12 @@ export function formatTimeJst(date: Date | null | undefined) {
   return `${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`;
 }
 
+/**
+ * 入力上限や経過日数の基準となる、JSTの現在日を返す。
+ *
+ * 実行環境のローカルタイムゾーンには依存しない。
+ */
 export function todayInputJst(now = new Date()) {
-  // 入力上限や経過日数は日本での運用を前提に、JSTの日付境界で判定する。
   const jst = getJstDate(now);
   return `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}`;
 }
@@ -123,6 +139,13 @@ export function getDaysInMonth(yearMonth: string) {
   });
 }
 
+/**
+ * 指定月を検索するための、日付専用`Date`による半開区間を返す。
+ *
+ * `end`は翌月1日の排他的境界であり、`lt: end`と組み合わせる。
+ *
+ * @throws `yearMonth`が厳密な`YYYY-MM`形式でない場合
+ */
 export function monthDateRange(yearMonth: string) {
   if (!isValidYearMonthInput(yearMonth)) {
     throw new Error(`Invalid month input: ${yearMonth}`);
@@ -132,7 +155,6 @@ export function monthDateRange(yearMonth: string) {
 
   return {
     start: parseDateInput(`${yearMonth}-01`),
-    // 終端は翌月1日の排他的境界にし、月末日の時刻差を気にせず検索できるようにする。
     end: createUtcDate(year, month, 1)
   };
 }

@@ -11,6 +11,12 @@ type UnsavedChangesGuardProps = {
   children: ReactNode;
 };
 
+/**
+ * `data-dirty-watch`フォームの未保存入力を、リンク遷移とページ離脱から保護する。
+ *
+ * 同一画面へのリンクは妨げず、アプリ内遷移は確認後にrouterへ委譲する。
+ * ブラウザ離脱では標準の`beforeunload`確認を使用する。
+ */
 export function UnsavedChangesGuard({ children }: UnsavedChangesGuardProps) {
   const router = useRouter();
   const [isDirty, setIsDirty] = useState(false);

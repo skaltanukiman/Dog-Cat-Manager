@@ -21,6 +21,12 @@ import {
   type SettingsSaveState
 } from "@/lib/settings-save-state";
 
+/**
+ * Householdのお世話日境界を、最新の管理権限を再確認して保存するServer Action。
+ *
+ * 境界変更時は旧境界で待機中の通知dispatchを無効化し、設定・通知状態・revisionを
+ * 同一transactionで確定する。送信済みの通知履歴は保持する。
+ */
 export async function saveCareDaySettings(
   previousState: SettingsSaveState,
   formData: FormData

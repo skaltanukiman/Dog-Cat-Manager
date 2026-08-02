@@ -35,8 +35,12 @@ export function createInvitationToken() {
   return randomBytes(32).toString("base64url");
 }
 
+/**
+ * 招待tokenをDB検索用の不可逆な値へ変換する。
+ *
+ * 生tokenは受諾URLの再構成に使えるため、永続化せずこのhashだけを保存する。
+ */
 export function hashInvitationToken(token: string) {
-  // DB流出時に招待URLを再構成できないよう、検索には不可逆なhashを使う。
   return createHash("sha256").update(token).digest("hex");
 }
 
@@ -44,6 +48,12 @@ export function invitationExpiresAt(now = new Date()) {
   return new Date(now.getTime() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000);
 }
 
+/**
+ * ユーザー単位の招待作成頻度を評価する。
+ *
+ * 直前作成からのcooldownを先に判定し、次に1時間枠の上限を判定する。
+ * @returns 制限中は理由と再試行可能時刻、許可する場合は`null`
+ */
 export function evaluateInvitationCreationLimit({
   now,
   latestCreatedAt,
@@ -77,6 +87,11 @@ export function evaluateInvitationCreationLimit({
   return null;
 }
 
+/**
+ * 招待の現在状態を、取消・受諾・期限切れの優先順で判定する。
+ *
+ * 競合で複数の日時が残る不整合時にも、取消を最優先して利用不可として扱う。
+ */
 export function getHouseholdInvitationStatus(
   invitation: InvitationLifecycle,
   now = new Date()
@@ -118,13 +133,23 @@ export function isValidInvitationToken(token: string) {
   return INVITATION_TOKEN_PATTERN.test(token);
 }
 
+/**
+ * 招待URLを生成し、生tokenをURL fragmentへ格納する。
+ *
+ * fragmentはHTTPリクエストや通常のサーバーログへ送信されない。受諾画面側で
+ * `getInvitationTokenFromHash`を使って取り出すこと。
+ */
 export function buildInvitationUrl(origin: string, token: string) {
   const url = new URL("/invitations/accept", origin);
-  // tokenをHTTPリクエストやサーバーログへ送らないため、queryではなくfragmentへ格納する。
   url.hash = new URLSearchParams({ token }).toString();
   return url.toString();
 }
 
+/**
+ * 招待URLのfragmentから検証済みtokenを取り出す。
+ *
+ * tokenがない、または許可したbase64url形式・長さでない場合は`null`を返す。
+ */
 export function getInvitationTokenFromHash(hash: string) {
   const token = new URLSearchParams(hash.replace(/^#/, "")).get("token");
   return token && isValidInvitationToken(token) ? token : null;

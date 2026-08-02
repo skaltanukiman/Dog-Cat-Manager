@@ -125,6 +125,12 @@ export type HouseholdLeaveMutationResult =
     }
   | { [Status in HouseholdLeaveFailureStatus]: { status: Status } }[HouseholdLeaveFailureStatus];
 
+/**
+ * Household退出と、必要なら最後のOWNER権限の移譲を同一transactionで実行する。
+ *
+ * Household lock取得後に最新の所属・OWNER数を再確認し、OWNER不在の中間状態を作らない。
+ * 成功時の`change`はcommit後に呼び出し側が公開する。業務上の拒否・競合はstatusで返す。
+ */
 export async function leaveHouseholdMembership(
   input: {
     householdId: string;

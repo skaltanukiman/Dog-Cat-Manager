@@ -149,6 +149,12 @@ export type CreateInvitationMutationResult =
   | { status: "limited"; code: InvitationCreationLimitCode; retryAt: Date }
   | { status: "activeLimit" };
 
+/**
+ * 招待作成を、権限・ユーザー頻度・Household内有効件数の制限付きで原子的に実行する。
+ *
+ * ユーザーlockの後にHousehold lockを取得し、待機後に権限を再確認する。
+ * 成功時は招待・操作履歴・revisionを同時に確定し、`change`の公開は呼び出し側が行う。
+ */
 export async function createRateLimitedHouseholdInvitation(
   input: {
     householdId: string;
@@ -229,6 +235,12 @@ export type RevokeInvitationMutationResult =
   | { status: "revoked"; invitationId: string; change: CommittedHouseholdChange }
   | { status: "forbidden" | "notFound" | "accepted" | "expired" | "alreadyRevoked" };
 
+/**
+ * 現在のHousehold内にある有効な招待だけを取消し、操作履歴とrevisionも確定する。
+ *
+ * 受諾・期限切れ・既取消との競合は最新状態を読み直し、例外ではなくstatusで返す。
+ * 成功時の`change`はcommit後に呼び出し側が公開する。
+ */
 export async function revokeHouseholdInvitationMutation(
   input: {
     householdId: string;

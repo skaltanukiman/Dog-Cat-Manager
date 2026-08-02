@@ -79,9 +79,14 @@ export function isWithinNotificationWindow(
   return nowMinute >= scheduledMinute && nowMinute <= Math.min(1439, scheduledMinute + lateWindowMinutes);
 }
 
+/**
+ * 現在のJST時刻が送信対象となる通知予定分を昇順で返す。
+ *
+ * 定期実行の遅延を許容する時間窓内だけを対象とし、食事と水替えが同じ予定時刻なら
+ * 1件のdispatchへまとめるため重複分を返さない。
+ */
 export function dueNotificationMinutes(setting: CareNotificationSettings, now: Date) {
   const nowMinute = getJstMinuteOfDay(now);
-  // 食事と水替えが同じ予定時刻なら、1件のdispatchにまとめて通知の重複を避ける。
   const due = new Set<number>();
   if (setting.feedingNotificationEnabled) {
     const minute = getNotificationScheduledMinute(
@@ -100,6 +105,11 @@ export function dueNotificationMinutes(setting: CareNotificationSettings, now: D
   return [...due].sort((left, right) => left - right);
 }
 
+/**
+ * 1件のdispatch予定分に含めるお世話種別を返す。
+ *
+ * 食事と水替えの予定分が一致する場合は両方を返し、通知本文を1件に統合できるようにする。
+ */
 export function dueCareKinds(setting: CareNotificationSettings, scheduledMinute: number): CareKind[] {
   const kinds: CareKind[] = [];
   if (
@@ -138,6 +148,11 @@ function compactNames(names: string[], prefix: string, maxLength = 88) {
   return `${prefix}${shown.join("、")}${omitted > 0 ? `、ほか${omitted}匹` : ""}`;
 }
 
+/**
+ * 未実施のお世話を、Web Pushの長さ制限内に収まる通知本文へ変換する。
+ *
+ * 個体名から制御文字を除き、長い一覧は件数表記へ畳み、最終的にUnicode文字単位で切り詰める。
+ */
 export function buildCareNotificationBody(
   feedingNames: string[],
   waterNames: string[],
@@ -157,6 +172,11 @@ export function buildCareNotificationBody(
     : `${characters.slice(0, NOTIFICATION_BODY_MAX_LENGTH - 1).join("")}…`;
 }
 
+/**
+ * 通知が対象とするお世話日を、Householdの日替わり時刻に基づいて返す。
+ *
+ * 戻り値はtimestampではなく、日付専用のUTC 00:00の`Date`である。
+ */
 export function notificationTargetDate(now: Date, careDayStartMinutes = 0) {
   return getCareDayRecordDate(now, careDayStartMinutes);
 }

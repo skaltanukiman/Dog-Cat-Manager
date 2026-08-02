@@ -55,6 +55,12 @@ function cleaningRedirect(hamsterId: string, yearMonth: string, status: string, 
   redirect(`/cleaning?${params.toString()}`);
 }
 
+/**
+ * 指定月の衛生記録を、フォーム全体のスナップショットとして保存するServer Action。
+ *
+ * 未来日は送信値を拒否したうえで更新対象外にし、空になった日は削除、変更のある日だけを
+ * 作成・更新する。月の変更件数と操作履歴、revisionは同一transactionで確定する。
+ */
 export async function saveCleaningMonth(formData: FormData) {
   const includeInactive = formData.get("includeInactive") === "1";
   try {

@@ -21,6 +21,12 @@ async function readRequest(request: Request) {
   }
 }
 
+/**
+ * 現在ユーザーのWeb Push購読を登録する。
+ *
+ * 同一origin・本文サイズ・subscription形式を検証し、同じendpointが別ユーザーに
+ * 所有されている場合は上書きせず409を返す。
+ */
 export async function POST(request: Request) {
   try {
     const userId = await getActivePushRouteUserId();
@@ -42,6 +48,11 @@ export async function POST(request: Request) {
   }
 }
 
+/**
+ * 現在ユーザーが所有するWeb Push購読だけを解除する。
+ *
+ * endpoint一致に加えてuserIdでも絞るため、他ユーザーの端末登録は削除しない。
+ */
 export async function DELETE(request: Request) {
   try {
     const userId = await getActivePushRouteUserId();

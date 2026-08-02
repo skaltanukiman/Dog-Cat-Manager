@@ -106,6 +106,12 @@ export type HouseholdDeleteMutationResult =
   | { status: "deleted"; actorHouseholdRole: "OWNER" }
   | { [Status in HouseholdDeleteFailureStatus]: { status: Status } }[HouseholdDeleteFailureStatus];
 
+/**
+ * 単独OWNERだけが、名前による再確認を経てHouseholdを削除する。
+ *
+ * 退出・招待受諾と共通のHousehold lock内で所属数とOWNER数を再確認する。
+ * 不整合や競合は削除せずstatusで返し、画像などDB外の資産は呼び出し側がcommit後に削除する。
+ */
 export async function deleteSoleOwnerHousehold(
   input: {
     householdId: string;
