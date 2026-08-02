@@ -98,7 +98,7 @@ test("新規2〜4匹はdetailsが開き、新規5匹以上と編集は閉じて�
   assert.doesNotMatch(collapsedMarkup, /<button|>変更<|>閉じる/);
 });
 
-test("独自マーカーと文字列を中央に揃え、選択内容を同じ行から自然に折り返す", () => {
+test("独自マーカーは先頭行と同じ高さのラッパー内で中央に揃え、選択内容を自然に折り返す", () => {
   const markup = renderToStaticMarkup(
     <MemoryHamsterSelector
       hamsters={hamsters}
@@ -117,7 +117,7 @@ test("独自マーカーと文字列を中央に揃え、選択内容を同じ�
   assert.match(summaryMarkup, /group-open:rotate-90/);
   assert.match(
     summaryMarkup,
-    /<span class="flex min-w-0 items-center gap-2">[\s\S]*?<svg[^>]*class="[^"]*h-3\.5 w-3\.5[^"]*"[^>]*>[\s\S]*?<span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0\.5 leading-5">/
+    /<span class="grid min-w-0 grid-cols-\[auto_minmax\(0,1fr\)\] gap-x-2">\s*<span class="flex h-5 shrink-0 items-center">\s*<svg[^>]*class="[^"]*h-3\.5 w-3\.5[^"]*"[^>]*>[\s\S]*?<\/svg>\s*<\/span>\s*<span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0\.5 leading-5">/
   );
   assert.match(
     summaryMarkup,

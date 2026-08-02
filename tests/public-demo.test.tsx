@@ -459,7 +459,8 @@ test("デモの思い出対象は通常版の要約付き選択UIを操作不可
   assert.match(markup, /<summary[^>]*\blist-none\b[^>]*webkit-details-marker/);
   assert.match(markup, /lucide-chevron-right/);
   assert.match(markup, /group-open:rotate-90/);
-  assert.match(markup, /flex min-w-0 items-center gap-2/);
+  assert.match(markup, /grid min-w-0 grid-cols-\[auto_minmax\(0,1fr\)\] gap-x-2/);
+  assert.match(markup, /flex h-5 shrink-0 items-center/);
   assert.match(markup, /flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0\.5 leading-5/);
   assert.doesNotMatch(markup, /<details[^>]*open=""|>変更<|>閉じる/);
   assert.match(markup, /管理外/);

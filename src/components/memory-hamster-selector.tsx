@@ -124,11 +124,13 @@ export function MemoryHamsterSelector({
         className={`group rounded-md border bg-slate-50 px-3 py-2 ${hasError ? "border-red-300" : "border-slate-200"}`}
       >
         <summary className="cursor-pointer list-none text-sm text-slate-700 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
-          <span className="flex min-w-0 items-center gap-2">
-            <ChevronRight
-              className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-open:rotate-90"
-              aria-hidden
-            />
+          <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-2">
+            <span className="flex h-5 shrink-0 items-center">
+              <ChevronRight
+                className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-open:rotate-90"
+                aria-hidden
+              />
+            </span>
             <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 leading-5">
               <span className="font-semibold text-slate-700">対象ハムスター（複数選択可）</span>
               <span className="min-w-0 break-words text-slate-600" aria-live="polite">
