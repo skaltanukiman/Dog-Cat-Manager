@@ -401,7 +401,14 @@ export async function getPublicDemoRecordsPageData(filters: RecordPageFilters) {
       hamster: { select: { id: true, name: true, isActive: true } },
       healthDetail: true,
       medicalDetail: true,
-      memoryDetail: true
+      memoryDetail: {
+        include: {
+          hamsters: {
+            orderBy: [{ sortOrder: "asc" }, { hamsterId: "asc" }],
+            include: { hamster: { select: { id: true, name: true, isActive: true } } }
+          }
+        }
+      }
     }
   });
 
@@ -438,7 +445,8 @@ export async function getPublicDemoRecordsPageData(filters: RecordPageFilters) {
         ? {
             tags: record.memoryDetail.tags,
             isFavorite: record.memoryDetail.isFavorite,
-            imageFileName: null
+            imageFileName: null,
+            hamsters: record.memoryDetail.hamsters.map((entry) => entry.hamster)
           }
         : null
     })),

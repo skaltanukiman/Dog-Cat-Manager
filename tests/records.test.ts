@@ -24,7 +24,9 @@ import {
   createHealthRecordSchema,
   createMedicalRecordSchema,
   createMemoryRecordSchema,
-  deleteSavedMemoryTagsSchema
+  deleteSavedMemoryTagsSchema,
+  MAX_MEMORY_RECORD_HAMSTERS,
+  updateMemoryRecordSchema
 } from "../src/lib/record-schemas";
 import {
   buildHealthSearchText,
@@ -40,6 +42,7 @@ import {
   getRecordSearchVariants,
   normalizeRecordScope,
   parseRecordSearchTerms,
+  planMemoryRecordsForHamsterDeletion,
   normalizeRecordTypeFilter,
   recordCreateKindForHamsterStatus,
   RECORD_PAGE_SIZE,
@@ -124,6 +127,7 @@ test("通院記録は理由だけを内容必須とし、診察費は0以上の�
 test("思い出記録はタイトル・内容を必須にし、自由タグを正規化する", () => {
   const parsed = createMemoryRecordSchema.safeParse({
     hamsterId: "hamster-1",
+    hamsterIds: ["hamster-1", "hamster-2", "hamster-2"],
     recordDate: "2026-07-15",
     title: "初めて手の上で寝た",
     content: "静かに眠ってくれた。",
@@ -132,11 +136,13 @@ test("思い出記録はタイトル・内容を必須にし、自由タグを�
     saveTags: "true"
   });
   assert.equal(parsed.success, true);
+  assert.deepEqual(parsed.success && parsed.data.hamsterIds, ["hamster-1", "hamster-2"]);
   assert.deepEqual(parsed.success && parsed.data.tags, ["初めて", "日常"]);
   assert.equal(parsed.success && parsed.data.isFavorite, true);
   assert.equal(parsed.success && parsed.data.saveTags, true);
   const withoutSaving = createMemoryRecordSchema.parse({
     hamsterId: "hamster-1",
+    hamsterIds: ["hamster-1"],
     recordDate: "2026-07-15",
     title: "日常",
     content: "ひまわりの種を食べた",
@@ -145,7 +151,44 @@ test("思い出記録はタイトル・内容を必須にし、自由タグを�
   });
   assert.deepEqual(withoutSaving.tags, ["ABC", "abc", "123"]);
   assert.equal(withoutSaving.saveTags, false);
-  assert.equal(createMemoryRecordSchema.safeParse({ hamsterId: "h", recordDate: "2026-07-15", title: "", content: "本文", tags: "", isFavorite: "false" }).success, false);
+  assert.equal(createMemoryRecordSchema.safeParse({ hamsterId: "h", hamsterIds: ["h"], recordDate: "2026-07-15", title: "", content: "本文", tags: "", isFavorite: "false" }).success, false);
+});
+
+test("思い出対象は1匹以上・空IDなし・100匹以内とし、重複を安全に除去する", () => {
+  const base = {
+    hamsterId: "hamster-1",
+    recordDate: "2026-07-15",
+    title: "一緒に遊んだ",
+    content: "部屋んぽを楽しみました。",
+    tags: "遊び",
+    isFavorite: "false",
+    saveTags: "false"
+  };
+  assert.equal(createMemoryRecordSchema.safeParse({ ...base, hamsterIds: [] }).success, false);
+  assert.equal(createMemoryRecordSchema.safeParse({ ...base, hamsterIds: [""] }).success, false);
+  assert.equal(
+    createMemoryRecordSchema.safeParse({
+      ...base,
+      hamsterIds: Array.from({ length: MAX_MEMORY_RECORD_HAMSTERS + 1 }, (_, index) => `hamster-${index}`)
+    }).success,
+    false
+  );
+  const duplicate = createMemoryRecordSchema.parse({ ...base, hamsterIds: ["hamster-1", "hamster-2", "hamster-2"] });
+  assert.deepEqual(duplicate.hamsterIds, ["hamster-1", "hamster-2"]);
+});
+
+test("新規思い出は代表ハムスターを対象に必須とし、編集では代表解除を許可する", () => {
+  const base = {
+    hamsterId: "hamster-1",
+    hamsterIds: ["hamster-2"],
+    recordDate: "2026-07-15",
+    title: "一緒のお祝い",
+    content: "みんなでお祝いしました。",
+    tags: "記念日",
+    isFavorite: "false"
+  };
+  assert.equal(createMemoryRecordSchema.safeParse({ ...base, saveTags: "false" }).success, false);
+  assert.equal(updateMemoryRecordSchema.safeParse({ ...base, id: "record-1" }).success, true);
 });
 
 test("保存対象の思い出タグをHousehold単位の個別行へ正規化する", () => {
@@ -168,7 +211,7 @@ test("保存済みタグの一括削除は選択必須・幅正規化・大小�
 test("検索用テキストへ症状・診断・薬・内容を含め、思い出タグは含めない", () => {
   const health = createHealthRecordSchema.parse(validHealth);
   const medical = createMedicalRecordSchema.parse(validMedical);
-  const memory = createMemoryRecordSchema.parse({ hamsterId: "h", recordDate: "2026-07-15", title: "誕生日", content: "ひまわりの種", tags: "記念日、食事", isFavorite: "false" });
+  const memory = createMemoryRecordSchema.parse({ hamsterId: "h", hamsterIds: ["h"], recordDate: "2026-07-15", title: "誕生日", content: "ひまわりの種", tags: "記念日、食事", isFavorite: "false" });
   assert.match(buildHealthSearchText(health), /くしゃみ/);
   assert.match(buildMedicalSearchText(medical), /経過観察/);
   assert.match(buildMedicalSearchText(medical), /整腸剤/);
@@ -251,7 +294,19 @@ test("URL指定が保存設定より優先され、URL未指定時だけ保存�
 test("個別表示とグループ表示は必ずHousehold境界を含む", () => {
   assert.deepEqual(buildRecordScopeWhere("hamster", "household-1", "hamster-1"), {
     hamster: { householdId: "household-1" },
-    hamsterId: "hamster-1"
+    OR: [
+      { recordType: { in: ["HEALTH", "MEDICAL"] }, hamsterId: "hamster-1" },
+      {
+        recordType: "MEMORY",
+        memoryDetail: {
+          is: {
+            hamsters: {
+              some: { hamsterId: "hamster-1", hamster: { householdId: "household-1" } }
+            }
+          }
+        }
+      }
+    ]
   });
   assert.deepEqual(buildRecordScopeWhere("household", "household-1", "hamster-1"), {
     hamster: { householdId: "household-1" }
@@ -337,6 +392,19 @@ test("共通タイムラインは日付、時刻ありの降順、時刻なし�
   assert.match(records, /memoryDetail: \{ is: \{ isFavorite: true \} \}/);
   assert.match(query, /skip: \(currentPage - 1\) \* RECORD_PAGE_SIZE/);
   assert.match(query, /take: RECORD_PAGE_SIZE/);
+  assert.match(query, /hamsters: \{[\s\S]*orderBy: \[\{ sortOrder: "asc" \}, \{ hamsterId: "asc" \}\]/);
+  assert.match(query, /hamsters: record\.memoryDetail\.hamsters\.map\(\(entry\) => entry\.hamster\)/);
+});
+
+test("個別タイムラインとタグ候補は思い出だけ中間関連を使い、グループ表示は親記録を重複させない", () => {
+  const records = source("src/lib/records.ts");
+  const query = source("src/lib/record-queries.ts");
+  assert.match(records, /recordType: \{ in: \["HEALTH", "MEDICAL"\] \}, hamsterId: selectedHamsterId/);
+  assert.match(records, /recordType: "MEMORY"[\s\S]*hamsters: \{[\s\S]*some: \{ hamsterId: selectedHamsterId/);
+  assert.match(query, /hamsterRecord\.count\(\{ where \}\)/);
+  assert.match(query, /hamsterRecord\.findMany\(\{[\s\S]*where,/);
+  assert.match(query, /hamsterRecord: buildRecordScopeWhere\(scope, context\.household\.id, selectedHamster\.id\)/);
+  assert.doesNotMatch(query, /memoryRecordHamster\.findMany/);
 });
 
 test("更新Actionは未来日・Household所属・管理外制御とrevision同一トランザクションを維持する", () => {
@@ -420,6 +488,108 @@ test("Prismaは親・種類別詳細・画像を分離し、Cascadeと検索索�
   }
   assert.match(schema, /memoryRecord\s+MemoryRecordDetail[\s\S]*onDelete: Cascade/);
   assert.match(migration, /gin_trgm_ops/);
+});
+
+test("思い出とハムスターの中間モデルは複合主キー・Cascade・検索用indexを持つ", () => {
+  const schema = source("prisma/schema.prisma");
+  assert.match(schema, /model MemoryRecordHamster/);
+  assert.match(schema, /hamsterRecordId\s+String[\s\S]*hamsterId\s+String[\s\S]*sortOrder\s+Int\s+@default\(0\)/);
+  assert.match(schema, /memoryRecord\s+MemoryRecordDetail[\s\S]*onDelete: Cascade/);
+  assert.match(schema, /hamster\s+Hamster[\s\S]*onDelete: Cascade/);
+  assert.match(schema, /@@id\(\[hamsterRecordId, hamsterId\]\)/);
+  assert.match(schema, /@@index\(\[hamsterId\]\)/);
+  assert.match(schema, /@@map\("memory_record_hamsters"\)/);
+  assert.match(schema, /model HamsterRecord[\s\S]*hamsterId\s+String\s+@map\("hamster_id"\)/);
+});
+
+test("思い出対象migrationは既存代表を重複なくバックフィルし、空対象を拒否する", () => {
+  const migration = source("prisma/migrations/20260802120000_add_memory_record_hamsters/migration.sql");
+  assert.match(migration, /CREATE TABLE "memory_record_hamsters"/);
+  assert.match(migration, /PRIMARY KEY \("hamster_record_id", "hamster_id"\)/);
+  assert.match(migration, /SELECT memory\."hamster_record_id", record\."hamster_id", 0/);
+  assert.match(migration, /WHERE record\."record_type" = 'MEMORY'/);
+  assert.match(migration, /ON CONFLICT \("hamster_record_id", "hamster_id"\) DO NOTHING/);
+  assert.match(migration, /NOT EXISTS \([\s\S]*FROM "memory_record_hamsters"/);
+  assert.match(migration, /RAISE EXCEPTION 'Failed to backfill memory record hamsters'/);
+  assert.match(migration, /memory_record_hamsters_hamster_id_idx/);
+  assert.equal((migration.match(/ON DELETE CASCADE ON UPDATE CASCADE/g) ?? []).length, 2);
+});
+
+test("思い出ActionはgetAllで対象を受け、Household所属をtransaction内で検証する", () => {
+  const actions = source("src/app/actions/records.ts");
+  assert.match(actions, /hamsterIds: formData\.getAll\("hamsterIds"\)/);
+  assert.match(actions, /tx\.hamster\.count\(\{ where: \{ id: \{ in: hamsterIds \}, householdId \} \}\)/);
+  assert.match(actions, /if \(count !== hamsterIds\.length\) throw new InvalidMemoryHamstersError\(\)/);
+  assert.match(actions, /await assertMemoryHamstersBelongToHousehold\(tx, result\.data\.hamsterIds, context\.household\.id\)/);
+  assert.match(actions, /await getMutationHamster\(result\.data\.hamsterId, context\.household\.id, true\)/);
+});
+
+test("思い出登録・更新は本体・対象・タグ・画像を同じrealtime transactionで整合させる", () => {
+  const actions = source("src/app/actions/records.ts");
+  assert.match(actions, /hamsters: \{[\s\S]*create: result\.data\.hamsterIds\.map/);
+  assert.match(actions, /memoryRecordHamster\.deleteMany\(\{ where: \{ hamsterRecordId: record\.id \} \}\)/);
+  assert.match(actions, /memoryRecordHamster\.createMany\(\{/);
+  assert.match(actions, /hamsterId: representativeHamsterId/);
+  assert.match(actions, /result\.data\.hamsterIds\.includes\(record\.hamsterId\)[\s\S]*record\.hamsterId[\s\S]*result\.data\.hamsterIds\[0\]/);
+  assert.match(actions, /memoryRecordImage\.deleteMany/);
+  assert.match(actions, /savedMemoryTag\.createMany/);
+  assert.match(actions, /source: "record"/);
+});
+
+test("共有思い出の削除計画は非代表削除を保持し、代表削除を先頭へ付け替える", () => {
+  const records = [{
+    id: "memory-1",
+    representativeHamsterId: "hamster-1",
+    hamsterIds: ["hamster-1", "hamster-2", "hamster-3"],
+    imageFileNames: ["photo.webp"]
+  }];
+  assert.deepEqual(planMemoryRecordsForHamsterDeletion(records, ["hamster-2"]), [{
+    recordId: "memory-1",
+    deleteRecord: false,
+    nextRepresentativeHamsterId: "hamster-1",
+    imageFileNamesToDelete: []
+  }]);
+  assert.deepEqual(planMemoryRecordsForHamsterDeletion(records, ["hamster-1"]), [{
+    recordId: "memory-1",
+    deleteRecord: false,
+    nextRepresentativeHamsterId: "hamster-2",
+    imageFileNamesToDelete: []
+  }]);
+});
+
+test("単独対象・一括全対象削除だけが思い出と重複排除済み画像を削除する", () => {
+  const single = planMemoryRecordsForHamsterDeletion([{
+    id: "memory-single",
+    representativeHamsterId: "hamster-1",
+    hamsterIds: ["hamster-1"],
+    imageFileNames: ["photo.webp", "photo.webp"]
+  }], ["hamster-1"]);
+  assert.deepEqual(single, [{
+    recordId: "memory-single",
+    deleteRecord: true,
+    nextRepresentativeHamsterId: null,
+    imageFileNamesToDelete: ["photo.webp"]
+  }]);
+
+  const bulk = planMemoryRecordsForHamsterDeletion([{
+    id: "memory-shared",
+    representativeHamsterId: "hamster-1",
+    hamsterIds: ["hamster-1", "hamster-2", "hamster-3"],
+    imageFileNames: ["shared.webp"]
+  }], ["hamster-1", "hamster-2"]);
+  assert.equal(bulk[0]?.deleteRecord, false);
+  assert.equal(bulk[0]?.nextRepresentativeHamsterId, "hamster-3");
+  assert.deepEqual(bulk[0]?.imageFileNamesToDelete, []);
+});
+
+test("単体・一括ハムスター削除は共有思い出を先に整理し、削除記録の画像だけ後処理する", () => {
+  const actions = source("src/app/actions/hamsters.ts");
+  assert.match(actions, /prepareMemoryRecordsForHamsterDeletion\([\s\S]*tx\.hamster\.deleteMany/);
+  assert.match(actions, /tx\.hamsterRecord\.update\([\s\S]*data: \{ hamsterId: plan\.nextRepresentativeHamsterId \}/);
+  assert.match(actions, /tx\.hamsterRecord\.deleteMany\([\s\S]*recordType: "MEMORY"/);
+  assert.equal((actions.match(/result: deletedMemoryRecords/g) ?? []).length, 2);
+  assert.equal((actions.match(/deletedMemoryRecords,/g) ?? []).length, 2);
+  assert.match(actions, /const deletedFileNames = new Set<string>\(\)/);
 });
 
 test("既存の思い出検索テキストからタグを除外するマイグレーションを持つ", () => {
@@ -567,13 +737,15 @@ test("記録画面は表示範囲を明示し、フィルター・種類・ペ�
   assert.match(page, /記録を追加するハムスター/);
   assert.match(page, /タイムラインにはグループ内の全ハムスターの記録が表示されます。/);
   assert.match(page, /グループ全体のタイムライン/);
-  assert.match(page, /<RecordTimeline records=\{data\.records\} scope=\{scope\} returnHamsterId=\{selectedHamsterId\}/);
+  assert.match(page, /<RecordTimeline records=\{data\.records\} hamsters=\{data\.hamsters\} scope=\{scope\} returnHamsterId=\{selectedHamsterId\}/);
 });
 
-test("グループタイムラインは記録自身のハムスター情報を表示・編集・削除・管理外判定へ使う", () => {
+test("タイムラインは思い出の全対象ハムスターを表示し、健康・通院は従来の所属を使う", () => {
   const timeline = source("src/components/record-timeline.tsx");
-  assert.match(timeline, /scope === "household" \? <Link href=\{recordsUrl\(\{ basePath, scope: "hamster", includeScope: true, hamsterId: record\.hamster\.id \}\)\}/);
-  assert.match(timeline, /\{record\.hamster\.name\}<\/Link>/);
+  assert.match(timeline, /record\.recordType === "MEMORY"[\s\S]*record\.memoryDetail\?\.hamsters/);
+  assert.match(timeline, /recordHamsters\.map\(\(hamster\) => <Link key=\{hamster\.id\}/);
+  assert.match(timeline, /hamsterId: hamster\.id/);
+  assert.match(timeline, /\{hamster\.name\}<\/Link>/);
   assert.ok((timeline.match(/name="hamsterId" value=\{record\.hamster\.id\}/g)?.length ?? 0) >= 4);
   assert.ok((timeline.match(/name="viewScope"/g)?.length ?? 0) >= 4);
   assert.ok((timeline.match(/name="returnHamsterId"/g)?.length ?? 0) >= 4);
@@ -673,6 +845,41 @@ test("思い出フォームは保存済みタグの再利用と同時保存に�
   assert.match(tagInput, /\{reusableTags\.length > 0 \? \(\s*<details/);
   assert.match(tagInput, /\{initialSuggestions\.length > 0 \? \(\s*<div className="grid gap-2">/);
   assert.doesNotMatch(tagInput, /<details[^>]*\sopen(?:=|\s|>)/);
+});
+
+test("思い出登録・編集フォームはスマホ向けチェックボックスで全Household候補と管理外を表示する", () => {
+  const page = source("src/app/(app)/records/page.tsx");
+  const forms = source("src/components/record-create-forms.tsx");
+  const timeline = source("src/components/record-timeline.tsx");
+  const selector = source("src/components/memory-hamster-selector.tsx");
+  assert.match(page, /hamsters=\{data\.hamsters\}/);
+  assert.match(forms, /<MemoryHamsterSelector key=\{hamsterId\} hamsters=\{hamsters\} selectedIds=\{\[hamsterId\]\} representativeId=\{hamsterId\} lockRepresentative \/>/);
+  assert.match(timeline, /selectedIds=\{record\.memoryDetail\.hamsters\.map\(\(hamster\) => hamster\.id\)\}/);
+  assert.match(selector, /対象ハムスター（複数選択可）/);
+  assert.match(selector, /grid gap-2 sm:grid-cols-2 lg:grid-cols-3/);
+  assert.match(selector, /type="checkbox"[\s\S]*name="hamsterIds"/);
+  assert.match(selector, /現在選択中のハムスターを代表/);
+  assert.match(selector, /管理外/);
+  assert.doesNotMatch(selector, /<select|multiple/);
+  assert.match(selector, /required=\{selectedCount === 0 && index === 0\}/);
+});
+
+test("思い出画像APIは代表だけでなく対象関連のHousehold所属で認可する", () => {
+  const route = source("src/app/api/records/[id]/image/route.ts");
+  assert.match(route, /memoryDetail: \{[\s\S]*hamsters: \{ some: \{ hamster: \{ householdId: context\.household\.id \} \} \}/);
+  assert.match(route, /hamsterHouseholdId = record\?\.memoryDetail\?\.hamsters\[0\]\?\.hamster\.householdId/);
+  assert.doesNotMatch(route, /where: \{ id, recordType: "MEMORY", hamster:/);
+});
+
+test("デモデータは全思い出を中間関連へ登録し、複数対象のサンプルを1件持つ", () => {
+  const seed = source("prisma/seed-demo.ts");
+  const demoQuery = source("src/lib/public-demo-queries.ts");
+  const demoPage = source("src/app/demo/records/page.tsx");
+  assert.match(seed, /tx\.memoryRecordHamster\.createMany/);
+  assert.match(seed, /record\.id === PUBLIC_DEMO_RECORD_IDS\.kinakoMemory/);
+  assert.match(seed, /PUBLIC_DEMO_HAMSTER_IDS\.monaka/);
+  assert.match(demoQuery, /hamsters: record\.memoryDetail\.hamsters\.map\(\(entry\) => entry\.hamster\)/);
+  assert.match(demoPage, /<RecordTimeline[\s\S]*hamsters=\{data\.hamsters\}/);
 });
 
 test("体調フォームはいつも通り設定を非表示にしつつ再表示用の処理を保持する", () => {

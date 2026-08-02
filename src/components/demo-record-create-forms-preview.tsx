@@ -276,7 +276,15 @@ function MedicalPreview({ today }: { today: string }) {
   );
 }
 
-function MemoryPreview({ today }: { today: string }) {
+function MemoryPreview({
+  today,
+  hamsters,
+  selectedHamsterId
+}: {
+  today: string;
+  hamsters: Array<{ id: string; name: string; isActive: boolean }>;
+  selectedHamsterId: string;
+}) {
   return (
     <div
       id="demo-record-preview-memory"
@@ -284,6 +292,19 @@ function MemoryPreview({ today }: { today: string }) {
       aria-labelledby="demo-record-preview-tab-memory"
       className="mt-5 grid gap-4"
     >
+      <fieldset className="grid gap-2" aria-disabled="true">
+        <legend className="text-sm font-semibold text-slate-700">対象ハムスター（複数選択可）</legend>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {hamsters.map((hamster) => (
+            <label key={hamster.id} className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${hamster.id === selectedHamsterId ? "border-moss bg-moss/5 font-semibold text-ink" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
+              <input type="checkbox" checked={hamster.id === selectedHamsterId} disabled aria-disabled="true" title={DEMO_PREVIEW_DISABLED_TITLE} readOnly />
+              <span className="min-w-0 flex-1 truncate">{hamster.name}</span>
+              {hamster.id === selectedHamsterId ? <span className="rounded-full bg-moss/10 px-2 py-0.5 text-[11px] font-bold text-moss">代表</span> : null}
+              {!hamster.isActive ? <span className="text-[11px] text-slate-500">管理外</span> : null}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
         <label className={demoPreviewFieldClass}>
           記録日
@@ -317,7 +338,15 @@ function MemoryPreview({ today }: { today: string }) {
   );
 }
 
-export function DemoRecordCreateFormsPreview({ today }: { today: string }) {
+export function DemoRecordCreateFormsPreview({
+  today,
+  hamsters = [],
+  selectedHamsterId = ""
+}: {
+  today: string;
+  hamsters?: Array<{ id: string; name: string; isActive: boolean }>;
+  selectedHamsterId?: string;
+}) {
   const [kind, setKind] = useState<DemoRecordPreviewKind>("health");
 
   return (
@@ -387,7 +416,7 @@ export function DemoRecordCreateFormsPreview({ today }: { today: string }) {
         <MedicalPreview today={today} />
       </div>
       <div hidden={kind !== "memory"}>
-        <MemoryPreview today={today} />
+        <MemoryPreview today={today} hamsters={hamsters} selectedHamsterId={selectedHamsterId} />
       </div>
     </section>
   );

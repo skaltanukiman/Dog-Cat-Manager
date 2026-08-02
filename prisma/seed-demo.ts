@@ -904,6 +904,20 @@ export async function rebuildPublicDemoData(client: PrismaClient) {
         }
       }
     });
+
+    const memoryRecords = await tx.hamsterRecord.findMany({
+      where: { recordType: "MEMORY", hamster: { householdId: PUBLIC_DEMO_HOUSEHOLD_ID } },
+      select: { id: true, hamsterId: true }
+    });
+    await tx.memoryRecordHamster.createMany({
+      data: memoryRecords.flatMap((record) => [
+        { hamsterRecordId: record.id, hamsterId: record.hamsterId, sortOrder: 0 },
+        ...(record.id === PUBLIC_DEMO_RECORD_IDS.kinakoMemory
+          ? [{ hamsterRecordId: record.id, hamsterId: PUBLIC_DEMO_HAMSTER_IDS.monaka, sortOrder: 1 }]
+          : [])
+      ]),
+      skipDuplicates: true
+    });
   });
 }
 

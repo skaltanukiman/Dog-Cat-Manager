@@ -17,18 +17,33 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const record = await prisma.hamsterRecord.findFirst({
-    where: { id, recordType: "MEMORY", hamster: { householdId: context.household.id } },
+    where: {
+      id,
+      recordType: "MEMORY",
+      memoryDetail: {
+        is: { hamsters: { some: { hamster: { householdId: context.household.id } } } }
+      }
+    },
     select: {
-      hamster: { select: { householdId: true } },
-      memoryDetail: { select: { images: { orderBy: { sortOrder: "asc" }, take: 1, select: { fileName: true } } } }
+      memoryDetail: {
+        select: {
+          images: { orderBy: { sortOrder: "asc" }, take: 1, select: { fileName: true } },
+          hamsters: {
+            orderBy: [{ sortOrder: "asc" }, { hamsterId: "asc" }],
+            take: 1,
+            select: { hamster: { select: { householdId: true } } }
+          }
+        }
+      }
     }
   });
   const fileName = record?.memoryDetail?.images[0]?.fileName ?? null;
+  const hamsterHouseholdId = record?.memoryDetail?.hamsters[0]?.hamster.householdId ?? null;
   if (
     !record ||
     !canServeRecordImage({
       currentHouseholdId: context.household.id,
-      hamsterHouseholdId: record.hamster.householdId,
+      hamsterHouseholdId,
       fileName
     })
   ) {

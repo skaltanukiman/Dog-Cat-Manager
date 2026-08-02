@@ -6,6 +6,7 @@ import { useEffect, useId, useState, type FormEvent } from "react";
 
 import { deleteHamsterRecord, updateHealthRecord, updateMedicalRecord, updateMemoryRecord } from "@/app/actions/records";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
+import { MemoryHamsterSelector } from "@/components/memory-hamster-selector";
 import { RecordImageField } from "@/components/record-image-field";
 import { RecordTimeInput } from "@/components/record-time-input";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -153,11 +154,13 @@ function HealthFields({ detail }: { detail: NonNullable<RecordItem["healthDetail
 
 function RecordEditForm({
   record,
+  hamsters,
   viewScope,
   returnHamsterId,
   today
 }: {
   record: RecordItem;
+  hamsters: Array<{ id: string; name: string; isActive: boolean }>;
   viewScope: RecordScope;
   returnHamsterId: string;
   today: string;
@@ -198,6 +201,12 @@ function RecordEditForm({
       <form action={updateMemoryRecord} data-dirty-watch className="mt-4 grid gap-4 border-t border-slate-200 pt-4">
         <input type="hidden" name="id" value={record.id} /><input type="hidden" name="hamsterId" value={record.hamster.id} />
         <input type="hidden" name="viewScope" value={viewScope} /><input type="hidden" name="returnHamsterId" value={returnHamsterId} />
+        <MemoryHamsterSelector
+          key={`${record.id}:${record.memoryDetail.hamsters.map((hamster) => hamster.id).join(",")}`}
+          hamsters={hamsters}
+          selectedIds={record.memoryDetail.hamsters.map((hamster) => hamster.id)}
+          representativeId={record.hamster.id}
+        />
         <div className="grid gap-3 sm:grid-cols-[180px_1fr]"><label className={fieldClass}>日付<input type="date" name="recordDate" defaultValue={record.recordDate} max={today} required /></label><label className={fieldClass}>タイトル<input name="title" defaultValue={record.title} maxLength={100} required /></label></div>
         <label className={fieldClass}>内容<textarea name="content" defaultValue={record.memo ?? ""} maxLength={5000} required /></label>
         <label className={fieldClass}>タグ（「、」またはカンマ区切り）<input name="tags" defaultValue={record.memoryDetail.tags.join("、")} maxLength={619} /><span className="text-xs font-normal text-slate-500">候補: {MEMORY_TAG_SUGGESTIONS.join("、")}</span></label>
@@ -218,6 +227,7 @@ function TypeIcon({ type }: { type: RecordItem["recordType"] }) {
 
 export function RecordTimeline({
   records,
+  hamsters,
   scope,
   returnHamsterId,
   canEdit,
@@ -225,6 +235,7 @@ export function RecordTimeline({
   basePath = "/records"
 }: {
   records: RecordItem[];
+  hamsters: Array<{ id: string; name: string; isActive: boolean }>;
   scope: RecordScope;
   returnHamsterId: string;
   canEdit: boolean;
@@ -243,12 +254,17 @@ export function RecordTimeline({
         {records.map((record) => {
           const editable = canEdit && (record.recordType === "MEMORY" || record.hamster.isActive);
           const typeStyle = recordTypeStyles[record.recordType];
+          const recordHamsters = record.recordType === "MEMORY"
+            ? record.memoryDetail?.hamsters ?? [record.hamster]
+            : scope === "household"
+              ? [record.hamster]
+              : [];
           return (
             <article key={record.id} className={`relative ml-9 rounded-lg border p-4 shadow-sm sm:ml-12 sm:p-5 ${typeStyle.card}`}>
               <span className={`absolute -left-[2.25rem] top-5 grid h-8 w-8 place-items-center rounded-full border-2 border-white text-white shadow sm:-left-[3.1rem] sm:h-10 sm:w-10 ${typeStyle.marker}`}><TypeIcon type={record.recordType} /></span>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${typeStyle.badge}`}><TypeIcon type={record.recordType} />{RECORD_TYPE_LABELS[record.recordType]}</span>{scope === "household" ? <Link href={recordsUrl({ basePath, scope: "hamster", includeScope: true, hamsterId: record.hamster.id })} scroll={false} className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-inset ring-violet-200 hover:bg-violet-100"><PawPrint className="h-3.5 w-3.5" aria-hidden />{record.hamster.name}</Link> : null}{record.memoryDetail?.isFavorite ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"><Star className="h-3.5 w-3.5 fill-current" aria-hidden />お気に入り</span> : null}</div>
+                  <div className="flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${typeStyle.badge}`}><TypeIcon type={record.recordType} />{RECORD_TYPE_LABELS[record.recordType]}</span>{recordHamsters.map((hamster) => <Link key={hamster.id} href={recordsUrl({ basePath, scope: "hamster", includeScope: true, hamsterId: hamster.id })} scroll={false} className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-inset ring-violet-200 hover:bg-violet-100"><PawPrint className="h-3.5 w-3.5" aria-hidden />{hamster.name}</Link>)}{record.memoryDetail?.isFavorite ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"><Star className="h-3.5 w-3.5 fill-current" aria-hidden />お気に入り</span> : null}</div>
                   <h3 className="mt-2 text-lg font-bold text-ink">{record.title}</h3>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{record.recordDate.replaceAll("-", "/")}</span>{record.recordTime ? <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" aria-hidden />{record.recordTime}</span> : null}<span className="inline-flex items-center gap-1"><UserRound className="h-3.5 w-3.5" aria-hidden />{record.createdByLabel}</span></div>
                 </div>
@@ -259,7 +275,7 @@ export function RecordTimeline({
               {record.recordType === "MEDICAL" && record.medicalDetail ? <div className="mt-4 grid gap-2 text-sm"><p><span className="font-semibold">理由・症状:</span> {record.medicalDetail.reason}</p>{record.medicalDetail.diagnosis ? <p><span className="font-semibold">診断:</span> {record.medicalDetail.diagnosis}</p> : null}{record.medicalDetail.medication ? <p><span className="font-semibold">処方薬:</span> {record.medicalDetail.medication}</p> : null}{record.medicalDetail.nextVisitDate ? <p className="inline-flex w-fit items-center gap-2 rounded-md bg-sky-50 px-3 py-2 font-semibold text-sky-800"><CalendarClock className="h-4 w-4" aria-hidden />次回通院予定: {record.medicalDetail.nextVisitDate.replaceAll("-", "/")}</p> : null}</div> : null}
               {record.recordType === "MEMORY" && record.memoryDetail ? <div className="mt-4 grid gap-3">{record.memoryDetail.imageFileName || record.staticImagePath ? <RecordPhoto recordId={record.id} title={record.title} staticImagePath={record.staticImagePath} /> : null}{record.memoryDetail.tags.length ? <div className="flex flex-wrap gap-1.5">{record.memoryDetail.tags.map((tag) => <span key={tag} className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">#{tag}</span>)}</div> : null}</div> : null}
               {record.memo ? <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{record.memo}</p> : null}
-              {editable ? <details className="group mt-4"><summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-moss"><Pencil className="h-4 w-4" aria-hidden /><span className="group-open:hidden">編集フォームを開く</span><span className="hidden group-open:inline">編集フォームを閉じる</span></summary><RecordEditForm record={record} viewScope={scope} returnHamsterId={returnHamsterId} today={today} /></details> : !canEdit ? null : <p className="mt-4 text-xs text-amber-700">管理外のため、この健康・通院記録は閲覧のみです。</p>}
+              {editable ? <details className="group mt-4"><summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-moss"><Pencil className="h-4 w-4" aria-hidden /><span className="group-open:hidden">編集フォームを開く</span><span className="hidden group-open:inline">編集フォームを閉じる</span></summary><RecordEditForm record={record} hamsters={hamsters} viewScope={scope} returnHamsterId={returnHamsterId} today={today} /></details> : !canEdit ? null : <p className="mt-4 text-xs text-amber-700">管理外のため、この健康・通院記録は閲覧のみです。</p>}
             </article>
           );
         })}

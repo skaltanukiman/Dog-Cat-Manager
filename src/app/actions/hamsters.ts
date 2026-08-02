@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect, unstable_rethrow } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import type { ZodIssue } from "zod";
 
 import { belongsToCurrentHousehold } from "@/lib/authorization";
@@ -17,6 +18,7 @@ import {
 import { writeServerLog } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { deleteRecordImage } from "@/lib/record-image";
+import { planMemoryRecordsForHamsterDeletion } from "@/lib/records";
 import { commitHouseholdMutation, getRealtimeActorId, publishHouseholdChangeSafely } from "@/lib/realtime";
 import { revalidatePathsSafely } from "@/lib/safe-side-effects";
 import { handleServerActionError, isPrismaUniqueConstraintError, logUnexpectedError } from "@/lib/server-errors";
@@ -82,8 +84,11 @@ async function deleteRecordImagesAfterHamsterMutation(
   records: Array<{ id: string; memoryDetail: { images: Array<{ fileName: string }> } | null }>,
   operation: string
 ) {
+  const deletedFileNames = new Set<string>();
   for (const record of records) {
     for (const image of record.memoryDetail?.images ?? []) {
+      if (deletedFileNames.has(image.fileName)) continue;
+      deletedFileNames.add(image.fileName);
       try {
         await deleteRecordImage(householdId, image.fileName);
       } catch (error) {
@@ -96,6 +101,73 @@ async function deleteRecordImagesAfterHamsterMutation(
       }
     }
   }
+}
+
+async function prepareMemoryRecordsForHamsterDeletion(
+  tx: Prisma.TransactionClient,
+  householdId: string,
+  hamsterIds: string[]
+) {
+  const records = await tx.hamsterRecord.findMany({
+    where: {
+      recordType: "MEMORY",
+      hamster: { householdId },
+      OR: [
+        { hamsterId: { in: hamsterIds } },
+        { memoryDetail: { is: { hamsters: { some: { hamsterId: { in: hamsterIds } } } } } }
+      ]
+    },
+    select: {
+      id: true,
+      hamsterId: true,
+      memoryDetail: {
+        select: {
+          hamsters: {
+            orderBy: [{ sortOrder: "asc" }, { hamsterId: "asc" }],
+            select: { hamsterId: true }
+          },
+          images: { select: { fileName: true } }
+        }
+      }
+    }
+  });
+  const plans = planMemoryRecordsForHamsterDeletion(
+    records.map((record) => ({
+      id: record.id,
+      representativeHamsterId: record.hamsterId,
+      hamsterIds: record.memoryDetail?.hamsters.map((entry) => entry.hamsterId) ?? [],
+      imageFileNames: record.memoryDetail?.images.map((image) => image.fileName) ?? []
+    })),
+    hamsterIds
+  );
+  const representatives = new Map(records.map((record) => [record.id, record.hamsterId]));
+
+  for (const plan of plans) {
+    if (
+      !plan.deleteRecord &&
+      plan.nextRepresentativeHamsterId &&
+      plan.nextRepresentativeHamsterId !== representatives.get(plan.recordId)
+    ) {
+      await tx.hamsterRecord.update({
+        where: { id: plan.recordId },
+        data: { hamsterId: plan.nextRepresentativeHamsterId }
+      });
+    }
+  }
+
+  const deletedRecordIds = plans.filter((plan) => plan.deleteRecord).map((plan) => plan.recordId);
+  if (deletedRecordIds.length > 0) {
+    await tx.hamsterRecord.deleteMany({
+      where: { id: { in: deletedRecordIds }, recordType: "MEMORY", hamster: { householdId } }
+    });
+  }
+
+  return plans
+    .filter((plan) => plan.deleteRecord)
+    .map((plan) => ({
+      id: plan.recordId,
+      memoryDetail: { images: plan.imageFileNamesToDelete.map((fileName) => ({ fileName })) }
+    }));
 }
 
 export async function createHamster(formData: FormData) {
@@ -345,15 +417,12 @@ export async function deleteHamster(formData: FormData) {
       where: { id: result.data.id, householdId: context.household.id },
       select: {
         name: true,
-        profileImageFileName: true,
-        records: {
-          select: { id: true, memoryDetail: { select: { images: { select: { fileName: true } } } } }
-        }
+        profileImageFileName: true
       }
     });
     if (!hamster) redirect("/hamsters?status=invalid");
 
-    const { change } = await commitHouseholdMutation({
+    const { change, result: deletedMemoryRecords } = await commitHouseholdMutation({
       householdId: context.household.id,
       source: "hamster",
       actorClientId: getRealtimeActorId(formData),
@@ -367,8 +436,14 @@ export async function deleteHamster(formData: FormData) {
         targetNameSnapshot: hamster.name
       },
       mutate: async (tx) => {
+        const memoryRecords = await prepareMemoryRecordsForHamsterDeletion(
+          tx,
+          context.household.id,
+          [result.data.id]
+        );
         const deleted = await tx.hamster.deleteMany({ where: { id: result.data.id, householdId: context.household.id } });
         if (deleted.count !== 1) redirect("/hamsters?status=invalid");
+        return memoryRecords;
       }
     });
     publishHouseholdChangeSafely(change);
@@ -382,7 +457,7 @@ export async function deleteHamster(formData: FormData) {
     );
     await deleteRecordImagesAfterHamsterMutation(
       context.household.id,
-      hamster.records,
+      deletedMemoryRecords,
       "hamsters.delete.deleteRecordImages"
     );
     revalidatePathsSafely([{ path: "/" }, { path: "/hamsters" }, { path: "/records" }, { path: "/settings/members" }, { path: "/settings/members/activity" }], "hamsters.delete.revalidate", {
@@ -406,15 +481,12 @@ export async function deleteHamsters(formData: FormData) {
       select: {
         id: true,
         name: true,
-        profileImageFileName: true,
-        records: {
-          select: { id: true, memoryDetail: { select: { images: { select: { fileName: true } } } } }
-        }
+        profileImageFileName: true
       }
     });
     if (hamsters.length !== result.data.ids.length) redirect("/hamsters?status=invalid");
 
-    const { change } = await commitHouseholdMutation({
+    const { change, result: deletedMemoryRecords } = await commitHouseholdMutation({
       householdId: context.household.id,
       source: "hamster",
       actorClientId: getRealtimeActorId(formData),
@@ -428,10 +500,16 @@ export async function deleteHamsters(formData: FormData) {
         targetNameSnapshot: hamster.name
       })),
       mutate: async (tx) => {
+        const memoryRecords = await prepareMemoryRecordsForHamsterDeletion(
+          tx,
+          context.household.id,
+          result.data.ids
+        );
         const deleted = await tx.hamster.deleteMany({
           where: { id: { in: result.data.ids }, householdId: context.household.id }
         });
         if (deleted.count !== result.data.ids.length) redirect("/hamsters?status=invalid");
+        return memoryRecords;
       }
     });
     publishHouseholdChangeSafely(change);
@@ -445,7 +523,7 @@ export async function deleteHamsters(formData: FormData) {
     );
     await deleteRecordImagesAfterHamsterMutation(
       context.household.id,
-      hamsters.flatMap((hamster) => hamster.records),
+      deletedMemoryRecords,
       "hamsters.deleteMany.deleteRecordImages"
     );
     revalidatePathsSafely(

@@ -6,6 +6,7 @@ import { isValidDateInput, parseDateInput } from "@/lib/date";
 import { parseRecordTimeInput } from "@/lib/record-time";
 
 const idSchema = z.string().trim().min(1);
+export const MAX_MEMORY_RECORD_HAMSTERS = 100;
 const dateSchema = z.string().refine(isValidDateInput, "invalidDate");
 const optionalDateSchema = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? null : value),
@@ -93,19 +94,36 @@ function normalizeSavedMemoryTags(value: unknown) {
   return [...new Set(value.map((tag) => (typeof tag === "string" ? normalizeTagStorageValue(tag) : tag)).filter(Boolean))];
 }
 
-const memoryBaseSchema = z.object({
+const memoryFields = {
   hamsterId: idSchema,
+  hamsterIds: z
+    .array(idSchema)
+    .min(1)
+    .max(MAX_MEMORY_RECORD_HAMSTERS)
+    .transform((ids) => [...new Set(ids)]),
   recordDate: dateSchema,
   title: z.string().trim().min(1).max(100),
   content: z.string().trim().min(1).max(5000),
   tags: z.preprocess(normalizeTags, z.array(z.string().min(1).max(30)).max(20)),
   isFavorite: z.preprocess((value) => value === "true" || value === "on", z.boolean())
-});
+};
 
-export const createMemoryRecordSchema = memoryBaseSchema.extend({
+function requireRepresentativeHamster<T extends { hamsterId: string; hamsterIds: string[] }>(
+  value: T,
+  context: z.RefinementCtx
+) {
+  if (!value.hamsterIds.includes(value.hamsterId)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["hamsterIds"], message: "representativeRequired" });
+  }
+}
+
+export const memoryBaseSchema = z.object(memoryFields);
+
+export const createMemoryRecordSchema = z.object({
+  ...memoryFields,
   saveTags: z.preprocess((value) => value === "true" || value === "on", z.boolean())
-});
-export const updateMemoryRecordSchema = memoryBaseSchema.extend({ id: idSchema });
+}).superRefine(requireRepresentativeHamster);
+export const updateMemoryRecordSchema = z.object({ ...memoryFields, id: idSchema });
 
 export const deleteHamsterRecordSchema = z.object({
   id: idSchema,

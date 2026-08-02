@@ -184,7 +184,7 @@ export default async function DemoRecordsPage({
             サンプル閲覧モードではデータを変更できません。
           </p>
 
-          <DemoRecordCreateFormsPreview today={today} />
+          <DemoRecordCreateFormsPreview today={today} hamsters={data.hamsters} selectedHamsterId={selectedHamsterId} />
 
           <section className="grid gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -224,6 +224,7 @@ export default async function DemoRecordsPage({
             />
             <RecordTimeline
               records={data.records}
+              hamsters={data.hamsters}
               scope={data.scope}
               returnHamsterId={selectedHamsterId}
               canEdit={false}

@@ -77,9 +77,9 @@ test("記録カードのハムスターリンク後はURL・選択UI・登録先
 
   assert.match(
     timeline,
-    /recordsUrl\(\{ basePath, scope: "hamster", includeScope: true, hamsterId: record\.hamster\.id \}\)/
+    /recordsUrl\(\{ basePath, scope: "hamster", includeScope: true, hamsterId: hamster\.id \}\)/
   );
-  assert.match(timeline, /\{record\.hamster\.name\}<\/Link>/);
+  assert.match(timeline, /\{hamster\.name\}<\/Link>/);
   assert.match(
     records,
     /options\.scope === "household" \|\| \(options\.includeScope && options\.scope === "hamster"\)/
@@ -88,7 +88,7 @@ test("記録カードのハムスターリンク後はURL・選択UI・登録先
   assert.match(queries, /hamsters\.find\(\(hamster\) => hamster\.id === filters\.selectedHamsterId\)/);
   assert.match(page, /selectedId=\{selectedHamsterId\}/);
   assert.match(page, /<RecordCreateForms hamsterId=\{selectedHamsterId\}/);
-  assert.match(page, /<RecordTimeline records=\{data\.records\} scope=\{scope\} returnHamsterId=\{selectedHamsterId\}/);
+  assert.match(page, /<RecordTimeline records=\{data\.records\} hamsters=\{data\.hamsters\} scope=\{scope\} returnHamsterId=\{selectedHamsterId\}/);
 });
 
 test("共通選択コンポーネントを使う記録・清掃・体重・CSV出力の既存利用形態を維持する", () => {

@@ -148,7 +148,7 @@ test("記録画面の初期表示は設定フォーム・保存Action・AppSetti
   assert.match(action, /if \(dashboardChanged\) \{[\s\S]*?dashboardHamster\.deleteMany/);
   assert.match(action, /userId_householdId: \{ userId: context\.user\.id, householdId: context\.household\.id \}/);
   assert.match(action, /\{ path: "\/records" \}/);
-  assert.match(prismaSchema, /recordTimelineDefaultScope String\s+@default\("hamster"\)/);
+  assert.match(prismaSchema, /recordTimelineDefaultScope\s+String\s+@default\("hamster"\)/);
   assert.match(migration, /ADD COLUMN "recordTimelineDefaultScope" TEXT NOT NULL DEFAULT 'hamster'/);
   assert.doesNotMatch(action, /createHouseholdActivity/);
 });

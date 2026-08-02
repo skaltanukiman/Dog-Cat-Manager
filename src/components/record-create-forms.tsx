@@ -11,6 +11,7 @@ import {
   type RecordCreateActionResult
 } from "@/app/actions/records";
 import { RecordImageField } from "@/components/record-image-field";
+import { MemoryHamsterSelector } from "@/components/memory-hamster-selector";
 import { MemoryTagInput } from "@/components/memory-tag-input";
 import { RecordTimeInput } from "@/components/record-time-input";
 import { AutoDismissSuccessMessage } from "@/components/status-message";
@@ -47,7 +48,7 @@ function RecordCreateError({ error }: { error?: CreateError }) {
   );
 }
 
-export function RecordCreateForms({ hamsterId, hamsterIsActive, today, savedMemoryTags }: { hamsterId: string; hamsterIsActive: boolean; today: string; savedMemoryTags: string[] }) {
+export function RecordCreateForms({ hamsterId, hamsterIsActive, hamsters, today, savedMemoryTags }: { hamsterId: string; hamsterIsActive: boolean; hamsters: Array<{ id: string; name: string; isActive: boolean }>; today: string; savedMemoryTags: string[] }) {
   const router = useRouter();
   const [kind, setKind] = useState<RecordCreateKind>(recordCreateKindForHamsterStatus("health", hamsterIsActive));
   const [previousHamsterIsActive, setPreviousHamsterIsActive] = useState(hamsterIsActive);
@@ -207,6 +208,7 @@ export function RecordCreateForms({ hamsterId, hamsterIsActive, today, savedMemo
             <input type="hidden" name="hamsterId" value={hamsterId} />
             <RecordCreateError error={submitErrors.memory} />
             {submitSuccesses.memory ? <AutoDismissSuccessMessage message="記録を登録しました。" /> : null}
+            <MemoryHamsterSelector key={hamsterId} hamsters={hamsters} selectedIds={[hamsterId]} representativeId={hamsterId} lockRepresentative />
             <div className="grid gap-3 sm:grid-cols-[180px_1fr]"><label className={fieldClass}>日付<input type="date" name="recordDate" defaultValue={today} max={today} required /></label><label className={fieldClass}>タイトル<input name="title" maxLength={100} required placeholder="初めて手の上で寝てくれた" /></label></div>
             <label className={fieldClass}>内容<textarea name="content" maxLength={5000} required /></label>
             <MemoryTagInput savedTags={savedMemoryTags} />

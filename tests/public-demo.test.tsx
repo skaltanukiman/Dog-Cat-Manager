@@ -89,6 +89,7 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
     }
   ];
   const deletedIds: string[] = [];
+  let memoryTargetRows: Array<{ hamsterRecordId: string; hamsterId: string; sortOrder: number }> = [];
 
   const transactionClient = {
     household: {
@@ -122,6 +123,25 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
         });
         return data;
       }
+    },
+    hamsterRecord: {
+      async findMany() {
+        const demo = households.find((household) => household.id === PUBLIC_DEMO_HOUSEHOLD_ID);
+        const data = demo?.data as {
+          hamsters?: { create?: Array<{ id: string; records?: { create?: Array<{ id: string; recordType: string }> } }> };
+        } | undefined;
+        return (data?.hamsters?.create ?? []).flatMap((hamster) =>
+          (hamster.records?.create ?? [])
+            .filter((record) => record.recordType === "MEMORY")
+            .map((record) => ({ id: record.id, hamsterId: hamster.id }))
+        );
+      }
+    },
+    memoryRecordHamster: {
+      async createMany({ data }: { data: Array<{ hamsterRecordId: string; hamsterId: string; sortOrder: number }> }) {
+        memoryTargetRows = data;
+        return { count: data.length };
+      }
     }
   };
   const client = {
@@ -139,6 +159,8 @@ test("デモseedは再実行しても固定デモ1件を再構築し、通常Hou
   assert.equal(demos[0].id, PUBLIC_DEMO_HOUSEHOLD_ID);
   assert.equal(demos[0].demoSlug, PUBLIC_DEMO_SLUG);
   assert.deepEqual(deletedIds, [PUBLIC_DEMO_HOUSEHOLD_ID]);
+  const sharedTargets = memoryTargetRows.filter((row) => row.hamsterRecordId === PUBLIC_DEMO_RECORD_IDS.kinakoMemory);
+  assert.deepEqual(sharedTargets.map((row) => row.hamsterId), [PUBLIC_DEMO_HAMSTER_IDS.kinako, PUBLIC_DEMO_HAMSTER_IDS.monaka]);
   const data = demos[0].data as {
     hamsters: {
       create: Array<{

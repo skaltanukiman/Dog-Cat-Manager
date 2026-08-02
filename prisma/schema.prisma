@@ -8,26 +8,27 @@ datasource db {
 }
 
 model Hamster {
-  id                   String             @id @default(cuid())
-  householdId          String?            @map("household_id")
-  household            Household?         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  id                      String                   @id @default(cuid())
+  householdId             String?                  @map("household_id")
+  household               Household?               @relation(fields: [householdId], references: [id], onDelete: Cascade)
   // ハムスター名は家庭内だけで重複を避け、別家庭なら同名を許可する。
-  name                 String
-  memo                 String?
-  profileImageFileName String?            @map("profile_image_file_name")
+  name                    String
+  memo                    String?
+  profileImageFileName    String?                  @map("profile_image_file_name")
   // カード表示にはまだ使わず、プロフィール情報として保存しておく日付。
-  birthDate            DateTime?          @db.Date
-  adoptionDate         DateTime?          @db.Date
+  birthDate               DateTime?                @db.Date
+  adoptionDate            DateTime?                @db.Date
   // 管理外にしたハムスターは記録編集をロックし、復活時に同じ履歴を再利用する。
-  isActive             Boolean            @default(true)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  cleaningRecords      CleaningRecord[]
-  feedingRecords       FeedingRecord[]
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  cleaningRecords         CleaningRecord[]
+  feedingRecords          FeedingRecord[]
   waterReplacementRecords WaterReplacementRecord[]
-  weightRecords        WeightRecord[]
-  dashboardEntries     DashboardHamster[]
-  records              HamsterRecord[]
+  weightRecords           WeightRecord[]
+  dashboardEntries        DashboardHamster[]
+  records                 HamsterRecord[]
+  memoryRecords           MemoryRecordHamster[]
 
   @@unique([householdId, name])
   @@index([householdId, createdAt])
@@ -104,29 +105,29 @@ model WeightRecord {
 }
 
 model AppSetting {
-  id                  String             @id @default(cuid())
-  userId              String?            @map("user_id")
-  householdId         String?            @map("household_id")
-  user                User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  household           Household?         @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  dashboardBoardCount Int                @default(6)
+  id                              String             @id @default(cuid())
+  userId                          String?            @map("user_id")
+  householdId                     String?            @map("household_id")
+  user                            User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household                       Household?         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  dashboardBoardCount             Int                @default(6)
   // ハムスター選択UIを、検索入力できるコンボボックス式か従来のプルダウン式かで切り替える。
-  hamsterSelectorMode String             @default("select")
+  hamsterSelectorMode             String             @default("select")
   // 記録画面をURLのscope指定なしで開いたときのタイムライン表示範囲。
-  recordTimelineDefaultScope String      @default("hamster")
+  recordTimelineDefaultScope      String             @default("hamster")
   // 衛生管理画面をスマートフォンで開いたときの日付フィルター初期値。
-  cleaningMobileDefaultDateFilter String @default("today")
+  cleaningMobileDefaultDateFilter String             @default("today")
   // 通知時刻は文字列ではなくJSTの0時からの経過分数として比較する。
-  feedingNotificationEnabled Boolean      @default(false)
-  feedingDeadlineMinutes     Int          @default(1320)
-  feedingNotifyBeforeMinutes Int          @default(30)
-  waterNotificationEnabled   Boolean      @default(false)
-  waterDeadlineMinutes       Int          @default(1260)
-  waterNotifyBeforeMinutes   Int          @default(30)
-  careNotificationCompactBody Boolean    @default(false)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  dashboardHamsters   DashboardHamster[]
+  feedingNotificationEnabled      Boolean            @default(false)
+  feedingDeadlineMinutes          Int                @default(1320)
+  feedingNotifyBeforeMinutes      Int                @default(30)
+  waterNotificationEnabled        Boolean            @default(false)
+  waterDeadlineMinutes            Int                @default(1260)
+  waterNotifyBeforeMinutes        Int                @default(30)
+  careNotificationCompactBody     Boolean            @default(false)
+  createdAt                       DateTime           @default(now())
+  updatedAt                       DateTime           @updatedAt
+  dashboardHamsters               DashboardHamster[]
 
   @@unique([userId, householdId])
   @@map("app_settings")
@@ -149,37 +150,37 @@ model DashboardHamster {
 }
 
 model User {
-  id                          String                @id @default(cuid())
-  name                        String?
-  email                       String?               @unique
-  emailVerified               DateTime?             @map("email_verified")
-  image                       String?
-  appRole                     AppRole               @default(USER) @map("app_role")
-  accessStatus                UserAccessStatus      @default(ACTIVE) @map("access_status")
-  suspendedAt                 DateTime?              @map("suspended_at")
-  suspendedByUserId           String?                @map("suspended_by_user_id")
-  suspensionReason            String?                @map("suspension_reason") @db.VarChar(500)
-  accounts                    Account[]
-  sessions                    Session[]
-  memberships                 HouseholdMember[]
-  appSettings                 AppSetting[]
-  createdHouseholdInvitations HouseholdInvitation[] @relation("HouseholdInvitationCreator")
-  createdHamsterRecords       HamsterRecord[]       @relation("HamsterRecordCreator")
-  createdFeedingRecords       FeedingRecord[]       @relation("FeedingRecordCreator")
-  createdWaterReplacementRecords WaterReplacementRecord[] @relation("WaterReplacementRecordCreator")
-  createdSavedMemoryTags      SavedMemoryTag[]      @relation("SavedMemoryTagCreator")
-  householdActivities         HouseholdActivity[]   @relation("HouseholdActivityActor")
-  suspendedBy                 User?                  @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
-  suspendedUsers              User[]                 @relation("UserCurrentSuspensionActor")
-  performedUserAccessActions  UserAccessAction[]     @relation("UserAccessActionActor")
-  receivedUserAccessActions   UserAccessAction[]     @relation("UserAccessActionTarget")
-  contactInquiries            ContactInquiry[]       @relation("ContactInquiryUser")
-  assignedContactInquiries    ContactInquiry[]       @relation("ContactInquiryAssignedAdmin")
-  contactInquiryMessages      ContactInquiryMessage[] @relation("ContactInquiryMessageSender")
-  webPushSubscriptions        WebPushSubscription[]
-  careNotificationDispatches  CareNotificationDispatch[]
-  createdAt                   DateTime              @default(now()) @map("created_at")
-  updatedAt                   DateTime              @updatedAt @map("updated_at")
+  id                             String                     @id @default(cuid())
+  name                           String?
+  email                          String?                    @unique
+  emailVerified                  DateTime?                  @map("email_verified")
+  image                          String?
+  appRole                        AppRole                    @default(USER) @map("app_role")
+  accessStatus                   UserAccessStatus           @default(ACTIVE) @map("access_status")
+  suspendedAt                    DateTime?                  @map("suspended_at")
+  suspendedByUserId              String?                    @map("suspended_by_user_id")
+  suspensionReason               String?                    @map("suspension_reason") @db.VarChar(500)
+  accounts                       Account[]
+  sessions                       Session[]
+  memberships                    HouseholdMember[]
+  appSettings                    AppSetting[]
+  createdHouseholdInvitations    HouseholdInvitation[]      @relation("HouseholdInvitationCreator")
+  createdHamsterRecords          HamsterRecord[]            @relation("HamsterRecordCreator")
+  createdFeedingRecords          FeedingRecord[]            @relation("FeedingRecordCreator")
+  createdWaterReplacementRecords WaterReplacementRecord[]   @relation("WaterReplacementRecordCreator")
+  createdSavedMemoryTags         SavedMemoryTag[]           @relation("SavedMemoryTagCreator")
+  householdActivities            HouseholdActivity[]        @relation("HouseholdActivityActor")
+  suspendedBy                    User?                      @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
+  suspendedUsers                 User[]                     @relation("UserCurrentSuspensionActor")
+  performedUserAccessActions     UserAccessAction[]         @relation("UserAccessActionActor")
+  receivedUserAccessActions      UserAccessAction[]         @relation("UserAccessActionTarget")
+  contactInquiries               ContactInquiry[]           @relation("ContactInquiryUser")
+  assignedContactInquiries       ContactInquiry[]           @relation("ContactInquiryAssignedAdmin")
+  contactInquiryMessages         ContactInquiryMessage[]    @relation("ContactInquiryMessageSender")
+  webPushSubscriptions           WebPushSubscription[]
+  careNotificationDispatches     CareNotificationDispatch[]
+  createdAt                      DateTime                   @default(now()) @map("created_at")
+  updatedAt                      DateTime                   @updatedAt @map("updated_at")
 
   @@index([accessStatus])
   @@index([suspendedByUserId])
@@ -187,18 +188,18 @@ model User {
 }
 
 model UserAccessAction {
-  id                    String               @id @default(cuid())
-  actionType            UserAccessActionType @map("action_type")
-  actorUserId           String?              @map("actor_user_id")
-  actorUserIdSnapshot   String                @map("actor_user_id_snapshot")
-  actorNameSnapshot     String                @map("actor_name_snapshot")
-  targetUserId          String?              @map("target_user_id")
-  targetUserIdSnapshot  String                @map("target_user_id_snapshot")
-  targetNameSnapshot    String                @map("target_name_snapshot")
-  reason                String?              @db.VarChar(500)
-  createdAt             DateTime             @default(now()) @map("created_at")
-  actor                 User?                @relation("UserAccessActionActor", fields: [actorUserId], references: [id], onDelete: SetNull)
-  target                User?                @relation("UserAccessActionTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  id                   String               @id @default(cuid())
+  actionType           UserAccessActionType @map("action_type")
+  actorUserId          String?              @map("actor_user_id")
+  actorUserIdSnapshot  String               @map("actor_user_id_snapshot")
+  actorNameSnapshot    String               @map("actor_name_snapshot")
+  targetUserId         String?              @map("target_user_id")
+  targetUserIdSnapshot String               @map("target_user_id_snapshot")
+  targetNameSnapshot   String               @map("target_name_snapshot")
+  reason               String?              @db.VarChar(500)
+  createdAt            DateTime             @default(now()) @map("created_at")
+  actor                User?                @relation("UserAccessActionActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  target               User?                @relation("UserAccessActionTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
 
   @@index([targetUserId, createdAt])
   @@index([actorUserId, createdAt])
@@ -245,22 +246,22 @@ model VerificationToken {
 }
 
 model Household {
-  id                    String                @id @default(cuid())
-  name                  String
-  isDemo                Boolean               @default(false) @map("is_demo")
-  demoSlug              String?               @unique @map("demo_slug")
-  careDayStartMinutes   Int                   @default(0) @map("care_day_start_minutes")
-  createdAt             DateTime              @default(now()) @map("created_at")
-  updatedAt             DateTime              @updatedAt @map("updated_at")
-  realtimeRevision      BigInt                @default(0) @map("realtime_revision")
-  realtimeActorClientId String?               @map("realtime_actor_client_id") @db.VarChar(128)
-  realtimeActorUserId   String?               @map("realtime_actor_user_id")
-  members               HouseholdMember[]
-  hamsters              Hamster[]
-  appSettings           AppSetting[]
-  invitations           HouseholdInvitation[]
-  savedMemoryTags       SavedMemoryTag[]
-  activities            HouseholdActivity[]
+  id                         String                     @id @default(cuid())
+  name                       String
+  isDemo                     Boolean                    @default(false) @map("is_demo")
+  demoSlug                   String?                    @unique @map("demo_slug")
+  careDayStartMinutes        Int                        @default(0) @map("care_day_start_minutes")
+  createdAt                  DateTime                   @default(now()) @map("created_at")
+  updatedAt                  DateTime                   @updatedAt @map("updated_at")
+  realtimeRevision           BigInt                     @default(0) @map("realtime_revision")
+  realtimeActorClientId      String?                    @map("realtime_actor_client_id") @db.VarChar(128)
+  realtimeActorUserId        String?                    @map("realtime_actor_user_id")
+  members                    HouseholdMember[]
+  hamsters                   Hamster[]
+  appSettings                AppSetting[]
+  invitations                HouseholdInvitation[]
+  savedMemoryTags            SavedMemoryTag[]
+  activities                 HouseholdActivity[]
   careNotificationDispatches CareNotificationDispatch[]
 
   @@map("households")
@@ -434,29 +435,29 @@ enum HouseholdActivityEvent {
 }
 
 model ContactInquiry {
-  id                        String                    @id @default(cuid())
-  publicId                  String                    @unique @map("public_id")
-  userId                    String?                   @map("user_id")
-  userIdSnapshot            String                    @map("user_id_snapshot")
-  userNameSnapshot          String                    @map("user_name_snapshot")
-  userEmailSnapshot         String?                   @map("user_email_snapshot")
+  id                        String                  @id @default(cuid())
+  publicId                  String                  @unique @map("public_id")
+  userId                    String?                 @map("user_id")
+  userIdSnapshot            String                  @map("user_id_snapshot")
+  userNameSnapshot          String                  @map("user_name_snapshot")
+  userEmailSnapshot         String?                 @map("user_email_snapshot")
   category                  ContactInquiryCategory
-  subject                   String                    @db.VarChar(100)
-  searchText                String                    @map("search_text") @db.Text
-  status                    ContactInquiryStatus      @default(OPEN)
-  sourcePath                String?                   @map("source_path") @db.VarChar(300)
-  errorId                   String?                   @map("error_id") @db.VarChar(128)
-  assignedAdminUserId       String?                   @map("assigned_admin_user_id")
-  assignedAdminNameSnapshot String?                   @map("assigned_admin_name_snapshot")
-  createdAt                 DateTime                  @default(now()) @map("created_at")
-  updatedAt                 DateTime                  @updatedAt @map("updated_at")
-  resolvedAt                DateTime?                 @map("resolved_at")
-  closedAt                  DateTime?                 @map("closed_at")
-  realtimeRevision          BigInt                    @default(0) @map("realtime_revision")
-  realtimeActorClientId     String?                   @map("realtime_actor_client_id") @db.VarChar(128)
-  realtimeActorUserId       String?                   @map("realtime_actor_user_id")
-  user                      User?                     @relation("ContactInquiryUser", fields: [userId], references: [id], onDelete: SetNull)
-  assignedAdmin             User?                     @relation("ContactInquiryAssignedAdmin", fields: [assignedAdminUserId], references: [id], onDelete: SetNull)
+  subject                   String                  @db.VarChar(100)
+  searchText                String                  @map("search_text") @db.Text
+  status                    ContactInquiryStatus    @default(OPEN)
+  sourcePath                String?                 @map("source_path") @db.VarChar(300)
+  errorId                   String?                 @map("error_id") @db.VarChar(128)
+  assignedAdminUserId       String?                 @map("assigned_admin_user_id")
+  assignedAdminNameSnapshot String?                 @map("assigned_admin_name_snapshot")
+  createdAt                 DateTime                @default(now()) @map("created_at")
+  updatedAt                 DateTime                @updatedAt @map("updated_at")
+  resolvedAt                DateTime?               @map("resolved_at")
+  closedAt                  DateTime?               @map("closed_at")
+  realtimeRevision          BigInt                  @default(0) @map("realtime_revision")
+  realtimeActorClientId     String?                 @map("realtime_actor_client_id") @db.VarChar(128)
+  realtimeActorUserId       String?                 @map("realtime_actor_user_id")
+  user                      User?                   @relation("ContactInquiryUser", fields: [userId], references: [id], onDelete: SetNull)
+  assignedAdmin             User?                   @relation("ContactInquiryAssignedAdmin", fields: [assignedAdminUserId], references: [id], onDelete: SetNull)
   messages                  ContactInquiryMessage[]
 
   @@index([status, updatedAt, id])
@@ -559,16 +560,29 @@ model MedicalVisitDetail {
 }
 
 model MemoryRecordDetail {
-  hamsterRecordId String              @id @map("hamster_record_id")
-  hamsterRecord   HamsterRecord       @relation(fields: [hamsterRecordId], references: [id], onDelete: Cascade)
-  tags            String[]            @default([])
-  searchTags      String[]            @default([]) @map("search_tags")
-  isFavorite      Boolean             @default(false) @map("is_favorite")
+  hamsterRecordId String                @id @map("hamster_record_id")
+  hamsterRecord   HamsterRecord         @relation(fields: [hamsterRecordId], references: [id], onDelete: Cascade)
+  tags            String[]              @default([])
+  searchTags      String[]              @default([]) @map("search_tags")
+  isFavorite      Boolean               @default(false) @map("is_favorite")
   images          MemoryRecordImage[]
+  hamsters        MemoryRecordHamster[]
 
   @@index([isFavorite])
   @@index([searchTags], type: Gin)
   @@map("memory_record_details")
+}
+
+model MemoryRecordHamster {
+  hamsterRecordId String             @map("hamster_record_id")
+  hamsterId       String             @map("hamster_id")
+  sortOrder       Int                @default(0) @map("sort_order")
+  memoryRecord    MemoryRecordDetail @relation(fields: [hamsterRecordId], references: [hamsterRecordId], onDelete: Cascade)
+  hamster         Hamster            @relation(fields: [hamsterId], references: [id], onDelete: Cascade)
+
+  @@id([hamsterRecordId, hamsterId])
+  @@index([hamsterId])
+  @@map("memory_record_hamsters")
 }
 
 model MemoryRecordImage {

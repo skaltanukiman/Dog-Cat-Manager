@@ -209,8 +209,66 @@ export function buildRecordScopeWhere(
 ): Prisma.HamsterRecordWhereInput {
   return {
     hamster: { householdId },
-    ...(scope === "hamster" ? { hamsterId: selectedHamsterId } : {})
+    ...(scope === "hamster"
+      ? {
+          OR: [
+            { recordType: { in: ["HEALTH", "MEDICAL"] }, hamsterId: selectedHamsterId },
+            {
+              recordType: "MEMORY",
+              memoryDetail: {
+                is: {
+                  hamsters: {
+                    some: { hamsterId: selectedHamsterId, hamster: { householdId } }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      : {})
   };
+}
+
+export type MemoryRecordDeletionCandidate = {
+  id: string;
+  representativeHamsterId: string;
+  hamsterIds: string[];
+  imageFileNames: string[];
+};
+
+export type MemoryRecordDeletionPlan = {
+  recordId: string;
+  deleteRecord: boolean;
+  nextRepresentativeHamsterId: string | null;
+  imageFileNamesToDelete: string[];
+};
+
+export function planMemoryRecordsForHamsterDeletion(
+  records: readonly MemoryRecordDeletionCandidate[],
+  deletingHamsterIds: readonly string[]
+): MemoryRecordDeletionPlan[] {
+  const deletingIds = new Set(deletingHamsterIds);
+  return records.map((record) => {
+    const remainingHamsterIds = record.hamsterIds.filter((hamsterId) => !deletingIds.has(hamsterId));
+    if (remainingHamsterIds.length === 0) {
+      return {
+        recordId: record.id,
+        deleteRecord: true,
+        nextRepresentativeHamsterId: null,
+        imageFileNamesToDelete: [...new Set(record.imageFileNames)]
+      };
+    }
+
+    const representativeRemains = remainingHamsterIds.includes(record.representativeHamsterId);
+    return {
+      recordId: record.id,
+      deleteRecord: false,
+      nextRepresentativeHamsterId: representativeRemains
+        ? record.representativeHamsterId
+        : remainingHamsterIds[0],
+      imageFileNamesToDelete: []
+    };
+  });
 }
 
 export function buildRecordListWhere({

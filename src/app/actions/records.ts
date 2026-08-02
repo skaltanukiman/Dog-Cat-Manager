@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect, unstable_rethrow } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import type { ZodIssue } from "zod";
 
 import { getRequiredHouseholdMutationContext } from "@/lib/auth-context";
@@ -145,6 +146,24 @@ function parseHealthForm(formData: FormData) {
     ...Object.fromEntries(formData),
     symptoms: formData.getAll("symptoms")
   };
+}
+
+function parseMemoryForm(formData: FormData) {
+  return {
+    ...Object.fromEntries(formData),
+    hamsterIds: formData.getAll("hamsterIds")
+  };
+}
+
+class InvalidMemoryHamstersError extends Error {}
+
+async function assertMemoryHamstersBelongToHousehold(
+  tx: Prisma.TransactionClient,
+  hamsterIds: string[],
+  householdId: string
+) {
+  const count = await tx.hamster.count({ where: { id: { in: hamsterIds }, householdId } });
+  if (count !== hamsterIds.length) throw new InvalidMemoryHamstersError();
 }
 
 function isSameStringArray(left: string[], right: string[]) {
@@ -295,7 +314,7 @@ export async function createMemoryRecord(formData: FormData): Promise<RecordCrea
   const hamsterId = formData.get("hamsterId");
   try {
     const context = await getRequiredHouseholdMutationContext("/records");
-    const result = createMemoryRecordSchema.safeParse(Object.fromEntries(formData));
+    const result = createMemoryRecordSchema.safeParse(parseMemoryForm(formData));
     if (!result.success) return recordCreateError(validationStatus(result.error.issues));
     if (isFutureDateInput(result.data.recordDate)) return recordCreateError("future");
     await getMutationHamster(result.data.hamsterId, context.household.id, true);
@@ -309,6 +328,7 @@ export async function createMemoryRecord(formData: FormData): Promise<RecordCrea
         actorUserId: context.user.id,
         actorNameSnapshot: activityActorName(context.user),
         mutate: async (tx) => {
+          await assertMemoryHamstersBelongToHousehold(tx, result.data.hamsterIds, context.household.id);
           if (result.data.saveTags && result.data.tags.length > 0) {
             await tx.savedMemoryTag.createMany({
               data: buildSavedMemoryTagRows(context.household.id, context.user.id, result.data.tags),
@@ -329,6 +349,12 @@ export async function createMemoryRecord(formData: FormData): Promise<RecordCrea
                   tags: result.data.tags,
                   searchTags: buildMemoryTagSearchValues(result.data.tags),
                   isFavorite: result.data.isFavorite,
+                  hamsters: {
+                    create: result.data.hamsterIds.map((targetHamsterId, sortOrder) => ({
+                      hamsterId: targetHamsterId,
+                      sortOrder
+                    }))
+                  },
                   ...(fileName ? { images: { create: { fileName, sortOrder: 0 } } } : {})
                 }
               }
@@ -351,6 +377,7 @@ export async function createMemoryRecord(formData: FormData): Promise<RecordCrea
     publishAndRevalidate(change, context.household.id, "records.memory.create");
     return { success: true };
   } catch (error) {
+    if (error instanceof InvalidMemoryHamstersError) return recordCreateError("invalid");
     if (error instanceof RecordImageError) {
       return recordCreateError(imageValidationStatus(error));
     }
@@ -399,7 +426,12 @@ async function getEditableRecord(id: string, hamsterId: string, householdId: str
       hamster: { select: { isActive: true, name: true } },
       healthDetail: true,
       medicalDetail: true,
-      memoryDetail: { include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } } }
+      memoryDetail: {
+        include: {
+          images: { orderBy: { sortOrder: "asc" }, take: 1 },
+          hamsters: { orderBy: [{ sortOrder: "asc" }, { hamsterId: "asc" }] }
+        }
+      }
     }
   });
   if (!record) recordRedirect(hamsterId, "invalid", formData);
@@ -569,7 +601,7 @@ export async function updateMemoryRecord(formData: FormData) {
   const hamsterId = formData.get("hamsterId");
   try {
     const context = await getRequiredHouseholdMutationContext("/records");
-    const result = updateMemoryRecordSchema.safeParse(Object.fromEntries(formData));
+    const result = updateMemoryRecordSchema.safeParse(parseMemoryForm(formData));
     if (!result.success) recordRedirect(typeof hamsterId === "string" ? hamsterId : null, validationStatus(result.error.issues), formData);
     if (isFutureDateInput(result.data.recordDate)) recordRedirect(result.data.hamsterId, "future", formData);
     const record = await getEditableRecord(result.data.id, result.data.hamsterId, context.household.id, formData);
@@ -577,10 +609,16 @@ export async function updateMemoryRecord(formData: FormData) {
     const imageFile = getOptionalRecordImageFile(formData.get("image"));
     const removeImage = formData.get("removeImage") === "true";
     const oldImage = record.memoryDetail.images[0]?.fileName ?? null;
+    const currentHamsterIds = record.memoryDetail.hamsters.map((entry) => entry.hamsterId);
+    const representativeHamsterId = result.data.hamsterIds.includes(record.hamsterId)
+      ? record.hamsterId
+      : result.data.hamsterIds[0];
     if (
       toDateInputValue(record.recordDate) === result.data.recordDate && record.title === result.data.title &&
       record.memo === result.data.content && record.memoryDetail.isFavorite === result.data.isFavorite &&
-      isSameStringArray(record.memoryDetail.tags, result.data.tags) && !imageFile && !(removeImage && oldImage)
+      isSameStringArray(record.memoryDetail.tags, result.data.tags) &&
+      isSameStringArray(currentHamsterIds, result.data.hamsterIds) &&
+      !imageFile && !(removeImage && oldImage)
     ) recordRedirect(result.data.hamsterId, "unchanged", formData);
 
     const preparedImage = imageFile ? await prepareRecordImage(imageFile) : null;
@@ -592,9 +630,11 @@ export async function updateMemoryRecord(formData: FormData) {
         actorUserId: context.user.id,
         actorNameSnapshot: activityActorName(context.user),
         mutate: async (tx) => {
+          await assertMemoryHamstersBelongToHousehold(tx, result.data.hamsterIds, context.household.id);
           const updated = await tx.hamsterRecord.updateMany({
             where: { id: record.id, updatedAt: record.updatedAt },
             data: {
+              hamsterId: representativeHamsterId,
               recordDate: parseDateInput(result.data.recordDate),
               title: result.data.title,
               memo: result.data.content,
@@ -609,6 +649,14 @@ export async function updateMemoryRecord(formData: FormData) {
               searchTags: buildMemoryTagSearchValues(result.data.tags),
               isFavorite: result.data.isFavorite
             }
+          });
+          await tx.memoryRecordHamster.deleteMany({ where: { hamsterRecordId: record.id } });
+          await tx.memoryRecordHamster.createMany({
+            data: result.data.hamsterIds.map((targetHamsterId, sortOrder) => ({
+              hamsterRecordId: record.id,
+              hamsterId: targetHamsterId,
+              sortOrder
+            }))
           });
           // undefinedは画像を維持、nullは削除、文字列は置換として区別する。
           if (fileName !== undefined) {
@@ -641,6 +689,9 @@ export async function updateMemoryRecord(formData: FormData) {
     }
     recordRedirect(result.data.hamsterId, "recordUpdated", formData);
   } catch (error) {
+    if (error instanceof InvalidMemoryHamstersError) {
+      recordRedirect(typeof hamsterId === "string" ? hamsterId : null, "invalid", formData);
+    }
     if (error instanceof RecordImageError) {
       recordRedirect(typeof hamsterId === "string" ? hamsterId : null, imageValidationStatus(error), formData);
     }

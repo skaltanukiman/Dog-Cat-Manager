@@ -116,7 +116,15 @@ export async function getRecordsPageData(filters: RecordPageFilters) {
       createdBy: { select: { name: true, email: true } },
       healthDetail: true,
       medicalDetail: true,
-      memoryDetail: { include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } } }
+      memoryDetail: {
+        include: {
+          images: { orderBy: { sortOrder: "asc" }, take: 1 },
+          hamsters: {
+            orderBy: [{ sortOrder: "asc" }, { hamsterId: "asc" }],
+            include: { hamster: { select: { id: true, name: true, isActive: true } } }
+          }
+        }
+      }
     }
   });
 
@@ -154,7 +162,8 @@ export async function getRecordsPageData(filters: RecordPageFilters) {
         ? {
             tags: record.memoryDetail.tags,
             isFavorite: record.memoryDetail.isFavorite,
-            imageFileName: (record.memoryDetail.images[0]?.fileName ?? null) as string | null
+            imageFileName: (record.memoryDetail.images[0]?.fileName ?? null) as string | null,
+            hamsters: record.memoryDetail.hamsters.map((entry) => entry.hamster)
           }
         : null
     })),
