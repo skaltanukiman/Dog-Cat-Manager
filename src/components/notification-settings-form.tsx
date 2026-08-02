@@ -192,7 +192,7 @@ function DeviceNotificationControls({
             <p className="mt-2 text-sm text-amber-700">サーバーのVAPID設定が未完了のため、端末登録は利用できません。</p>
           ) : null}
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            iPhone・iPadではSafariからホーム画面へ追加したPWAを開き、このボタンから通知を許可してください。
+            iPhone・iPadでは、Safariでこのアプリをホーム画面に追加し、ホーム画面から開いて「この端末で通知を有効にする」を押してください。
           </p>
         </div>
       </div>

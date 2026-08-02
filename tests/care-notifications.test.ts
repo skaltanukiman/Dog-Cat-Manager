@@ -461,7 +461,8 @@ test("設定UIは非対応・未選択・拒否・未登録・有効・解除・
   assert.match(source, /Notification\.requestPermission\(\)/);
   assert.match(source, /この端末で通知を有効にする/);
   assert.match(source, /この端末の通知を解除する/);
-  assert.match(source, /ホーム画面へ追加したPWA/);
+  assert.match(source, /iPhone・iPadでは、Safariでこのアプリをホーム画面に追加し、ホーム画面から開いて「この端末で通知を有効にする」を押してください。/);
+  assert.doesNotMatch(source, /ホーム画面へ追加したPWA/);
   assert.match(source, /name="careNotificationCompactBody"/);
   assert.match(source, /通知内容を簡略表示する/);
   assert.match(source, /ハムスター名を表示せず/);
