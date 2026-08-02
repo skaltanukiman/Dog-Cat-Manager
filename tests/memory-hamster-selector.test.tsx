@@ -75,10 +75,10 @@ test("1匹だけの場合は固定表示と送信値だけを描画する", () =
   assert.match(markup, /代表/);
   assert.match(markup, /管理外/);
   assert.match(markup, /type="hidden" name="hamsterIds" value="h3"/);
-  assert.doesNotMatch(markup, /type="checkbox"|aria-expanded|>変更<|>閉じる</);
+  assert.doesNotMatch(markup, /type="checkbox"|<details|<summary|>変更<|>閉じる</);
 });
 
-test("新規2〜4匹は展開し、新規5匹以上と編集は要約状態で始まる", () => {
+test("新規2〜4匹はdetailsが開き、新規5匹以上と編集は閉じて始まる", () => {
   const expandedMarkup = renderToStaticMarkup(
     <MemoryHamsterSelector hamsters={hamsters.slice(0, 4)} selectedIds={["h1"]} representativeId="h1" lockRepresentative />
   );
@@ -88,21 +88,21 @@ test("新規2〜4匹は展開し、新規5匹以上と編集は要約状態で�
   const editingMarkup = renderToStaticMarkup(
     <MemoryHamsterSelector hamsters={hamsters.slice(0, 2)} selectedIds={["h1", "h2"]} representativeId="h1" isEditing />
   );
-  assert.match(expandedMarkup, /aria-expanded="true"/);
-  assert.match(expandedMarkup, />閉じる</);
-  assert.match(collapsedMarkup, /aria-expanded="false"/);
-  assert.match(collapsedMarkup, />変更</);
+  assert.match(expandedMarkup, /<details[^>]*open=""/);
+  assert.doesNotMatch(collapsedMarkup, /<details[^>]*open=""/);
+  assert.doesNotMatch(editingMarkup, /<details[^>]*open=""/);
+  assert.match(collapsedMarkup, /<summary[^>]*>[\s\S]*対象ハムスター（複数選択可）/);
   assert.match(collapsedMarkup, /ほか3匹/);
   assert.match(collapsedMarkup, /5匹選択中/);
-  assert.match(collapsedMarkup, /きなこ[\s\S]*代表[\s\S]*もなか/);
-  assert.match(editingMarkup, /aria-expanded="false"/);
+  assert.match(collapsedMarkup, /きなこ（代表）[\s\S]*もなか/);
+  assert.doesNotMatch(collapsedMarkup, /<button|>変更<|>閉じる/);
 });
 
 test("折りたたみ時もチェックボックスとhamsterIdsをDOMに保持する", () => {
   const markup = renderToStaticMarkup(
     <MemoryHamsterSelector hamsters={hamsters} selectedIds={["h1", "h2"]} representativeId="h1" lockRepresentative />
   );
-  assert.match(markup, /class="hidden"/);
+  assert.doesNotMatch(markup, /<details[^>]*open=""/);
   assert.match(markup, /type="hidden" name="hamsterIds" value="h1"/);
   assert.match(markup, /type="checkbox" name="hamsterIds" checked="" value="h2"/);
   assert.equal((markup.match(/name="hamsterIds"/g) ?? []).length, 5);
@@ -119,8 +119,7 @@ test("対象ハムスターのエラー時は初期条件より優先して一�
     />
   );
   assert.match(markup, /aria-invalid="true"/);
-  assert.match(markup, /aria-expanded="true"/);
-  assert.doesNotMatch(markup, /id="[^"]+" class="hidden" aria-label="対象ハムスターの選択一覧"/);
+  assert.match(markup, /<details[^>]*open=""/);
 });
 
 test("デモ用は要約の開閉だけを許可し、選択操作と送信名を無効にする", () => {
@@ -129,7 +128,8 @@ test("デモ用は要約の開閉だけを許可し、選択操作と送信名�
   );
   assert.match(markup, /きなこ/);
   assert.match(markup, /1匹選択中/);
-  assert.match(markup, /aria-expanded="false"[^>]*data-preview-toggle="true"/);
+  assert.match(markup, /<details[\s\S]*<summary/);
+  assert.doesNotMatch(markup, /<details[^>]*open=""|<button|>変更<|>閉じる/);
   assert.doesNotMatch(markup, /name="hamsterIds"/);
   for (const checkbox of markup.match(/<input type="checkbox"[^>]*>/g) ?? []) {
     assert.match(checkbox, /disabled=""/);

@@ -864,10 +864,11 @@ test("思い出登録・編集フォームは要約付き折りたたみで全Ho
   assert.match(selector, /管理外/);
   assert.doesNotMatch(selector, /<select|multiple/);
   assert.match(selector, /required=\{!readOnly && summary\.selectedCount === 0 && index === 0\}/);
-  assert.match(selector, /type="button"[\s\S]*aria-expanded=\{expanded\}[\s\S]*aria-controls=\{selectionRegionId\}/);
-  assert.match(selector, /expanded \? "閉じる" : "変更"/);
-  assert.match(selector, /onInvalid=\{\(\) => setIsExpanded\(true\)\}/);
-  assert.match(selector, /className=\{`\$\{expanded \? "mt-3" : "hidden"\}`\}/);
+  assert.match(selector, /<details[\s\S]*open=\{hasError \|\| isOpen\}[\s\S]*onToggle=\{\(event\) => setIsOpen\(event\.currentTarget\.open\)\}[\s\S]*<summary/);
+  assert.match(selector, /<summary[^>]*>[\s\S]*対象ハムスター（複数選択可）[\s\S]*aria-live="polite"/);
+  assert.match(selector, /detailsRef\.current\.open = true/);
+  assert.doesNotMatch(selector, /ChevronDown|aria-expanded|>変更<|>閉じる|<summary[^>]*>[\s\S]*<button/);
+  assert.doesNotMatch(selector, /expanded \? "mt-3" : "hidden"/);
   assert.match(actions, /issue\.path\[0\] === "hamsterIds"/);
   assert.match(actions, /recordCreateError\("invalid", "hamsterIds"\)/);
 });

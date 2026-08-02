@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
-import { Fragment, useId, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 
 export type MemoryHamsterOption = {
   id: string;
@@ -77,15 +76,20 @@ export function MemoryHamsterSelector({
   hasError?: boolean;
 }) {
   const selectionRegionId = useId();
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   const [selected, setSelected] = useState(() => {
     const validIds = new Set(hamsters.map((hamster) => hamster.id));
     const initialIds = new Set(selectedIds.filter((id) => validIds.has(id)));
     if (lockRepresentative && validIds.has(representativeId)) initialIds.add(representativeId);
     return initialIds;
   });
-  const [isExpanded, setIsExpanded] = useState(() =>
+  const [isOpen, setIsOpen] = useState(() =>
     shouldInitiallyExpand({ hamsterCount: hamsters.length, isEditing })
   );
+
+  useEffect(() => {
+    if (hasError && detailsRef.current) detailsRef.current.open = true;
+  }, [hasError]);
 
   if (hamsters.length === 1) {
     const hamster = hamsters[0];
@@ -108,52 +112,41 @@ export function MemoryHamsterSelector({
     );
   }
 
-  const expanded = hasError || isExpanded;
   const summary = getMemoryHamsterSelectionSummary({ hamsters, selectedIds: selected, representativeId });
 
   return (
-    <fieldset className="grid gap-2" aria-invalid={hasError || undefined}>
-      <legend className="text-sm font-semibold text-slate-700">対象ハムスター（複数選択可）</legend>
-      <div className={`rounded-lg border p-3 ${hasError ? "border-red-300 bg-red-50/50" : "border-slate-200 bg-slate-50/60"}`}>
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="min-w-0 break-words text-sm leading-6 text-slate-700" aria-live="polite">
-            {summary.visibleHamsters.length > 0 ? (
-              summary.visibleHamsters.map((hamster, index) => (
-                <Fragment key={hamster.id}>
-                  {index > 0 ? "、" : null}
-                  <span className="font-semibold text-ink">{hamster.name}</span>
-                  {hamster.id === summary.effectiveRepresentativeId ? (
-                    <span className="ml-1 inline-flex rounded-full bg-moss/10 px-2 py-0.5 align-middle text-[11px] font-bold leading-5 text-moss">
-                      代表
+    <fieldset className="grid gap-2" aria-label="対象ハムスター（複数選択可）" aria-invalid={hasError || undefined}>
+      <details
+        ref={detailsRef}
+        open={hasError || isOpen}
+        onToggle={(event) => setIsOpen(event.currentTarget.open)}
+        className={`rounded-md border bg-slate-50 px-3 py-1 ${hasError ? "border-red-300" : "border-slate-200"}`}
+      >
+        <summary className="min-h-11 cursor-pointer py-2 text-sm text-slate-700 marker:text-xs marker:text-slate-500 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2">
+          <span className="ml-1 inline-flex max-w-[calc(100%_-_1.5rem)] min-w-0 flex-col gap-0.5 align-middle sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
+            <span className="font-semibold text-slate-700">対象ハムスター（複数選択可）</span>
+            <span className="min-w-0 break-words leading-6 text-slate-600" aria-live="polite">
+              {summary.visibleHamsters.length > 0 ? (
+                summary.visibleHamsters.map((hamster, index) => (
+                  <Fragment key={hamster.id}>
+                    {index > 0 ? "、" : null}
+                    <span className="font-semibold text-ink">
+                      {hamster.name}
+                      {hamster.id === summary.effectiveRepresentativeId ? "（代表）" : null}
                     </span>
-                  ) : null}
-                </Fragment>
-              ))
-            ) : (
-              <span className="font-semibold text-red-700">未選択</span>
-            )}
-            {summary.additionalCount > 0 ? `、ほか${summary.additionalCount}匹` : null}
-            <span className="whitespace-nowrap text-slate-500">・{summary.selectedCount}匹選択中</span>
-          </p>
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls={selectionRegionId}
-            data-preview-toggle={readOnly ? "true" : undefined}
-            onClick={() => setIsExpanded((current) => !current)}
-            className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1 self-start rounded-md border border-moss bg-white px-3 text-sm font-semibold text-moss transition hover:bg-moss/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 sm:self-auto"
-          >
-            {expanded ? "閉じる" : "変更"}
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-              aria-hidden
-            />
-          </button>
-        </div>
-
+                  </Fragment>
+                ))
+              ) : (
+                <span className="font-semibold text-red-700">未選択</span>
+              )}
+              {summary.additionalCount > 0 ? `、ほか${summary.additionalCount}匹` : null}
+              <span className="whitespace-nowrap text-slate-500">・{summary.selectedCount}匹選択中</span>
+            </span>
+          </span>
+        </summary>
         <div
           id={selectionRegionId}
-          className={`${expanded ? "mt-3" : "hidden"}`}
+          className="mt-2 border-t border-slate-200 pt-3"
           aria-label="対象ハムスターの選択一覧"
         >
           <div className="grid max-h-64 gap-2 overflow-y-auto overscroll-contain pr-1 sm:max-h-none sm:grid-cols-2 lg:grid-cols-3">
@@ -192,7 +185,9 @@ export function MemoryHamsterSelector({
                       disabled={readOnly}
                       aria-disabled={readOnly || undefined}
                       required={!readOnly && summary.selectedCount === 0 && index === 0}
-                      onInvalid={() => setIsExpanded(true)}
+                      onInvalid={() => {
+                        if (detailsRef.current) detailsRef.current.open = true;
+                      }}
                       onChange={(event) => {
                         setSelected((current) =>
                           updateMemoryHamsterSelection(current, hamster.id, event.target.checked)
@@ -221,7 +216,7 @@ export function MemoryHamsterSelector({
             <p className="mt-2 text-xs leading-5 text-slate-500 sm:hidden">一覧内を上下にスクロールして選択できます。</p>
           ) : null}
         </div>
-      </div>
+      </details>
       <p className="text-xs leading-5 text-slate-500">
         {lockRepresentative
           ? "現在選択中のハムスターを代表として、同じグループのハムスターを追加できます。"

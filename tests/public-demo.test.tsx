@@ -371,7 +371,7 @@ function assertPreviewControlsAreDisabled(markup: string, tabsMayBeEnabled = fal
   const controls = markup.match(/<(?:input|select|textarea|button)\b[^>]*>/g) ?? [];
   assert.ok(controls.length > 0);
   for (const control of controls) {
-    if (tabsMayBeEnabled && (/role="tab"/.test(control) || /data-preview-toggle="true"/.test(control))) {
+    if (tabsMayBeEnabled && /role="tab"/.test(control)) {
       continue;
     }
     assert.match(control, /\b(?:disabled|readonly)=""/i);
@@ -455,7 +455,8 @@ test("デモの思い出対象は通常版の要約付き選択UIを操作不可
   assert.match(markup, /対象ハムスター（複数選択可）/);
   assert.match(markup, /きなこ[\s\S]*代表/);
   assert.match(markup, /1匹選択中/);
-  assert.match(markup, /aria-expanded="false"[^>]*data-preview-toggle="true"/);
+  assert.match(markup, /<details[\s\S]*<summary/);
+  assert.doesNotMatch(markup, /<details[^>]*open=""|>変更<|>閉じる/);
   assert.match(markup, /管理外/);
   assert.doesNotMatch(markup, /name="hamsterIds"/);
   assertPreviewControlsAreDisabled(markup, true);
