@@ -95,6 +95,13 @@ export default async function AdminPage({
     now
   } = await getAdminPageData(invitationQuery);
   const { invitations, pagination } = invitationPage;
+  const hasOpenInquiries = inquiryOverview.openCount > 0;
+  const hasOverdueOpenInquiries = inquiryOverview.overdueOpenCount > 0;
+  const openInquiryCardClassName = hasOverdueOpenInquiries
+    ? "rounded-md border border-red-300 bg-red-50 p-4 shadow-sm transition hover:border-red-400 hover:bg-red-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+    : hasOpenInquiries
+      ? "rounded-md border border-amber-300 bg-amber-50/50 p-4 shadow-sm transition hover:border-amber-400 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+      : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
 
   return (
     <div className="space-y-6">
@@ -131,9 +138,14 @@ export default async function AdminPage({
           </Link>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Link href="/admin/inquiries?status=unhandled" aria-label="未対応の問い合わせ一覧を表示" className="rounded-md border border-amber-200 bg-white p-4 shadow-sm transition hover:border-amber-300 hover:bg-amber-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2">
+          <Link href="/admin/inquiries?status=unhandled" aria-label="未対応の問い合わせ一覧を表示" className={openInquiryCardClassName}>
             <p className="text-xs font-semibold text-slate-500">未対応</p>
             <p className="mt-2 text-2xl font-bold text-ink">{inquiryOverview.openCount}</p>
+            {hasOverdueOpenInquiries ? (
+              <p className="mt-1 text-xs font-medium text-red-700">
+                24時間以上 {inquiryOverview.overdueOpenCount}件
+              </p>
+            ) : null}
           </Link>
           <Link href="/admin/inquiries?status=inProgress" aria-label="確認中の問い合わせ一覧を表示" className="rounded-md border border-sky-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:bg-sky-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2">
             <p className="text-xs font-semibold text-slate-500">確認中</p>

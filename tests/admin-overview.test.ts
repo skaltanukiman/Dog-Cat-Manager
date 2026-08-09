@@ -47,6 +47,7 @@ test("管理トップの問い合わせ概要は件数と既存フィルター�
 
   assert.match(pageSource, /問い合わせ概要/);
   assert.match(pageSource, /inquiryOverview\.openCount/);
+  assert.match(pageSource, /inquiryOverview\.overdueOpenCount/);
   assert.match(pageSource, /inquiryOverview\.inProgressCount/);
   assert.match(pageSource, /inquiryOverview\.waitingCount/);
   assert.match(pageSource, /すべての問い合わせを表示/);
@@ -56,6 +57,7 @@ test("管理トップの問い合わせ概要は件数と既存フィルター�
   assert.doesNotMatch(pageSource, /inquiryOverview\.latest|問い合わせはまだありません。|ContactStatusBadge/);
   assert.doesNotMatch(overviewSource, /findMany|take: 5|latest|select:|orderBy:/);
   assert.match(overviewSource, /status: "OPEN"/);
+  assert.match(overviewSource, /createdAt: \{ lte: overdueThreshold \}/);
   assert.match(overviewSource, /status: "IN_PROGRESS"/);
   assert.match(overviewSource, /status: "WAITING_FOR_USER"/);
 });

@@ -73,6 +73,14 @@ const pageReader: ContactInquiryPageReader = {
     prisma.contactInquiry.findMany(args) as unknown as Promise<ContactInquiryListItem[]>
 };
 
+type ContactInquiryOverviewReader = {
+  count(args: Prisma.ContactInquiryCountArgs): Promise<number>;
+};
+
+const overviewReader: ContactInquiryOverviewReader = {
+  count: (args) => prisma.contactInquiry.count(args)
+};
+
 export async function getUserContactInquiryPage(
   userId: string,
   requestedPage: number,
@@ -142,13 +150,18 @@ export function getAssignableContactAdmins() {
   });
 }
 
-export async function getAdminContactInquiryOverview() {
-  const [openCount, inProgressCount, waitingCount] = await Promise.all([
-    prisma.contactInquiry.count({ where: { status: "OPEN" } }),
-    prisma.contactInquiry.count({ where: { status: "IN_PROGRESS" } }),
-    prisma.contactInquiry.count({ where: { status: "WAITING_FOR_USER" } }),
+export async function getAdminContactInquiryOverview(
+  now = new Date(),
+  reader: ContactInquiryOverviewReader = overviewReader
+) {
+  const overdueThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const [openCount, overdueOpenCount, inProgressCount, waitingCount] = await Promise.all([
+    reader.count({ where: { status: "OPEN" } }),
+    reader.count({ where: { status: "OPEN", createdAt: { lte: overdueThreshold } } }),
+    reader.count({ where: { status: "IN_PROGRESS" } }),
+    reader.count({ where: { status: "WAITING_FOR_USER" } }),
   ]);
-  return { openCount, inProgressCount, waitingCount };
+  return { openCount, overdueOpenCount, inProgressCount, waitingCount };
 }
 
 export function assignedAdminDisplayName(inquiry: {
