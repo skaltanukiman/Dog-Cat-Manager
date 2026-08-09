@@ -54,6 +54,12 @@ test("管理トップの問い合わせ概要は件数と既存フィルター�
   assert.match(pageSource, /href="\/admin\/inquiries\?status=unhandled"/);
   assert.match(pageSource, /href="\/admin\/inquiries\?status=inProgress"/);
   assert.match(pageSource, /href="\/admin\/inquiries\?status=waiting"/);
+  assert.match(pageSource, /const hasInProgressInquiries = inquiryOverview\.inProgressCount > 0/);
+  assert.match(pageSource, /const hasWaitingInquiries = inquiryOverview\.waitingCount > 0/);
+  assert.match(pageSource, /inProgressInquiryCardClassName = hasInProgressInquiries[\s\S]*?border-sky-200[\s\S]*?border-slate-200/);
+  assert.match(pageSource, /waitingInquiryCardClassName = hasWaitingInquiries[\s\S]*?border-violet-200[\s\S]*?border-slate-200/);
+  assert.match(pageSource, /className=\{inProgressInquiryCardClassName\}/);
+  assert.match(pageSource, /className=\{waitingInquiryCardClassName\}/);
   assert.doesNotMatch(pageSource, /inquiryOverview\.latest|問い合わせはまだありません。|ContactStatusBadge/);
   assert.doesNotMatch(overviewSource, /findMany|take: 5|latest|select:|orderBy:/);
   assert.match(overviewSource, /status: "OPEN"/);

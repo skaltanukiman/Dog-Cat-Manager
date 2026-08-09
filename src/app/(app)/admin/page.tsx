@@ -97,11 +97,19 @@ export default async function AdminPage({
   const { invitations, pagination } = invitationPage;
   const hasOpenInquiries = inquiryOverview.openCount > 0;
   const hasOverdueOpenInquiries = inquiryOverview.overdueOpenCount > 0;
+  const hasInProgressInquiries = inquiryOverview.inProgressCount > 0;
+  const hasWaitingInquiries = inquiryOverview.waitingCount > 0;
   const openInquiryCardClassName = hasOverdueOpenInquiries
     ? "rounded-md border border-red-300 bg-red-50 p-4 shadow-sm transition hover:border-red-400 hover:bg-red-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
     : hasOpenInquiries
       ? "rounded-md border border-amber-300 bg-amber-50/50 p-4 shadow-sm transition hover:border-amber-400 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
       : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
+  const inProgressInquiryCardClassName = hasInProgressInquiries
+    ? "rounded-md border border-sky-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:bg-sky-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+    : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
+  const waitingInquiryCardClassName = hasWaitingInquiries
+    ? "rounded-md border border-violet-200 bg-white p-4 shadow-sm transition hover:border-violet-300 hover:bg-violet-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+    : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
 
   return (
     <div className="space-y-6">
@@ -147,11 +155,11 @@ export default async function AdminPage({
               </p>
             ) : null}
           </Link>
-          <Link href="/admin/inquiries?status=inProgress" aria-label="確認中の問い合わせ一覧を表示" className="rounded-md border border-sky-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:bg-sky-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2">
+          <Link href="/admin/inquiries?status=inProgress" aria-label="確認中の問い合わせ一覧を表示" className={inProgressInquiryCardClassName}>
             <p className="text-xs font-semibold text-slate-500">確認中</p>
             <p className="mt-2 text-2xl font-bold text-ink">{inquiryOverview.inProgressCount}</p>
           </Link>
-          <Link href="/admin/inquiries?status=waiting" aria-label="回答待ちの問い合わせ一覧を表示" className="rounded-md border border-violet-200 bg-white p-4 shadow-sm transition hover:border-violet-300 hover:bg-violet-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2">
+          <Link href="/admin/inquiries?status=waiting" aria-label="回答待ちの問い合わせ一覧を表示" className={waitingInquiryCardClassName}>
             <p className="text-xs font-semibold text-slate-500">利用者からの回答待ち</p>
             <p className="mt-2 text-2xl font-bold text-ink">{inquiryOverview.waitingCount}</p>
           </Link>
