@@ -8,11 +8,11 @@ export function ContactInquiryAutoCloseNotice({ resolvedAt }: { resolvedAt: Date
   return (
     <div className="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-slate-700">
       <p className="font-semibold text-ink">このお問い合わせへの対応は完了しています。</p>
-      <p className="mt-1">
+      <p className="mt-1 text-[13px] sm:text-sm">
         追加で確認したいことがある場合は、このまま返信できます。
       </p>
       {autoCloseAt ? (
-        <p className="mt-1">
+        <p className="mt-1 text-[13px] sm:text-sm">
           返信がない場合は、{formatDateTimeJst(autoCloseAt)}以降の自動処理でこのお問い合わせを終了します。
         </p>
       ) : null}

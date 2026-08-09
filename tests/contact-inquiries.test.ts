@@ -1005,6 +1005,8 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
   );
   assert.match(autoCloseNotice, /このお問い合わせへの対応は完了しています。/);
   assert.match(autoCloseNotice, /追加で確認したいことがある場合は、このまま返信できます。/);
+  assert.equal((autoCloseNotice.match(/className="mt-1 text-\[13px\] sm:text-sm"/g) ?? []).length, 2);
+  assert.match(autoCloseNotice, /className="font-semibold text-ink">このお問い合わせへの対応は完了しています。/);
   assert.doesNotMatch(autoCloseNotice, /対応済みになってから7日後/);
   assert.match(autoCloseNotice, /getContactInquiryAutoCloseAt\(resolvedAt\)/);
   assert.match(
