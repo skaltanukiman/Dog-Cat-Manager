@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 
 import {
   CONTACT_INQUIRY_PAGE_SIZE,
+  getContactInquiryOverdueThreshold,
   type AdminInquiryQuery,
   statusesForAdminFilter
 } from "@/lib/contact-inquiry-core";
@@ -115,10 +116,13 @@ export async function getAdminContactInquiryPage(
   const where = createAdminInquiryWhere(query);
   const totalCount = await reader.count({ where });
   const pagination = createAdminPagination(query.page, totalCount);
+  const orderBy = query.status === "unhandled"
+    ? [{ createdAt: "asc" as const }, { id: "asc" as const }]
+    : [{ updatedAt: "desc" as const }, { id: "desc" as const }];
   const inquiries = await reader.findMany({
     where,
     select: inquiryListSelect,
-    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    orderBy,
     skip: (pagination.currentPage - 1) * CONTACT_INQUIRY_PAGE_SIZE,
     take: CONTACT_INQUIRY_PAGE_SIZE
   });
@@ -154,7 +158,7 @@ export async function getAdminContactInquiryOverview(
   now = new Date(),
   reader: ContactInquiryOverviewReader = overviewReader
 ) {
-  const overdueThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const overdueThreshold = getContactInquiryOverdueThreshold(now);
   const [openCount, overdueOpenCount, inProgressCount, waitingCount] = await Promise.all([
     reader.count({ where: { status: "OPEN" } }),
     reader.count({ where: { status: "OPEN", createdAt: { lte: overdueThreshold } } }),

@@ -17,6 +17,7 @@ import {
   canTransitionContactStatus,
   createContactInquirySchema,
   createContactPublicId,
+  isContactInquiryOverdue,
   isSafeContactSourcePath,
   normalizeContactPage,
   parseAdminInquiryQuery,
@@ -704,6 +705,26 @@ test("状態遷移ルールを一箇所で管理する", () => {
   assert.equal(statusAfterUserReply("CLOSED"), null);
 });
 
+test("contact inquiry overdue status is based on OPEN and elapsed time since creation", () => {
+  const now = new Date("2026-08-09T00:00:00Z");
+  assert.equal(
+    isContactInquiryOverdue({ status: "OPEN", createdAt: new Date("2026-08-08T00:01:00Z") }, now),
+    false
+  );
+  assert.equal(
+    isContactInquiryOverdue({ status: "OPEN", createdAt: new Date("2026-08-08T00:00:00Z") }, now),
+    true
+  );
+  assert.equal(
+    isContactInquiryOverdue({ status: "OPEN", createdAt: new Date("2026-08-07T23:59:59Z") }, now),
+    true
+  );
+  assert.equal(
+    isContactInquiryOverdue({ status: "IN_PROGRESS", createdAt: new Date("2026-08-07T00:00:00Z") }, now), false);
+  assert.equal(
+    isContactInquiryOverdue({ status: "WAITING_FOR_USER", createdAt: new Date("2026-08-07T00:00:00Z") }, now), false);
+});
+
 test("利用者一覧はUser条件、DB側20件ページング、更新日時とIDの安定順を使う", async () => {
   let countArgs: Record<string, unknown> | undefined;
   let findArgs: Record<string, unknown> | undefined;
@@ -750,6 +771,37 @@ test("管理一覧は状態・種類・正規化検索をDB条件へ入れてペ
   assert.equal(result.pagination.currentPage, 2);
   assert.equal(findArgs?.skip, 20);
   assert.equal(findArgs?.take, 20);
+  assert.deepEqual(findArgs?.orderBy, [{ updatedAt: "desc" }, { id: "desc" }]);
+});
+
+test("admin unhandled inquiries are ordered from oldest creation time", async () => {
+  const query = parseAdminInquiryQuery({ status: "unhandled" });
+  let findArgs: Record<string, unknown> | undefined;
+  await getAdminContactInquiryPage(query, {
+    count: async () => 1,
+    findMany: async (args) => {
+      findArgs = args;
+      return [];
+    }
+  });
+
+  assert.deepEqual(findArgs?.orderBy, [{ createdAt: "asc" }, { id: "asc" }]);
+});
+
+test("admin inquiry list marks only overdue inquiries with text and pale red styling", async () => {
+  const [adminPage, list] = await Promise.all([
+    readFile("src/app/(app)/admin/inquiries/page.tsx", "utf8"),
+    readFile("src/components/contact-inquiry-list.tsx", "utf8")
+  ]);
+  const userListSource = list.slice(0, list.indexOf("export function AdminContactInquiryList"));
+
+  assert.match(adminPage, /const now = new Date\(\)/);
+  assert.match(adminPage, /<AdminContactInquiryList inquiries=\{inquiries\} now=\{now\} \/>/);
+  assert.match(list, /isContactInquiryOverdue\(inquiry, now\)/);
+  assert.match(list, /bg-red-50\/50 hover:bg-red-50/);
+  assert.match(list, /border-red-300 bg-red-50\/50/);
+  assert.match(list, /24時間経過/);
+  assert.doesNotMatch(userListSource, /24時間経過|isContactInquiryOverdue\(|bg-red-50\/50/);
 });
 
 test("ページ番号・フィルターの不正値を安全に補正する", () => {

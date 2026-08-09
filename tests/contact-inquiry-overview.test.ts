@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { ContactInquiryStatus, Prisma } from "@prisma/client";
 
+import { getContactInquiryOverdueThreshold } from "../src/lib/contact-inquiry-core";
 import { getAdminContactInquiryOverview } from "../src/lib/contact-inquiry-queries";
 
 type OverviewInquiry = {
@@ -23,6 +24,10 @@ function getOverview(inquiries: OverviewInquiry[], now: Date) {
 }
 
 const now = new Date("2026-08-09T00:00:00Z");
+
+test("問い合わせ期限超過の閾値は現在時刻のちょうど24時間前", () => {
+  assert.equal(getContactInquiryOverdueThreshold(now).toISOString(), "2026-08-08T00:00:00.000Z");
+});
 
 test("問い合わせ概要はOPENが0件の場合、期限超過も0件にする", async () => {
   const overview = await getOverview(

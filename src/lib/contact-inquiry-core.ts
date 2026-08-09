@@ -17,6 +17,7 @@ export const CONTACT_CREATION_WINDOW_LIMIT = 5;
 export const CONTACT_OPEN_INQUIRY_LIMIT = 10;
 export const CONTACT_REPLY_COOLDOWN_MS = 10 * 1000;
 export const CONTACT_SEARCH_MAX_LENGTH = 100;
+export const CONTACT_INQUIRY_OVERDUE_MS = 24 * 60 * 60 * 1000;
 
 export const CONTACT_CATEGORIES = [
   "BUG",
@@ -35,6 +36,20 @@ export const CONTACT_STATUSES = [
   "CLOSED"
 ] as const;
 export type ContactStatus = (typeof CONTACT_STATUSES)[number];
+
+export function getContactInquiryOverdueThreshold(now: Date) {
+  return new Date(now.getTime() - CONTACT_INQUIRY_OVERDUE_MS);
+}
+
+export function isContactInquiryOverdue(
+  inquiry: { status: ContactStatus; createdAt: Date },
+  now: Date
+) {
+  return (
+    inquiry.status === "OPEN" &&
+    inquiry.createdAt.getTime() <= now.getTime() - CONTACT_INQUIRY_OVERDUE_MS
+  );
+}
 
 export const CONTACT_CATEGORY_LABELS: Record<ContactCategory, string> = {
   BUG: "不具合",

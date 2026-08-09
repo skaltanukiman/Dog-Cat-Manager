@@ -40,6 +40,7 @@ export default async function AdminInquiriesPage({
   await getRequiredAppAdminUser();
   const query = parseAdminInquiryQuery(params);
   const { inquiries, pagination } = await getAdminContactInquiryPage(query);
+  const now = new Date();
 
   return (
     <div className="space-y-6">
@@ -104,7 +105,7 @@ export default async function AdminInquiriesPage({
         emptyMessage="条件に一致する問い合わせはありません。"
         buildHref={(page) => buildAdminInquiryHref(query, page)}
       />
-      <AdminContactInquiryList inquiries={inquiries} />
+      <AdminContactInquiryList inquiries={inquiries} now={now} />
       {inquiries.length > 0 ? (
         <PaginationLayout
           ariaLabel="問い合わせ管理一覧のページ移動"

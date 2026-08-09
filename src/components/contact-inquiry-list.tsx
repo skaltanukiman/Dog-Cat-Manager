@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { ContactCategoryBadge, ContactStatusBadge } from "@/components/contact-status-badge";
+import { isContactInquiryOverdue } from "@/lib/contact-inquiry-core";
 import type { ContactInquiryListItem } from "@/lib/contact-inquiry-queries";
 import { assignedAdminDisplayName } from "@/lib/contact-inquiry-queries";
 import { formatDateTimeJst } from "@/lib/date";
@@ -87,7 +88,13 @@ export function ContactInquiryList({ inquiries }: { inquiries: ContactInquiryLis
   );
 }
 
-export function AdminContactInquiryList({ inquiries }: { inquiries: ContactInquiryListItem[] }) {
+export function AdminContactInquiryList({
+  inquiries,
+  now
+}: {
+  inquiries: ContactInquiryListItem[];
+  now: Date;
+}) {
   if (inquiries.length === 0) {
     return (
       <div className="rounded-md border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-sm">
@@ -121,14 +128,21 @@ export function AdminContactInquiryList({ inquiries }: { inquiries: ContactInqui
             </tr>
           </thead>
           <tbody>
-            {inquiries.map((inquiry) => (
-              <tr key={inquiry.id}>
-                <td>
-                  <div className="flex flex-col items-start gap-1.5">
-                    <ContactStatusBadge status={inquiry.status} compact />
-                    <ContactCategoryBadge category={inquiry.category} />
-                  </div>
-                </td>
+            {inquiries.map((inquiry) => {
+              const isOverdue = isContactInquiryOverdue(inquiry, now);
+              return (
+                <tr key={inquiry.id} className={isOverdue ? "bg-red-50/50 hover:bg-red-50" : undefined}>
+                  <td>
+                    <div className="flex flex-col items-start gap-1.5">
+                      {isOverdue ? (
+                        <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                          24時間経過
+                        </span>
+                      ) : null}
+                      <ContactStatusBadge status={inquiry.status} compact />
+                      <ContactCategoryBadge category={inquiry.category} />
+                    </div>
+                  </td>
                 <td className="break-all text-xs font-semibold text-ink">{inquiry.publicId}</td>
                 <td className="break-words font-semibold text-ink [overflow-wrap:anywhere]">{inquiry.subject}</td>
                 <td className="min-w-0">
@@ -150,18 +164,31 @@ export function AdminContactInquiryList({ inquiries }: { inquiries: ContactInqui
                     <ChevronRight className="h-4 w-4" aria-hidden />
                   </Link>
                 </td>
-              </tr>
-            ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
       <div className="grid gap-3 lg:hidden">
-        {inquiries.map((inquiry) => (
-          <article key={inquiry.id} className="min-w-0 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap items-center gap-2">
-              <ContactStatusBadge status={inquiry.status} compact />
-              <ContactCategoryBadge category={inquiry.category} />
-            </div>
+        {inquiries.map((inquiry) => {
+          const isOverdue = isContactInquiryOverdue(inquiry, now);
+          return (
+            <article
+              key={inquiry.id}
+              className={isOverdue
+                ? "min-w-0 rounded-md border border-red-300 bg-red-50/50 p-4 shadow-sm"
+                : "min-w-0 rounded-md border border-slate-200 bg-white p-4 shadow-sm"}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {isOverdue ? (
+                  <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                    24時間経過
+                  </span>
+                ) : null}
+                <ContactStatusBadge status={inquiry.status} compact />
+                <ContactCategoryBadge category={inquiry.category} />
+              </div>
             <h3 className="mt-3 break-words font-bold text-ink [overflow-wrap:anywhere]">{inquiry.subject}</h3>
             <p className="mt-1 break-all text-xs font-semibold text-slate-500">{inquiry.publicId}</p>
             <dl className="mt-4 grid min-w-0 gap-3 border-t border-slate-100 pt-3 text-sm sm:grid-cols-2">
@@ -193,8 +220,9 @@ export function AdminContactInquiryList({ inquiries }: { inquiries: ContactInqui
               詳細を確認
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </>
   );
