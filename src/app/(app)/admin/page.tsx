@@ -143,7 +143,7 @@ export default async function AdminPage({
             <p className="mt-2 text-2xl font-bold text-ink">{inquiryOverview.openCount}</p>
             {hasOverdueOpenInquiries ? (
               <p className="mt-1 text-xs font-medium text-red-700">
-                24時間以上 {inquiryOverview.overdueOpenCount}件
+                24時間経過: {inquiryOverview.overdueOpenCount}件
               </p>
             ) : null}
           </Link>
