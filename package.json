@@ -12,6 +12,7 @@
     "log:smoke": "tsx scripts/log-smoke.ts",
     "invitations:cleanup": "tsx scripts/cleanup-invitations.ts",
     "household-activities:cleanup": "tsx scripts/cleanup-household-activities.ts",
+    "contact-inquiries:auto-close": "tsx scripts/close-resolved-contact-inquiries.ts",
     "notifications:dispatch": "tsx scripts/dispatch-care-notifications.ts",
     "admin:grant": "tsx prisma/admin-role.ts",
     "admin:revoke": "tsx prisma/admin-role.ts --role USER",

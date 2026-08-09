@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { ContactMessageThread } from "@/components/contact-message-thread";
+import { ContactInquiryAutoCloseNotice } from "@/components/contact-inquiry-auto-close-notice";
 import { ContactRealtimeRefreshListener } from "@/components/contact-realtime-refresh-listener";
 import { UserContactReplyForm } from "@/components/contact-reply-form";
 import { ContactCategoryBadge, ContactStatusBadge } from "@/components/contact-status-badge";
@@ -82,6 +83,10 @@ export default async function ContactDetailPage({
           </div>
         </dl>
       </section>
+
+      {inquiry.status === "RESOLVED" ? (
+        <ContactInquiryAutoCloseNotice resolvedAt={inquiry.resolvedAt} />
+      ) : null}
 
       <section className="space-y-3" aria-labelledby="contact-messages-title">
         <h3 id="contact-messages-title" className="text-base font-bold text-ink">メッセージ履歴</h3>

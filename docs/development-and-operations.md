@@ -1035,6 +1035,32 @@ crontab -l
 
 クリーンアップはアプリコンテナが起動している場合に実行できます。cron登録前に、まず `--dry-run` で対象件数とログを確認してください。
 
+### 対応済み問い合わせの自動終了
+
+`RESOLVED`になった問い合わせは、最後の`resolvedAt`から7日間、利用者の追加返信がなければ`CLOSED`へ自動終了します。利用者が期間内に返信すると既存の状態遷移で`IN_PROGRESS`へ戻り、`resolvedAt`はnullになります。その後に管理者が再度`RESOLVED`へ変更した場合は、新しい`resolvedAt`から7日間を数え直します。判定に`createdAt`や`updatedAt`は使用せず、`RESOLVED`でも`resolvedAt`がnullのデータは自動終了しません。
+
+手動実行:
+
+```powershell
+docker compose exec -T app npm run contact-inquiries:auto-close
+```
+
+DBを変更せず対象件数だけ確認する場合:
+
+```powershell
+docker compose exec -T app npm run contact-inquiries:auto-close -- --dry-run
+```
+
+通常実行では対象件数と実際の終了件数を標準出力・アプリケーションログへ記録します。対象取得後に利用者返信や管理者更新が競合しても、更新時に`status = RESOLVED`と`resolvedAt`の閾値を再確認するため、状態が変わった問い合わせは終了しません。自動終了時は問い合わせのrealtime revisionを増分しますが、利用者・管理者の操作として記録しないようactor列はnullにします。
+
+この実装をデプロイしただけでは定期実行されません。7日単位の判定なので、VPSの`crontab -e`へ1日1回の実行を登録します。次は毎日3時30分に実行する例です。時刻はVPSのタイムゾーン基準で、アプリ仕様として固定ではありません。
+
+```cron
+30 3 * * * cd /home/USER/apps/hamster-manager-browser && /usr/bin/docker compose exec -T app npm run contact-inquiries:auto-close
+```
+
+配置先とDockerコマンドの絶対パスを実環境へ読み替え、登録前に`--dry-run`でDB接続、対象件数、ログを確認してください。
+
 ### 共有グループ操作履歴の定期整理
 
 `HouseholdActivity` の初期保持期間は90日です。保持日数は `.env` の次の環境変数を正の整数へ変更するだけで調整できます。未設定、空文字、0、負数、小数、数値以外の場合、クリーンアップはエラー内容と `errorId` をサーバーログ・標準エラーへ出力して異常終了し、暗黙的な90日への置き換えは行いません。この検証はクリーンアップ実行時だけ行うため、値が不正でもアプリケーション本体の起動には影響しません。

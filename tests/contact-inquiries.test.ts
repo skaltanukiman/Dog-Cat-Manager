@@ -15,8 +15,10 @@ import {
   CONTACT_INQUIRY_PAGE_SIZE,
   CONTACT_OPEN_INQUIRY_LIMIT,
   canTransitionContactStatus,
+  contactStatusTimestamps,
   createContactInquirySchema,
   createContactPublicId,
+  isContactInquiryAutoCloseEligible,
   isContactInquiryOverdue,
   isSafeContactSourcePath,
   normalizeContactPage,
@@ -78,6 +80,8 @@ type FakeInquiry = {
   realtimeActorUserId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  resolvedAt: Date | null;
+  closedAt: Date | null;
 };
 type FakeDatabase = {
   users: Map<string, FakeUser>;
@@ -157,7 +161,9 @@ function createExecutor(database: FakeDatabase): ContactInquiryMutationExecutor 
           realtimeActorClientId: null,
           realtimeActorUserId: null,
           createdAt: input.now,
-          updatedAt: input.now
+          updatedAt: input.now,
+          resolvedAt: null,
+          closedAt: null
         };
         database.inquiries.push(inquiry);
         database.messages.push({
@@ -233,6 +239,7 @@ function createExecutor(database: FakeDatabase): ContactInquiryMutationExecutor 
         stored.assignedAdminUserId = assignedAdminUserId;
         stored.assignedAdminNameSnapshot = assignedAdminNameSnapshot;
         stored.updatedAt = now;
+        Object.assign(stored, contactStatusTimestamps(status, now));
         return true;
       },
       updateRealtimeRevision: async ({
@@ -705,6 +712,65 @@ test("状態遷移ルールを一箇所で管理する", () => {
   assert.equal(statusAfterUserReply("CLOSED"), null);
 });
 
+test("対応済みへの利用者返信はresolvedAtを消し、再対応済み時刻から7日を数え直す", async () => {
+  const database = createDatabase();
+  const inquiry = await seedInquiry(database);
+  const firstResolvedAt = new Date("2026-07-24T00:01:00Z");
+  const firstResolve = await updateContactInquiryByAdmin(
+    {
+      actorUserId: "admin-1",
+      publicId: inquiry.publicId,
+      body: null,
+      nextStatus: "RESOLVED",
+      assignedAdminUserId: null,
+      now: firstResolvedAt
+    },
+    createExecutor(database)
+  );
+  assert.equal(firstResolve.status, "updated");
+  assert.deepEqual(inquiry.resolvedAt, firstResolvedAt);
+
+  const reply = await addUserContactReply(
+    {
+      actorUserId: "user-1",
+      publicId: inquiry.publicId,
+      body: "追加で確認してほしい内容があります。",
+      now: new Date("2026-07-24T00:01:11Z")
+    },
+    createExecutor(database)
+  );
+  assert.equal(reply.status, "replied");
+  assert.equal(inquiry.status, "IN_PROGRESS");
+  assert.equal(inquiry.resolvedAt, null);
+  assert.equal(
+    isContactInquiryAutoCloseEligible(inquiry, new Date("2026-08-01T00:01:00Z")),
+    false
+  );
+
+  const secondResolvedAt = new Date("2026-07-24T00:02:00Z");
+  const secondResolve = await updateContactInquiryByAdmin(
+    {
+      actorUserId: "admin-1",
+      publicId: inquiry.publicId,
+      body: null,
+      nextStatus: "RESOLVED",
+      assignedAdminUserId: null,
+      now: secondResolvedAt
+    },
+    createExecutor(database)
+  );
+  assert.equal(secondResolve.status, "updated");
+  assert.deepEqual(inquiry.resolvedAt, secondResolvedAt);
+  assert.equal(
+    isContactInquiryAutoCloseEligible(inquiry, new Date("2026-07-31T00:01:59Z")),
+    false
+  );
+  assert.equal(
+    isContactInquiryAutoCloseEligible(inquiry, new Date("2026-07-31T00:02:00Z")),
+    true
+  );
+});
+
 test("contact inquiry overdue status is based on OPEN and elapsed time since creation", () => {
   const now = new Date("2026-08-09T00:00:00Z");
   assert.equal(
@@ -850,6 +916,7 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
     detailPage,
     adminPage,
     adminDetail,
+    autoCloseNotice,
     action,
     form,
     replyForm,
@@ -865,6 +932,7 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
       readFile("src/app/(app)/contact/[publicId]/page.tsx", "utf8"),
       readFile("src/app/(app)/admin/inquiries/page.tsx", "utf8"),
       readFile("src/app/(app)/admin/inquiries/[publicId]/page.tsx", "utf8"),
+      readFile("src/components/contact-inquiry-auto-close-notice.tsx", "utf8"),
       readFile("src/app/actions/contact.ts", "utf8"),
       readFile("src/components/contact-inquiry-form.tsx", "utf8"),
       readFile("src/components/contact-reply-form.tsx", "utf8"),
@@ -927,6 +995,20 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
   );
   assert.match(detailPage, /inquiry\.status === "CLOSED"/);
   assert.match(adminDetail, /inquiry\.status === "CLOSED"/);
+  assert.match(
+    detailPage,
+    /inquiry\.status === "RESOLVED"[\s\S]*?<ContactInquiryAutoCloseNotice resolvedAt=\{inquiry\.resolvedAt\}/
+  );
+  assert.match(
+    adminDetail,
+    /inquiry\.status === "RESOLVED"[\s\S]*?<ContactInquiryAutoCloseNotice resolvedAt=\{inquiry\.resolvedAt\}/
+  );
+  assert.match(autoCloseNotice, /対応済みになってから7日後に自動的に終了します。/);
+  assert.match(autoCloseNotice, /getContactInquiryAutoCloseAt\(resolvedAt\)/);
+  assert.match(
+    autoCloseNotice,
+    /formatDateTimeJst\(autoCloseAt\)[\s\S]*?次回の自動処理で終了予定です。/
+  );
   assert.match(detailPage, /<ContactRealtimeRefreshListener/);
   assert.match(adminDetail, /<ContactRealtimeRefreshListener/);
   assert.match(realtimeListener, /\/api\/realtime\/contact\?/);

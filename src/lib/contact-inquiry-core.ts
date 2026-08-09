@@ -18,6 +18,7 @@ export const CONTACT_OPEN_INQUIRY_LIMIT = 10;
 export const CONTACT_REPLY_COOLDOWN_MS = 10 * 1000;
 export const CONTACT_SEARCH_MAX_LENGTH = 100;
 export const CONTACT_INQUIRY_OVERDUE_MS = 24 * 60 * 60 * 1000;
+export const CONTACT_INQUIRY_AUTO_CLOSE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const CONTACT_CATEGORIES = [
   "BUG",
@@ -48,6 +49,28 @@ export function isContactInquiryOverdue(
   return (
     inquiry.status === "OPEN" &&
     inquiry.createdAt.getTime() <= now.getTime() - CONTACT_INQUIRY_OVERDUE_MS
+  );
+}
+
+/** 対応済み問い合わせを自動終了する基準となる、現在時刻の7日前を返す。 */
+export function getContactInquiryAutoCloseThreshold(now: Date) {
+  return new Date(now.getTime() - CONTACT_INQUIRY_AUTO_CLOSE_MS);
+}
+
+/** 最後に対応済みになった時刻から算出した、自動終了可能になる時刻を返す。 */
+export function getContactInquiryAutoCloseAt(resolvedAt: Date) {
+  return new Date(resolvedAt.getTime() + CONTACT_INQUIRY_AUTO_CLOSE_MS);
+}
+
+/** statusと最後のresolvedAtだけを使い、現在時刻時点の自動終了対象か判定する。 */
+export function isContactInquiryAutoCloseEligible(
+  inquiry: { status: ContactStatus; resolvedAt: Date | null },
+  now: Date
+) {
+  return (
+    inquiry.status === "RESOLVED" &&
+    inquiry.resolvedAt !== null &&
+    inquiry.resolvedAt.getTime() <= getContactInquiryAutoCloseThreshold(now).getTime()
   );
 }
 
