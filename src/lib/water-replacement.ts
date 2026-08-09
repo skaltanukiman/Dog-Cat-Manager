@@ -49,7 +49,7 @@ export async function setTodayWaterReplacementState(
     careDayStartMinutes = 0
   }: {
     hamsterId: string;
-    createdByUserId: string;
+    createdByUserId: string | null;
     state: WaterReplacementState;
     now?: Date;
     careDayStartMinutes?: number;

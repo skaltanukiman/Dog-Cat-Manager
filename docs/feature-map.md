@@ -6,7 +6,7 @@
 
 | 項目 | 主なファイル | 注意点 |
 | --- | --- | --- |
-| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`と境界一致する`/demo`配下だけが公開。通常画面は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` と `tests/public-demo.test.tsx` で検証する。 |
+| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/app/api/device/care/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`、`/api/device/care`と境界一致する`/demo`配下だけが公開。デバイスお世話APIはAuth.jsセッションの代わりにRoute内でBearer tokenを必須とする。通常画面は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` と `tests/public-demo.test.tsx` で検証する。 |
 | 現在の Household と権限 | `src/lib/authorization.ts`, `src/lib/auth-context.ts`, `src/app/actions/households.ts`, `src/components/household-switcher.tsx` | `OWNER` / `ADMIN` / `MEMBER` / `VIEWER` の閲覧・共有データ編集・招待・解除・権限変更を共通判定する。`hamster_current_household` Cookie は所属確認後にのみ更新する。 |
 | レイアウト・ナビゲーション | `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/app/demo/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | 永続するRootLayoutは全経路共通の`html`・`body`・メタデータだけを担当する。通常URLは`(app)` Route Groupに置き、同Groupのlayoutが認証・Household切替・リアルタイム監視・通常ヘッダー・main幅を構成する。デモURLは別のlayout枝で専用ヘッダー・ナビ・main幅を構成するため、クライアント遷移や戻る操作でも両シェルが混在しない。1024px 未満では主要5画面をアイコンなしの均等幅タブで表示し、設定・共有・管理は補助メニューにまとめる。`lg` 以上では従来のボタン型ナビゲーションを1行で表示する。 |
 | PWA メタデータ・プッシュ通知 | `src/app/manifest.ts`, `src/components/service-worker-registration.tsx`, `public/sw.js`, `public/icons/*`, `src/app/api/push/subscriptions/*`, `src/lib/care-notification-dispatch.ts` | Manifestとアイコンに加え、認証済み通常画面で通知専用Service Workerを登録する。Service Workerはpush/clickだけを扱い、オフラインキャッシュは持たない。購読APIは認証・同一origin・入力上限を検証する。 |
@@ -65,10 +65,10 @@
 
 - **画面または URL:** `/`。
 - **主なコンポーネント:** `DashboardMemo`、`FeedingToggle`、`WaterReplacementToggle`、`CleaningDateToggle`、`HamsterThumbnail`、`EmptyState`。`FeedingToggle`と`WaterReplacementToggle`は本日の状態とJST実施時刻を表示し、通常画面では押下で状態を切り替え、デモ・VIEWER・管理外では操作不可にする。画像登録済みの `HamsterThumbnail` はクリック・タップで拡大モーダルを表示し、未登録・読込失敗時は操作不可のプレースホルダーになる。
-- **Server Action または API:** `setTodayFeeding`（`src/app/actions/feeding.ts`）と`setTodayWaterReplacement`（`src/app/actions/water-replacement.ts`）が意図する最終状態を受け取り、共通Household更新transactionで現在のお世話日の記録・操作履歴・revisionを確定する。操作時はtransaction内で最新の `Household.careDayStartMinutes` を再取得する。設定更新は `saveSettings` と `saveCareDaySettings`。
+- **Server Action または API:** `setTodayFeeding`（`src/app/actions/feeding.ts`）と`setTodayWaterReplacement`（`src/app/actions/water-replacement.ts`）が意図する最終状態を受け取り、共通Household更新transactionで現在のお世話日の記録・操作履歴・revisionを確定する。`POST /api/device/care`は固定Householdの管理中ハムスターに対する食事・水替えの実施済み化だけを許可し、`src/lib/device-care.ts`から同じ共通処理を使う。操作時はtransaction内で最新の `Household.careDayStartMinutes` を再取得する。設定更新は `saveSettings` と `saveCareDaySettings`。
 - **データアクセス・Prismaモデル:** `getDashboardData`（`src/lib/queries.ts`）が `Hamster`、`AppSetting` / `DashboardHamster`、現在のお世話日の `FeedingRecord` / `WaterReplacementRecord`、最新 `WeightRecord`、各種 `CleaningRecord` を Household とユーザー設定で取得する。食事・水替え記録は同一の`now`と`Household.careDayStartMinutes`から算出した対象日、表示対象ハムスターIDを指定した一括queryで取得する。掃除・体重などの通常日付にはお世話日境界を適用しない。
-- **バリデーション:** 表示件数・対象選択は設定の `dashboardSettingsSchema` と `dashboard-settings.ts`。
-- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/care-day.test.ts`、`tests/feeding.test.tsx` / `tests/water-replacement.test.tsx`（Household別のお世話日境界、日単位一意性、同時・冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）。
+- **バリデーション:** 表示件数・対象選択は設定の `dashboardSettingsSchema` と `dashboard-settings.ts`。デバイスAPIは`DEVICE_CARE_API_TOKEN`と`DEVICE_CARE_HOUSEHOLD_ID`を必須とし、設定Household不在・デモは503、対象Household外は404、管理外ハムスターは409で拒否する。入力に取消状態は持たない。
+- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/care-day.test.ts`、`tests/feeding.test.tsx` / `tests/water-replacement.test.tsx`（Household別のお世話日境界、日単位一意性、同時・冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）、`tests/device-care-api.test.ts`（Bearer認証、固定Household、demo・所属・管理状態、実施済み専用、履歴・revision・レスポンス）。
 - **関連設定:** `src/lib/dashboard-settings.ts`（1〜30件、選択 UI の既定値）。
 - **依存関係:** 表示対象はユーザー・Household ごとの設定。食事・水替え更新後の他メンバー反映は既存Household revision / SSE / revision pollを使う。掃除種別を増減する場合は `getDashboardData` とカード表示を同時に変更する。
 
@@ -206,9 +206,9 @@
 
 - **画面または URL:** ログイン後の全画面（`src/app/(app)/layout.tsx`の通常画面シェル）、家庭SSE `/api/realtime/household`、家庭revision API `/api/realtime/household/revision`、問い合わせSSE `/api/realtime/contact`、問い合わせrevision API `/api/realtime/contact/revision`。
 - **主なコンポーネント:** `RealtimeRefreshListener`、`ContactRealtimeRefreshListener`、`AutoSubmitInput`、`AutoSubmitSelect`、`DirtySubmitButton`、`form-dirty-state.ts`。
-- **Server Action または API:** 更新系 Action は `commitHouseholdMutation` / `publishHouseholdChangeSafely`（`src/lib/realtime.ts`）を利用。SSE Route はメモリ内 subscribe、revision Route は DB read。
+- **Server Action または API:** 更新系 Action とデバイスお世話APIは `commitHouseholdMutation` / `publishHouseholdChangeSafely`（`src/lib/realtime.ts`）を利用。SSE Route はメモリ内 subscribe、revision Route は DB read。
 - **データアクセス・Prismaモデル:** 家庭同期は `Household.realtimeRevision`、`realtimeActorClientId`、`realtimeActorUserId` と `HouseholdMember`、問い合わせ同期は `ContactInquiry` の同名3列と問い合わせ所有者またはApp管理者権限でAPI認可する。いずれも業務データ更新と revision 増加は同一 transaction。家庭と問い合わせは別イベントバスとし、更新対象scopeを混在させない。
-- **バリデーション:** API はログイン・`householdId`・所属を確認。クライアントは `realtimeActorId`、現在ユーザー、未保存フォームを照合する。
+- **バリデーション:** 購読APIはログイン・`householdId`・所属を確認。デバイスお世話APIはBearer tokenと環境変数のHouseholdを検証し、人間ユーザーに偽装せずactor列をnullにする。クライアントは `realtimeActorId`、現在ユーザー、未保存フォームを照合する。
 - **関連テスト:** `tests/csv-and-realtime.test.ts`、`tests/error-handling.test.ts`。
 - **関連設定:** `src/lib/realtime-constants.ts`、`src/lib/realtime-health.ts`。SSE は Node runtime / force-dynamic 指定。
 - **依存関係:** SSE はプロセス内配信なので複数インスタンスでは単独では届かない。revision poll がフォールバック。自己更新を SSE と poll の双方で抑止し、保存後の `revalidatePath`、revision、配信の順序を壊さない。

@@ -22,7 +22,7 @@ type FakeWaterReplacementRow = {
   hamsterId: string;
   recordDate: Date;
   replacedAt: Date;
-  createdByUserId: string;
+  createdByUserId: string | null;
 };
 
 function createFakeTransaction() {
@@ -139,7 +139,7 @@ test("交換済み化と取消を冪等に処理し、同日レコードを重�
   const database = createFakeTransaction();
   const input = {
     hamsterId: "hamster-1",
-    createdByUserId: "user-1",
+    createdByUserId: null,
     now: new Date("2026-07-28T10:05:00.000Z")
   };
 
@@ -154,6 +154,7 @@ test("交換済み化と取消を冪等に処理し、同日レコードを重�
   assert.equal(firstMark.changed, true);
   assert.equal(duplicateMark.changed, false);
   assert.equal(database.rows.size, 1);
+  assert.equal([...database.rows.values()][0]?.createdByUserId, null);
 
   const firstUnmark = await setTodayWaterReplacementState(database.tx, {
     ...input,

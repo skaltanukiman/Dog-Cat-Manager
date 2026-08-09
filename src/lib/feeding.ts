@@ -51,7 +51,7 @@ export async function setTodayFeedingState(
     careDayStartMinutes = 0
   }: {
     hamsterId: string;
-    createdByUserId: string;
+    createdByUserId: string | null;
     state: FeedingState;
     now?: Date;
     careDayStartMinutes?: number;
