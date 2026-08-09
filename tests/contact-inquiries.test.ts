@@ -1003,11 +1003,13 @@ test("ページとActionは認可、所有者条件、二重送信防止、終�
     adminDetail,
     /inquiry\.status === "RESOLVED"[\s\S]*?<ContactInquiryAutoCloseNotice resolvedAt=\{inquiry\.resolvedAt\}/
   );
-  assert.match(autoCloseNotice, /対応済みになってから7日後に自動的に終了します。/);
+  assert.match(autoCloseNotice, /このお問い合わせへの対応は完了しています。/);
+  assert.match(autoCloseNotice, /追加で確認したいことがある場合は、このまま返信できます。/);
+  assert.doesNotMatch(autoCloseNotice, /対応済みになってから7日後/);
   assert.match(autoCloseNotice, /getContactInquiryAutoCloseAt\(resolvedAt\)/);
   assert.match(
     autoCloseNotice,
-    /formatDateTimeJst\(autoCloseAt\)[\s\S]*?次回の自動処理で終了予定です。/
+    /返信がない場合は、\{formatDateTimeJst\(autoCloseAt\)\}以降の自動処理でこのお問い合わせを終了します。/
   );
   assert.match(detailPage, /<ContactRealtimeRefreshListener/);
   assert.match(adminDetail, /<ContactRealtimeRefreshListener/);
