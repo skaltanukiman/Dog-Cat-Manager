@@ -20,6 +20,14 @@ const databaseUrl = getDatabaseUrlForSeed();
 const prisma = databaseUrl ? new PrismaClient({ datasources: { db: { url: databaseUrl } } }) : new PrismaClient();
 const targetUserId = process.env.CONTACT_INQUIRY_SEED_USER_ID;
 const seedPrefix = "[検証]";
+const legacyPublicIds = [
+  "HMB-20260809-O000000001",
+  "HMB-20260809-O000000002",
+  "HMB-20260809-O000000003",
+  "HMB-20260809-O000000004",
+  "HMB-20260809-O000000005",
+  "HMB-20260809-O000000006"
+];
 
 type Fixture = {
   publicId: string;
@@ -32,12 +40,12 @@ type Fixture = {
 };
 
 const fixtures: Fixture[] = [
-  { publicId: "HMB-20260809-O000000001", category: "BUG", status: "OPEN", subject: `${seedPrefix} 未対応・48時間経過`, createdMinutesAgo: 48 * 60, updatedMinutesAgo: 5, assigned: false },
-  { publicId: "HMB-20260809-O000000002", category: "HOW_TO", status: "OPEN", subject: `${seedPrefix} 未対応・24時間経過`, createdMinutesAgo: 24 * 60, updatedMinutesAgo: 120, assigned: false },
-  { publicId: "HMB-20260809-O000000003", category: "FEATURE_REQUEST", status: "OPEN", subject: `${seedPrefix} 未対応・22時間経過`, createdMinutesAgo: 22 * 60, updatedMinutesAgo: 1, assigned: false },
-  { publicId: "HMB-20260809-O000000004", category: "ACCOUNT", status: "IN_PROGRESS", subject: `${seedPrefix} 確認中・72時間経過`, createdMinutesAgo: 72 * 60, updatedMinutesAgo: 10, assigned: true },
-  { publicId: "HMB-20260809-O000000005", category: "OTHER", status: "WAITING_FOR_USER", subject: `${seedPrefix} 回答待ち・72時間経過`, createdMinutesAgo: 72 * 60, updatedMinutesAgo: 15, assigned: true },
-  { publicId: "HMB-20260809-O000000006", category: "BUG", status: "RESOLVED", subject: `${seedPrefix} 対応済み・72時間経過`, createdMinutesAgo: 72 * 60, updatedMinutesAgo: 20, assigned: true }
+  { publicId: "HMB-20260809-A000000001", category: "BUG", status: "OPEN", subject: `${seedPrefix} 未対応・48時間経過`, createdMinutesAgo: 48 * 60, updatedMinutesAgo: 5, assigned: false },
+  { publicId: "HMB-20260809-A000000002", category: "HOW_TO", status: "OPEN", subject: `${seedPrefix} 未対応・24時間経過`, createdMinutesAgo: 24 * 60, updatedMinutesAgo: 120, assigned: false },
+  { publicId: "HMB-20260809-A000000003", category: "FEATURE_REQUEST", status: "OPEN", subject: `${seedPrefix} 未対応・22時間経過`, createdMinutesAgo: 22 * 60, updatedMinutesAgo: 1, assigned: false },
+  { publicId: "HMB-20260809-A000000004", category: "ACCOUNT", status: "IN_PROGRESS", subject: `${seedPrefix} 確認中・72時間経過`, createdMinutesAgo: 72 * 60, updatedMinutesAgo: 10, assigned: true },
+  { publicId: "HMB-20260809-A000000005", category: "OTHER", status: "WAITING_FOR_USER", subject: `${seedPrefix} 回答待ち・72時間経過`, createdMinutesAgo: 72 * 60, updatedMinutesAgo: 15, assigned: true },
+  { publicId: "HMB-20260809-A000000006", category: "BUG", status: "RESOLVED", subject: `${seedPrefix} 対応済み・72時間経過`, createdMinutesAgo: 72 * 60, updatedMinutesAgo: 20, assigned: true }
 ];
 
 function at(now: Date, minutesAgo: number) {
@@ -61,6 +69,8 @@ async function main() {
   const now = new Date();
   const userName = user.name?.trim() || "Support test user";
   const adminName = `${userName} (support)`;
+
+  await prisma.contactInquiry.deleteMany({ where: { publicId: { in: legacyPublicIds } } });
 
   for (const fixture of fixtures) {
     const createdAt = at(now, fixture.createdMinutesAgo);
