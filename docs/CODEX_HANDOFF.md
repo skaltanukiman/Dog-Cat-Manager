@@ -74,9 +74,9 @@ docker compose up -d
 Docker Compose 内で app から db に接続する場合:
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@db:5432/dog_cat_manager_dev?schema=public"
+DATABASE_URL="postgresql://dog_cat_user:dev_password@db:5432/dog_cat_manager_dev?schema=public"
 POSTGRES_DB="dog_cat_manager_dev"
-POSTGRES_USER="hamster_user"
+POSTGRES_USER="dog_cat_user"
 POSTGRES_PASSWORD="dev_password"
 ```
 
@@ -101,9 +101,9 @@ HAMSTER_IMAGE_DIR=/app/uploads/hamsters
 ホスト PC で `npm run dev` し、DB だけ Docker で動かす場合:
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
+DATABASE_URL="postgresql://dog_cat_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
 POSTGRES_DB="dog_cat_manager_dev"
-POSTGRES_USER="hamster_user"
+POSTGRES_USER="dog_cat_user"
 POSTGRES_PASSWORD="dev_password"
 ```
 

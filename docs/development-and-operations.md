@@ -527,10 +527,10 @@ cp .env.production.example .env
 Docker Compose 内で Next.js コンテナから PostgreSQL コンテナへ接続する場合、`DATABASE_URL` のホスト名は `db` です。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@db:5432/dog_cat_manager_dev?schema=public"
+DATABASE_URL="postgresql://dog_cat_user:dev_password@db:5432/dog_cat_manager_dev?schema=public"
 
 POSTGRES_DB="dog_cat_manager_dev"
-POSTGRES_USER="hamster_user"
+POSTGRES_USER="dog_cat_user"
 POSTGRES_PASSWORD="dev_password"
 ```
 
@@ -547,10 +547,10 @@ DATABASE_URL のポート     = 5432
 ホスト PC 上で `npm run dev` を実行し、DB だけ Docker Compose で動かす場合は、`DATABASE_URL` のホストを `localhost`、ポートを `5433` にします。`docker-compose.yml` では PostgreSQL を `127.0.0.1:5433` に公開しています。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
+DATABASE_URL="postgresql://dog_cat_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
 
 POSTGRES_DB="dog_cat_manager_dev"
-POSTGRES_USER="hamster_user"
+POSTGRES_USER="dog_cat_user"
 POSTGRES_PASSWORD="dev_password"
 ```
 
@@ -611,7 +611,7 @@ Copy-Item .env.development.example .env
 その後、`.env` の `DATABASE_URL` を `localhost:5434` に変更します。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
+DATABASE_URL="postgresql://dog_cat_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
 ```
 
 Google ログインを使うため、同じ `.env` に `AUTH_SECRET`、`AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、必要に応じて `AUTH_URL` を設定します。ホスト PC で `npm run dev` する場合の `AUTH_URL` 例は次の通りです。
@@ -1174,10 +1174,10 @@ nano .env
 `POSTGRES_PASSWORD` は必ず強い値に変更します。`DATABASE_URL` 側のユーザー名、パスワード、DB 名は `POSTGRES_USER`、`POSTGRES_PASSWORD`、`POSTGRES_DB` と合わせます。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:change_me_to_a_strong_password@db:5432/dog_cat_manager?schema=public"
+DATABASE_URL="postgresql://dog_cat_user:change_me_to_a_strong_password@db:5432/dog_cat_manager?schema=public"
 
 POSTGRES_DB="dog_cat_manager"
-POSTGRES_USER="hamster_user"
+POSTGRES_USER="dog_cat_user"
 POSTGRES_PASSWORD="change_me_to_a_strong_password"
 ```
 
@@ -1312,17 +1312,17 @@ PostgreSQL のデータは Docker volume `dog_cat_manager_pgdata` に永続化�
 バックアップ例:
 
 ```bash
-docker compose exec db pg_dump -U hamster_user dog_cat_manager > backup.sql
+docker compose exec db pg_dump -U dog_cat_user dog_cat_manager > backup.sql
 tar czf hamster-uploads.tar.gz uploads
 ```
 
 リストア例:
 
 ```bash
-docker compose exec -T db psql -U hamster_user dog_cat_manager < backup.sql
+docker compose exec -T db psql -U dog_cat_user dog_cat_manager < backup.sql
 ```
 
-`.env` で DB 名やユーザー名を変更している場合は、コマンド内の `hamster_user` と `dog_cat_manager` も実際の値に合わせてください。
+`.env` で DB 名やユーザー名を変更している場合は、コマンド内の `dog_cat_user` と `dog_cat_manager` も実際の値に合わせてください。
 
 ## 食事・水替えのWebプッシュ通知
 
