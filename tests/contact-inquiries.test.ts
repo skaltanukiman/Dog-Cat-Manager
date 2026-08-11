@@ -14,6 +14,8 @@ import {
   CONTACT_CREATION_WINDOW_LIMIT,
   CONTACT_INQUIRY_PAGE_SIZE,
   CONTACT_OPEN_INQUIRY_LIMIT,
+  buildAdminInquiryDetailHref,
+  buildAdminInquiryHref,
   canTransitionContactStatus,
   contactStatusTimestamps,
   createContactInquirySchema,
@@ -21,6 +23,7 @@ import {
   isContactInquiryAutoCloseEligible,
   isContactInquiryOverdue,
   isSafeContactSourcePath,
+  normalizeAdminInquiryReturnTo,
   normalizeContactPage,
   parseAdminInquiryQuery,
   parseInitialErrorId,
@@ -862,7 +865,10 @@ test("admin inquiry list marks only overdue inquiries with text and pale red sty
   const userListSource = list.slice(0, list.indexOf("export function AdminContactInquiryList"));
 
   assert.match(adminPage, /const now = new Date\(\)/);
-  assert.match(adminPage, /<AdminContactInquiryList inquiries=\{inquiries\} now=\{now\} \/>/);
+  assert.match(
+    adminPage,
+    /<AdminContactInquiryList[\s\S]*?inquiries=\{inquiries\}[\s\S]*?now=\{now\}[\s\S]*?\/>/
+  );
   assert.match(list, /isContactInquiryOverdue\(inquiry, now\)/);
   assert.match(list, /bg-red-50\/50 hover:bg-red-50/);
   assert.match(list, /border-red-300 bg-red-50\/50/);
@@ -880,6 +886,60 @@ test("ページ番号・フィルターの不正値を安全に補正する", ()
     category: "all",
     search: "x"
   });
+});
+
+test("管理問い合わせ一覧の条件を詳細のreturnToへ引き継ぐ", () => {
+  const cases = [
+    [{}, "/admin/inquiries"],
+    [{ status: "unhandled" }, "/admin/inquiries?status=unhandled"],
+    [{ category: "BUG" }, "/admin/inquiries?category=BUG"],
+    [{ search: "test" }, "/admin/inquiries?search=test"],
+    [{ page: "2" }, "/admin/inquiries?page=2"],
+    [
+      { status: "unhandled", category: "BUG", search: "test", page: "3" },
+      "/admin/inquiries?status=unhandled&category=BUG&search=test&page=3"
+    ]
+  ] as const;
+
+  for (const [params, expectedReturnTo] of cases) {
+    const query = parseAdminInquiryQuery(params);
+    const returnTo = buildAdminInquiryHref(query, query.page);
+    assert.equal(returnTo, expectedReturnTo);
+    assert.equal(normalizeAdminInquiryReturnTo(returnTo), expectedReturnTo);
+    const detailHref = buildAdminInquiryDetailHref("HMB-20260811-1234567890", returnTo);
+    assert.equal(
+      new URL(detailHref, "https://app.invalid").searchParams.get("returnTo"),
+      expectedReturnTo
+    );
+  }
+});
+
+test("管理問い合わせ詳細のreturnToは一覧以外を拒否する", () => {
+  for (const unsafeReturnTo of [
+    "/admin",
+    "/admin/inquiries/HMB-20260811-1234567890",
+    "https://example.com/admin/inquiries",
+    "//example.com/admin/inquiries",
+    "/admin/inquiries#https://example.com"
+  ]) {
+    assert.equal(normalizeAdminInquiryReturnTo(unsafeReturnTo), "/admin/inquiries");
+  }
+  assert.equal(normalizeAdminInquiryReturnTo(undefined), "/admin/inquiries");
+});
+
+test("管理問い合わせ一覧と詳細は安全なreturnToを戻るリンクへ配線する", async () => {
+  const [adminPage, adminDetail, list] = await Promise.all([
+    readFile("src/app/(app)/admin/inquiries/page.tsx", "utf8"),
+    readFile("src/app/(app)/admin/inquiries/[publicId]/page.tsx", "utf8"),
+    readFile("src/components/contact-inquiry-list.tsx", "utf8")
+  ]);
+
+  assert.match(adminPage, /const returnTo = buildAdminInquiryHref\(query, query\.page\)/);
+  assert.match(adminPage, /buildDetailHref=\{\(publicId\) => buildAdminInquiryDetailHref\(publicId, returnTo\)\}/);
+  assert.equal((list.match(/href=\{buildDetailHref\(inquiry\.publicId\)\}/g) ?? []).length, 2);
+  assert.match(adminDetail, /const returnTo = normalizeAdminInquiryReturnTo\(query\.returnTo\)/);
+  assert.match(adminDetail, /<Link href=\{returnTo\}/);
+  assert.match(adminDetail, /<StatusMessage status=\{getParam\(query\.status\)\}/);
 });
 
 test("PrismaとmigrationはUser削除SetNull、message Cascade、snapshot、indexを保持する", async () => {

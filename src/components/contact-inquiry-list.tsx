@@ -90,10 +90,12 @@ export function ContactInquiryList({ inquiries }: { inquiries: ContactInquiryLis
 
 export function AdminContactInquiryList({
   inquiries,
-  now
+  now,
+  buildDetailHref
 }: {
   inquiries: ContactInquiryListItem[];
   now: Date;
+  buildDetailHref: (publicId: string) => string;
 }) {
   if (inquiries.length === 0) {
     return (
@@ -156,7 +158,7 @@ export function AdminContactInquiryList({
                 <td className="break-words [overflow-wrap:anywhere]">{assignedAdminDisplayName(inquiry)}</td>
                 <td>
                   <Link
-                    href={`/admin/inquiries/${inquiry.publicId}`}
+                    href={buildDetailHref(inquiry.publicId)}
                     aria-label={`${inquiry.publicId}の管理詳細を表示`}
                     className="inline-flex min-h-10 items-center gap-1 font-semibold text-moss hover:underline"
                   >
@@ -214,7 +216,7 @@ export function AdminContactInquiryList({
               </div>
             </dl>
             <Link
-              href={`/admin/inquiries/${inquiry.publicId}`}
+              href={buildDetailHref(inquiry.publicId)}
               className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-md border border-moss px-4 text-sm font-semibold text-moss hover:bg-moss hover:text-white sm:w-auto"
             >
               詳細を確認

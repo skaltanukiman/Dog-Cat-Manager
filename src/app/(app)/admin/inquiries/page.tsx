@@ -6,6 +6,7 @@ import { AutoSubmitFilterForm } from "@/components/auto-submit-filter-form";
 import { PaginationLayout } from "@/components/pagination";
 import {
   ADMIN_INQUIRY_FILTERS,
+  buildAdminInquiryDetailHref,
   buildAdminInquiryHref,
   CONTACT_CATEGORIES,
   CONTACT_CATEGORY_LABELS,
@@ -41,6 +42,7 @@ export default async function AdminInquiriesPage({
   const query = parseAdminInquiryQuery(params);
   const { inquiries, pagination } = await getAdminContactInquiryPage(query);
   const now = new Date();
+  const returnTo = buildAdminInquiryHref(query, query.page);
 
   return (
     <div className="space-y-6">
@@ -105,7 +107,11 @@ export default async function AdminInquiriesPage({
         emptyMessage="条件に一致する問い合わせはありません。"
         buildHref={(page) => buildAdminInquiryHref(query, page)}
       />
-      <AdminContactInquiryList inquiries={inquiries} now={now} />
+      <AdminContactInquiryList
+        inquiries={inquiries}
+        now={now}
+        buildDetailHref={(publicId) => buildAdminInquiryDetailHref(publicId, returnTo)}
+      />
       {inquiries.length > 0 ? (
         <PaginationLayout
           ariaLabel="問い合わせ管理一覧のページ移動"

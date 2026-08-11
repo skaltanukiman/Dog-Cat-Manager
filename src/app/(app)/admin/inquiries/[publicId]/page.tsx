@@ -9,6 +9,7 @@ import { AdminContactReplyForm } from "@/components/contact-reply-form";
 import { ContactCategoryBadge, ContactStatusBadge } from "@/components/contact-status-badge";
 import { StatusMessage } from "@/components/status-message";
 import { getRequiredAppAdminUser } from "@/lib/auth-context";
+import { normalizeAdminInquiryReturnTo } from "@/lib/contact-inquiry-core";
 import {
   assignedAdminDisplayName,
   getAdminContactInquiryDetail,
@@ -27,9 +28,14 @@ export default async function AdminInquiryDetailPage({
   searchParams
 }: {
   params: Promise<{ publicId: string }>;
-  searchParams: Promise<{ status?: string | string[]; errorId?: string | string[] }>;
+  searchParams: Promise<{
+    status?: string | string[];
+    errorId?: string | string[];
+    returnTo?: string | string[];
+  }>;
 }) {
   const [{ publicId }, query] = await Promise.all([params, searchParams]);
+  const returnTo = normalizeAdminInquiryReturnTo(query.returnTo);
   await getRequiredAppAdminUser();
   const [inquiry, admins] = await Promise.all([
     getAdminContactInquiryDetail(publicId),
@@ -44,7 +50,7 @@ export default async function AdminInquiryDetailPage({
         initialRevision={inquiry.realtimeRevision.toString()}
       />
       <div>
-        <Link href="/admin/inquiries" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
+        <Link href={returnTo} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           問い合わせ一覧へ戻る
         </Link>

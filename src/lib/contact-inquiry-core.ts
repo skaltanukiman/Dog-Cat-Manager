@@ -313,3 +313,34 @@ export function buildAdminInquiryHref(query: AdminInquiryQuery, page: number) {
   const suffix = params.toString();
   return suffix ? `/admin/inquiries?${suffix}` : "/admin/inquiries";
 }
+
+const ADMIN_INQUIRIES_PATH = "/admin/inquiries";
+const ADMIN_INQUIRIES_ORIGIN = "https://app.invalid";
+
+/** 管理問い合わせ詳細から戻る一覧URLを、管理問い合わせ一覧だけに制限する。 */
+export function normalizeAdminInquiryReturnTo(value: string | string[] | undefined) {
+  const raw = firstParam(value);
+  if (
+    !raw ||
+    (raw !== ADMIN_INQUIRIES_PATH && !raw.startsWith(`${ADMIN_INQUIRIES_PATH}?`))
+  ) {
+    return ADMIN_INQUIRIES_PATH;
+  }
+
+  try {
+    const parsed = new URL(raw, ADMIN_INQUIRIES_ORIGIN);
+    return parsed.origin === ADMIN_INQUIRIES_ORIGIN &&
+      parsed.pathname === ADMIN_INQUIRIES_PATH &&
+      parsed.hash === ""
+      ? raw
+      : ADMIN_INQUIRIES_PATH;
+  } catch {
+    return ADMIN_INQUIRIES_PATH;
+  }
+}
+
+/** 一覧へ戻るURLをreturnToへ格納した管理問い合わせ詳細URLを生成する。 */
+export function buildAdminInquiryDetailHref(publicId: string, returnTo: string) {
+  const params = new URLSearchParams({ returnTo });
+  return `/admin/inquiries/${encodeURIComponent(publicId)}?${params.toString()}`;
+}
