@@ -1,6 +1,6 @@
 # 機能マップ
 
-最終確認: 2026-07-31。Next.js App Router / Prisma / PostgreSQL 構成において、画面から Server Action・Route Handler・データアクセスまでを辿るための索引です。原則として、Household に属するデータは `getRequiredHouseholdContext()` で現在の所属を確定し、共有データ更新Actionは `getRequiredHouseholdMutationContext()` でVIEWERをDB処理前に拒否します。Action / API 側でも対象の所属・管理状態を確認します。
+最終確認: 2026-08-11。Next.js App Router / Prisma / PostgreSQL 構成において、画面から Server Action・Route Handler・データアクセスまでを辿るための索引です。原則として、Household に属するデータは `getRequiredHouseholdContext()` で現在の所属を確定し、共有データ更新Actionは `getRequiredHouseholdMutationContext()` でVIEWERをDB処理前に拒否します。Action / API 側でも対象の所属・管理状態を確認します。
 
 ## 共通の起点
 
@@ -71,6 +71,17 @@
 - **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/care-day.test.ts`、`tests/feeding.test.tsx` / `tests/water-replacement.test.tsx`（Household別のお世話日境界、日単位一意性、同時・冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）、`tests/device-care-api.test.ts`（Bearer認証、固定Household、demo・所属・管理状態、実施済み専用、履歴・revision・レスポンス）。
 - **関連設定:** `src/lib/dashboard-settings.ts`（1〜30件、選択 UI の既定値）。
 - **依存関係:** 表示対象はユーザー・Household ごとの設定。食事・水替え更新後の他メンバー反映は既存Household revision / SSE / revision pollを使う。掃除種別を増減する場合は `getDashboardData` とカード表示を同時に変更する。
+
+## Pet一覧・登録・編集
+
+- **画面または URL:** `/pets`。
+- **主なコンポーネント:** `src/app/(app)/pets/page.tsx` の新規登録フォーム、Petカード型一覧、編集フォーム、管理状態変更フォーム、`DirtySubmitButton`、`StatusMessage`。
+- **Server Action または API:** `createPet`、`updatePet`、`updatePetActiveStatus`（`src/app/actions/pets.ts`）。物理削除Actionとプロフィール画像APIは初期段階では持たない。
+- **データアクセス・Prismaモデル:** `Pet`、`PetSpecies`、`PetSex`。一覧は `getRequiredHouseholdContext()` が確定した現在のHousehold IDをDB条件へ含める。PetはHousehold必須かつCascade削除で、名前は `@@unique([householdId, name])` によりHousehold内だけ一意とする。`profileImageFileName` は将来の画像対応用にモデルへ保持するが、今回のUIでは編集しない。
+- **バリデーション:** `createPetSchema`、`updatePetSchema`、`updatePetActiveStatusSchema`（`src/lib/schemas.ts`）。speciesは `DOG` / `CAT`、sexは `MALE` / `FEMALE` / `UNKNOWN` だけを許可し、誕生日・お迎え日は実在する未来でない暦日に限定する。
+- **認可・管理終了:** VIEWERは画面とActionの両方で登録・更新・状態変更を拒否する。各Actionは現在のHouseholdで対象を絞り、更新と同じtransaction内でも最新membershipを再確認する。管理終了は `isActive=false` とし、Pet本体を物理削除しない。
+- **関連テスト:** `tests/pets.test.ts`（DOG/CATとenum拒否、日付の暦日維持、Household単位一意性、VIEWER拒否、Household境界、管理終了時の非削除、画面項目）。
+- **設計資料:** `docs/dog-cat-manager-design.md`。将来の `/care`、`/weights`、`/records` と別DB・別Session方針を記録する。
 
 ## ハムスター一覧・登録・編集・削除
 

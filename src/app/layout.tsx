@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Hamster Manager",
-  description: "ハムスターの衛生管理と体重管理を行うWebアプリ",
-  applicationName: "ハムスター管理",
+  title: "Dog & Cat Manager",
+  description: "犬と猫の情報を管理するWebアプリ",
+  applicationName: "Dog & Cat Manager",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "ハムスター管理",
+    title: "Dog & Cat Manager",
     statusBarStyle: "default"
   },
   icons: {

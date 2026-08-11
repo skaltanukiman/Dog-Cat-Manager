@@ -43,10 +43,10 @@ export default async function LoginPage({
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md items-center">
       <section className="w-full rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-persimmon">Hamster Manager</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-persimmon">Dog & Cat Manager</p>
         <h2 className="mt-2 text-2xl font-bold text-ink">ログイン</h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          ハムスター管理を利用するには Google アカウントでログインしてください。
+          犬・猫管理を利用するには Google アカウントでログインしてください。
         </p>
         {hasAuthError ? (
           <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

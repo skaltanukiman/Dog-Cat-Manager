@@ -35,6 +35,41 @@ model Hamster {
   @@map("hamsters")
 }
 
+model Pet {
+  id                   String     @id @default(cuid())
+  householdId          String     @map("household_id")
+  household            Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  // ペット名はHousehold内だけで重複を避け、別Householdでは同名を許可する。
+  name                 String
+  species              PetSpecies
+  breed                String?
+  sex                  PetSex     @default(UNKNOWN)
+  birthDate            DateTime?  @map("birth_date") @db.Date
+  adoptionDate         DateTime?  @map("adoption_date") @db.Date
+  profileImageFileName String?    @map("profile_image_file_name")
+  memo                 String?    @db.Text
+  // 管理終了後もPet本体を保持し、将来追加する履歴の参照先を維持する。
+  isActive             Boolean    @default(true) @map("is_active")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  @@unique([householdId, name])
+  @@index([householdId, createdAt])
+  @@index([householdId, species])
+  @@map("pets")
+}
+
+enum PetSpecies {
+  DOG
+  CAT
+}
+
+enum PetSex {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
 model CleaningRecord {
   id                  String   @id @default(cuid())
   hamsterId           String
@@ -261,6 +296,7 @@ model Household {
   realtimeActorUserId        String?                    @map("realtime_actor_user_id")
   members                    HouseholdMember[]
   hamsters                   Hamster[]
+  pets                       Pet[]
   appSettings                AppSetting[]
   invitations                HouseholdInvitation[]
   savedMemoryTags            SavedMemoryTag[]

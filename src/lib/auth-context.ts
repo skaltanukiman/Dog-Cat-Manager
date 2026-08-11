@@ -8,7 +8,7 @@ import { DEFAULT_DASHBOARD_BOARD_COUNT, DEFAULT_HAMSTER_SELECTOR_MODE } from "@/
 import { prisma } from "@/lib/prisma";
 
 export const CURRENT_HOUSEHOLD_COOKIE = "hamster_current_household";
-export const DEFAULT_HOUSEHOLD_NAME_SUFFIX = "のハムスター管理";
+export const DEFAULT_HOUSEHOLD_NAME_SUFFIX = "の犬・猫管理";
 export const AUTH_SESSION_COOKIE_NAMES = ["authjs.session-token", "__Secure-authjs.session-token"] as const;
 
 export type SessionUser = {

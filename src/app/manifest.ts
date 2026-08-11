@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "ハムスター管理",
-    short_name: "Hamster Manager",
+    name: "Dog & Cat Manager",
+    short_name: "Dog & Cat Manager",
     start_url: "/",
     scope: "/",
     display: "standalone",

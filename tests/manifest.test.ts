@@ -20,8 +20,8 @@ test("PWA Manifest にインストール情報とアイコンを設定する", (
     },
     {
       id: "/",
-      name: "ハムスター管理",
-      short_name: "Hamster Manager",
+      name: "Dog & Cat Manager",
+      short_name: "Dog & Cat Manager",
       start_url: "/",
       scope: "/",
       display: "standalone",

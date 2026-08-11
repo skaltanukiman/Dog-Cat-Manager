@@ -21,6 +21,15 @@ const nullableMemoSchema = z.preprocess((value) => {
   return trimmed.length > 0 ? trimmed : null;
 }, z.string().max(2000).nullable());
 
+const nullableBreedSchema = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}, z.string().max(100).nullable());
+
 // 任意の日付入力は空欄ならnull、入力ありならDB保存用のDateへ正規化する。
 const nullableDateInputSchema = z.preprocess((value) => {
   if (typeof value !== "string") {
@@ -62,6 +71,25 @@ export const deleteHamstersSchema = z.object({
 });
 
 export const updateHamsterActiveStatusSchema = z.object({
+  id: idSchema,
+  isActive: z.enum(["true", "false"]).transform((value) => value === "true")
+});
+
+export const createPetSchema = z.object({
+  name: z.string().trim().min(1).max(50),
+  species: z.enum(["DOG", "CAT"]),
+  breed: nullableBreedSchema,
+  sex: z.enum(["MALE", "FEMALE", "UNKNOWN"]),
+  birthDate: nullablePastOrTodayDateInputSchema,
+  adoptionDate: nullablePastOrTodayDateInputSchema,
+  memo: nullableMemoSchema
+});
+
+export const updatePetSchema = createPetSchema.extend({
+  id: idSchema
+});
+
+export const updatePetActiveStatusSchema = z.object({
   id: idSchema,
   isActive: z.enum(["true", "false"]).transform((value) => value === "true")
 });
