@@ -41,8 +41,8 @@
 - 既存の `discord-game-bot` など PM2 管理アプリとは分離する。
 - このアプリでは PM2 を使わない。
 - Docker Compose のコンテナ名:
-  - `hamster-manager-web`
-  - `hamster-manager-db`
+  - `dog-cat-manager-web`
+  - `dog-cat-manager-db`
 - ホスト側ポート:
   - Next.js: `3001`
   - PostgreSQL: `127.0.0.1:5433`
@@ -50,7 +50,7 @@
   - Next.js: `3000`
   - PostgreSQL: `5432`
 - Docker コンテナ間の `DATABASE_URL` はホスト名 `db` を使う。
-- ホスト PC から DB に接続する場合は `localhost:5433` を使う。
+- ホスト PC から DB に接続する場合は `localhost:5434` を使う。
 
 ## env の考え方
 
@@ -74,8 +74,8 @@ docker compose up -d
 Docker Compose 内で app から db に接続する場合:
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@db:5432/hamster_manager_dev?schema=public"
-POSTGRES_DB="hamster_manager_dev"
+DATABASE_URL="postgresql://hamster_user:dev_password@db:5432/dog_cat_manager_dev?schema=public"
+POSTGRES_DB="dog_cat_manager_dev"
 POSTGRES_USER="hamster_user"
 POSTGRES_PASSWORD="dev_password"
 ```
@@ -101,8 +101,8 @@ HAMSTER_IMAGE_DIR=/app/uploads/hamsters
 ホスト PC で `npm run dev` し、DB だけ Docker で動かす場合:
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5433/hamster_manager_dev?schema=public"
-POSTGRES_DB="hamster_manager_dev"
+DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
+POSTGRES_DB="dog_cat_manager_dev"
 POSTGRES_USER="hamster_user"
 POSTGRES_PASSWORD="dev_password"
 ```

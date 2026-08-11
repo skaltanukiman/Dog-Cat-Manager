@@ -26,8 +26,8 @@ C:\Users\sound\source\repos\Hamster-Manager-Browser
 - GAS / Googleスプレッドシートで管理していたハムスターの衛生管理・体重管理をWebアプリ化したものです。
 - Next.js / TypeScript / Prisma / PostgreSQL / Auth.js / Tailwind CSS / Recharts / Docker Compose 構成です。
 - SQLiteではなくPostgreSQL前提です。
-- Docker Composeのappコンテナは hamster-manager-web、dbコンテナは hamster-manager-db です。
-- appはホスト3001→コンテナ3000、dbは127.0.0.1:5433→コンテナ5432です。
+- Docker Composeのappコンテナは dog-cat-manager-web、dbコンテナは dog-cat-manager-db です。
+- appはホスト3001→コンテナ3000、dbは127.0.0.1:5434→コンテナ5432です。
 - 既存PM2アプリとは分離し、このアプリではPM2を使いません。
 
 現在の主な仕様:

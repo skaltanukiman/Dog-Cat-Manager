@@ -527,9 +527,9 @@ cp .env.production.example .env
 Docker Compose 内で Next.js コンテナから PostgreSQL コンテナへ接続する場合、`DATABASE_URL` のホスト名は `db` です。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@db:5432/hamster_manager_dev?schema=public"
+DATABASE_URL="postgresql://hamster_user:dev_password@db:5432/dog_cat_manager_dev?schema=public"
 
-POSTGRES_DB="hamster_manager_dev"
+POSTGRES_DB="dog_cat_manager_dev"
 POSTGRES_USER="hamster_user"
 POSTGRES_PASSWORD="dev_password"
 ```
@@ -547,9 +547,9 @@ DATABASE_URL のポート     = 5432
 ホスト PC 上で `npm run dev` を実行し、DB だけ Docker Compose で動かす場合は、`DATABASE_URL` のホストを `localhost`、ポートを `5433` にします。`docker-compose.yml` では PostgreSQL を `127.0.0.1:5433` に公開しています。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5433/hamster_manager_dev?schema=public"
+DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
 
-POSTGRES_DB="hamster_manager_dev"
+POSTGRES_DB="dog_cat_manager_dev"
 POSTGRES_USER="hamster_user"
 POSTGRES_PASSWORD="dev_password"
 ```
@@ -608,10 +608,10 @@ npm install
 Copy-Item .env.development.example .env
 ```
 
-その後、`.env` の `DATABASE_URL` を `localhost:5433` に変更します。
+その後、`.env` の `DATABASE_URL` を `localhost:5434` に変更します。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5433/hamster_manager_dev?schema=public"
+DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
 ```
 
 Google ログインを使うため、同じ `.env` に `AUTH_SECRET`、`AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、必要に応じて `AUTH_URL` を設定します。ホスト PC で `npm run dev` する場合の `AUTH_URL` 例は次の通りです。
@@ -700,7 +700,7 @@ PostgreSQL コンテナ側: 5432
 PostgreSQL は Docker volume に永続化されます。
 
 ```text
-hamster_manager_pgdata
+dog_cat_manager_pgdata
 ```
 
 通常の停止では DB データは消えません。
@@ -1127,7 +1127,7 @@ npm run admin:revoke -- --email example@gmail.com
 npm run migrate:assign-owner -- --email example@gmail.com
 ```
 
-ホスト PC から実行する場合は、`DATABASE_URL` が `localhost:5433` を向くようにしてから実行してください。Docker Compose の app コンテナ内で実行する場合は、`DATABASE_URL` は `db:5432` のままで構いません。
+ホスト PC から実行する場合は、`DATABASE_URL` が `localhost:5434` を向くようにしてから実行してください。Docker Compose の app コンテナ内で実行する場合は、`DATABASE_URL` は `db:5432` のままで構いません。
 
 ## VPS デプロイ手順
 
@@ -1174,9 +1174,9 @@ nano .env
 `POSTGRES_PASSWORD` は必ず強い値に変更します。`DATABASE_URL` 側のユーザー名、パスワード、DB 名は `POSTGRES_USER`、`POSTGRES_PASSWORD`、`POSTGRES_DB` と合わせます。
 
 ```env
-DATABASE_URL="postgresql://hamster_user:change_me_to_a_strong_password@db:5432/hamster_manager?schema=public"
+DATABASE_URL="postgresql://hamster_user:change_me_to_a_strong_password@db:5432/dog_cat_manager?schema=public"
 
-POSTGRES_DB="hamster_manager"
+POSTGRES_DB="dog_cat_manager"
 POSTGRES_USER="hamster_user"
 POSTGRES_PASSWORD="change_me_to_a_strong_password"
 ```
@@ -1295,8 +1295,8 @@ Tailscale側のアクセス制御に加えて、OSのファイアウォールで
 ## 既存アプリとの同居時の注意
 
 - このアプリは Docker Compose で管理し、PM2 には登録しません。
-- App コンテナ名は `hamster-manager-web` です。
-- DB コンテナ名は `hamster-manager-db` です。
+- App コンテナ名は `dog-cat-manager-web` です。
+- DB コンテナ名は `dog-cat-manager-db` です。
 - App のホスト側ポートは `127.0.0.1:3001` に限定しています。既存アプリと衝突する場合は `docker-compose.yml` の `127.0.0.1:3001:3000` を変更してください。
 - PostgreSQL の DB 名、ユーザー名、パスワードはこのアプリ専用にします。
 - `.env` はこのアプリ専用にします。
@@ -1305,24 +1305,24 @@ Tailscale側のアクセス制御に加えて、OSのファイアウォールで
 
 ## DB・プロフィール画像・思い出画像のバックアップ
 
-PostgreSQL のデータは Docker volume `hamster_manager_pgdata` に永続化されます。VPS 本番では、定期バックアップと VPS 外への退避を検討してください。
+PostgreSQL のデータは Docker volume `dog_cat_manager_pgdata` に永続化されます。VPS 本番では、定期バックアップと VPS 外への退避を検討してください。
 
 プロフィール画像と思い出画像はDBではなくホスト側 `uploads/hamsters`、`uploads/records` にあります。DBバックアップだけでは画像を復元できないため、DBダンプと同じ世代の `uploads` ディレクトリも必ずバックアップしてください。
 
 バックアップ例:
 
 ```bash
-docker compose exec db pg_dump -U hamster_user hamster_manager > backup.sql
+docker compose exec db pg_dump -U hamster_user dog_cat_manager > backup.sql
 tar czf hamster-uploads.tar.gz uploads
 ```
 
 リストア例:
 
 ```bash
-docker compose exec -T db psql -U hamster_user hamster_manager < backup.sql
+docker compose exec -T db psql -U hamster_user dog_cat_manager < backup.sql
 ```
 
-`.env` で DB 名やユーザー名を変更している場合は、コマンド内の `hamster_user` と `hamster_manager` も実際の値に合わせてください。
+`.env` で DB 名やユーザー名を変更している場合は、コマンド内の `hamster_user` と `dog_cat_manager` も実際の値に合わせてください。
 
 ## 食事・水替えのWebプッシュ通知
 
