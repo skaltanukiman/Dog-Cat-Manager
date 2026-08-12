@@ -148,10 +148,10 @@ export default async function PetsPage({
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     種類
-                    <select name="species" required defaultValue={pet.species} disabled={!canEdit}>
-                      <option value="DOG">犬</option>
-                      <option value="CAT">猫</option>
-                    </select>
+                    <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+                      {SPECIES_LABELS[pet.species]}
+                    </span>
+                    <span className="text-xs font-normal text-slate-500">種類は登録後変更できません</span>
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     品種

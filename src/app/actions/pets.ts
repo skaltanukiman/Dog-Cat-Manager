@@ -102,7 +102,6 @@ export async function updatePet(formData: FormData) {
       where: { id, householdId: context.household.id },
       select: {
         name: true,
-        species: true,
         breed: true,
         sex: true,
         birthDate: true,
@@ -115,7 +114,6 @@ export async function updatePet(formData: FormData) {
 
     if (
       pet.name === data.name &&
-      pet.species === data.species &&
       pet.breed === data.breed &&
       pet.sex === data.sex &&
       isSameNullableDate(pet.birthDate, data.birthDate) &&

@@ -10,6 +10,7 @@ Hamster Manager とは別DB・別Sessionで運用する。開発用Docker環境�
 
 - 犬と猫は共通の `Pet` モデルで扱い、DOG用・CAT用の別テーブルには分けない。
 - 種別は `PetSpecies.DOG` と `PetSpecies.CAT` だけを許可する。
+- `Pet.species` は新規登録時に確定し、登録後は変更不可とする。将来のDOG/CAT固有データとの整合性を守るためである。
 - 性別は `PetSex.MALE`、`PetSex.FEMALE`、`PetSex.UNKNOWN` を使用する。
 - 既存のHousehold構造を継承し、すべてのPetは必ず1つのHouseholdに属する。
 - Pet名の一意性はHousehold内に限定し、別Householdでは同名を許可する。

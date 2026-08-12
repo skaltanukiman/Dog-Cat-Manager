@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { createPetSchema } from "../src/lib/schemas";
+import { createPetSchema, updatePetSchema } from "../src/lib/schemas";
 import { toDateInputValue } from "../src/lib/date";
 
 const validPet = {
@@ -24,6 +24,23 @@ test("DOGとCATだけをPetとして登録入力に使用できる", () => {
   assert.equal(createPetSchema.safeParse({ ...validPet, species: "CAT" }).success, true);
   assert.equal(createPetSchema.safeParse({ ...validPet, species: undefined }).success, false);
   assert.equal(createPetSchema.safeParse({ ...validPet, species: "BIRD" }).success, false);
+});
+
+test("Pet更新入力はspeciesを受け付けず、改変されたspeciesを出力から除外する", () => {
+  const result = updatePetSchema.safeParse({ ...validPet, id: "pet-1", species: "CAT" });
+
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  assert.equal("species" in result.data, false);
+  assert.deepEqual(result.data, {
+    id: "pet-1",
+    name: validPet.name,
+    breed: validPet.breed,
+    sex: validPet.sex,
+    birthDate: new Date("2024-05-06T00:00:00.000Z"),
+    adoptionDate: new Date("2024-07-08T00:00:00.000Z"),
+    memo: validPet.memo
+  });
 });
 
 test("Petの性別はMALE、FEMALE、UNKNOWNだけを許可する", () => {
@@ -83,6 +100,18 @@ test("Pet ActionはVIEWERとHousehold境界を登録・更新・状態変更で�
   assert.match(actions, /canEditHouseholdSharedData\(membership\.role\)/);
 });
 
+test("Pet更新Actionはspeciesを取得・差分判定・更新データに含めない", async () => {
+  const actions = await source("src/app/actions/pets.ts");
+  const start = actions.indexOf("export async function updatePet");
+  const end = actions.indexOf("export async function updatePetActiveStatus", start);
+  const action = actions.slice(start, end);
+
+  assert.match(action, /updatePetSchema\.safeParse\(Object\.fromEntries\(formData\)\)/);
+  assert.doesNotMatch(action, /species:\s*true/);
+  assert.doesNotMatch(action, /pet\.species|data\.species/);
+  assert.match(action, /data\s*$/m);
+});
+
 test("管理終了はisActive更新だけを行いPet本体を保持する", async () => {
   const actions = await source("src/app/actions/pets.ts");
   const start = actions.indexOf("export async function updatePetActiveStatus");
@@ -92,13 +121,17 @@ test("管理終了はisActive更新だけを行いPet本体を保持する", asy
   assert.doesNotMatch(action, /pet\.delete|deleteMany/);
 });
 
-test("Pet画面は選択中Householdだけを一覧表示し全基本項目と日本語ラベルを持つ", async () => {
+test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規登録時のみ選択できる", async () => {
   const page = await source("src/app/(app)/pets/page.tsx");
 
   assert.match(page, /where: \{ householdId: context\.household\.id \}/);
-  for (const field of ["name", "species", "breed", "sex", "birthDate", "adoptionDate", "memo"]) {
+  for (const field of ["name", "breed", "sex", "birthDate", "adoptionDate", "memo"]) {
     assert.match(page, new RegExp(`name="${field}"`));
   }
+  assert.match(page, /<select name="species" required defaultValue="">/);
+  assert.equal((page.match(/name="species"/g) ?? []).length, 1);
+  assert.match(page, /SPECIES_LABELS\[pet\.species\]/);
+  assert.match(page, /種類は登録後変更できません/);
   for (const label of ["犬", "猫", "オス", "メス", "不明", "管理中", "管理終了"]) {
     assert.match(page, new RegExp(label));
   }

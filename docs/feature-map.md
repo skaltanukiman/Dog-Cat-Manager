@@ -78,7 +78,7 @@
 - **主なコンポーネント:** `src/app/(app)/pets/page.tsx` の新規登録フォーム、Petカード型一覧、編集フォーム、管理状態変更フォーム、`DirtySubmitButton`、`StatusMessage`。
 - **Server Action または API:** `createPet`、`updatePet`、`updatePetActiveStatus`（`src/app/actions/pets.ts`）。物理削除Actionとプロフィール画像APIは初期段階では持たない。
 - **データアクセス・Prismaモデル:** `Pet`、`PetSpecies`、`PetSex`。一覧は `getRequiredHouseholdContext()` が確定した現在のHousehold IDをDB条件へ含める。PetはHousehold必須かつCascade削除で、名前は `@@unique([householdId, name])` によりHousehold内だけ一意とする。`profileImageFileName` は将来の画像対応用にモデルへ保持するが、今回のUIでは編集しない。
-- **バリデーション:** `createPetSchema`、`updatePetSchema`、`updatePetActiveStatusSchema`（`src/lib/schemas.ts`）。speciesは `DOG` / `CAT`、sexは `MALE` / `FEMALE` / `UNKNOWN` だけを許可し、誕生日・お迎え日は実在する未来でない暦日に限定する。
+- **バリデーション:** `createPetSchema`、`updatePetSchema`、`updatePetActiveStatusSchema`（`src/lib/schemas.ts`）。新規登録時のspeciesは `DOG` / `CAT` の選択必須で、登録後は更新schema・Action・編集フォームのいずれからも変更できない。sexは `MALE` / `FEMALE` / `UNKNOWN` だけを許可し、誕生日・お迎え日は実在する未来でない暦日に限定する。
 - **認可・管理終了:** VIEWERは画面とActionの両方で登録・更新・状態変更を拒否する。各Actionは現在のHouseholdで対象を絞り、更新と同じtransaction内でも最新membershipを再確認する。管理終了は `isActive=false` とし、Pet本体を物理削除しない。
 - **関連テスト:** `tests/pets.test.ts`（DOG/CATとenum拒否、日付の暦日維持、Household単位一意性、VIEWER拒否、Household境界、管理終了時の非削除、画面項目）。
 - **設計資料:** `docs/dog-cat-manager-design.md`。将来の `/care`、`/weights`、`/records` と別DB・別Session方針を記録する。

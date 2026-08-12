@@ -85,7 +85,9 @@ export const createPetSchema = z.object({
   memo: nullableMemoSchema
 });
 
-export const updatePetSchema = createPetSchema.extend({
+export const updatePetSchema = createPetSchema.omit({
+  species: true
+}).extend({
   id: idSchema
 });
 
