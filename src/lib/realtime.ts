@@ -15,6 +15,8 @@ export type HouseholdChangeSource =
   | "petWeight"
   | "petFeeding"
   | "petWater"
+  | "petWalk"
+  | "petLitter"
   | "cleaning"
   | "feeding"
   | "waterReplacement"

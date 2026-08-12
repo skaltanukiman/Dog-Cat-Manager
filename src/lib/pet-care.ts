@@ -85,3 +85,10 @@ export const PET_WATER_ACTION_LABELS = {
   REPLACED: "交換",
   REFILLED: "補充"
 } as const;
+
+export const PET_LITTER_ACTION_LABELS = {
+  URINATION: "おしっこ",
+  DEFECATION: "うんち",
+  BOTH: "おしっこ・うんち",
+  CLEANED: "トイレ掃除"
+} as const;

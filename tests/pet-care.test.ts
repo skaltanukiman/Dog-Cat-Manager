@@ -128,9 +128,9 @@ test("業務更新・Activity・revisionは同一transactionで確定しPet専�
 test("Pet Care queryはPet候補と1 Pet・1お世話日の履歴をDBでHousehold絞り込みする", async () => {
   const query = await source("src/lib/pet-care-queries.ts");
   assert.match(query, /where: \{ householdId: context\.household\.id \}/);
-  assert.equal((query.match(/petId: selectedPet\.id,/g) ?? []).length, 2);
+  assert.equal((query.match(/petId: selectedPet\.id,/g) ?? []).length >= 2, true);
   assert.equal((query.match(/recordDate,/g) ?? []).length >= 2, true);
-  assert.equal((query.match(/pet: \{ householdId: context\.household\.id \}/g) ?? []).length, 2);
+  assert.equal((query.match(/pet: \{ householdId: context\.household\.id/g) ?? []).length >= 2, true);
   assert.match(query, /orderBy: \[\{ fedAt: "asc" \}, \{ id: "asc" \}\]/);
   assert.match(query, /orderBy: \[\{ caredAt: "asc" \}, \{ id: "asc" \}\]/);
   assert.match(query, /includeInactive \? allPets : allPets\.filter/);

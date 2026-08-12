@@ -174,6 +174,44 @@ export const deletePetWaterRecordSchema = z.object({
   petId: idSchema
 });
 
+const nullableWalkDurationSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value ?? null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}, z.coerce.number().int().min(1).max(1440).nullable());
+
+export const createPetWalkRecordSchema = z.object({
+  petId: idSchema,
+  startedAt: petCareDateTimeSchema,
+  durationMinutes: nullableWalkDurationSchema,
+  memo: nullablePetCareMemoSchema
+});
+
+export const updatePetWalkRecordSchema = createPetWalkRecordSchema.extend({
+  id: idSchema
+});
+
+export const deletePetWalkRecordSchema = z.object({
+  id: idSchema,
+  petId: idSchema
+});
+
+export const createPetLitterRecordSchema = z.object({
+  petId: idSchema,
+  occurredAt: petCareDateTimeSchema,
+  action: z.enum(["URINATION", "DEFECATION", "BOTH", "CLEANED"]),
+  memo: nullablePetCareMemoSchema
+});
+
+export const updatePetLitterRecordSchema = createPetLitterRecordSchema.extend({
+  id: idSchema
+});
+
+export const deletePetLitterRecordSchema = z.object({
+  id: idSchema,
+  petId: idSchema
+});
+
 export const createWeightRecordSchema = z.object({
   hamsterId: idSchema,
   recordDate: dateInputSchema,

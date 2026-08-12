@@ -5,8 +5,9 @@ import { normalizePetCareDate } from "@/lib/pet-care";
 import { prisma } from "@/lib/prisma";
 
 /**
- * 現在のHouseholdに属するPet候補と、選択した1 Pet・1お世話日の食事・水履歴を取得する。
+ * 現在のHouseholdに属するPet候補と、選択した1 Pet・1お世話日のCare履歴を取得する。
  * 履歴は全件取得せず、`petId + recordDate`をDB条件としてイベント時刻順に絞り込む。
+ * species固有履歴はDOGならWalk、CATならLitterだけを問い合わせる。
  */
 export async function getPetCarePageData({
   selectedPetId,
@@ -45,7 +46,9 @@ export async function getPetCarePageData({
       selectedCareDate,
       currentCareDate,
       feedingRecords: [],
-      waterRecords: []
+      waterRecords: [],
+      walkRecords: [],
+      litterRecords: []
     };
   }
 
@@ -70,6 +73,28 @@ export async function getPetCarePageData({
       include: { createdBy: { select: { name: true } } }
     })
   ]);
+  const walkRecords = selectedPet.species === "DOG"
+    ? await prisma.petWalkRecord.findMany({
+        where: {
+          petId: selectedPet.id,
+          recordDate,
+          pet: { householdId: context.household.id, species: "DOG" }
+        },
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        include: { createdBy: { select: { name: true } } }
+      })
+    : [];
+  const litterRecords = selectedPet.species === "CAT"
+    ? await prisma.petLitterRecord.findMany({
+        where: {
+          petId: selectedPet.id,
+          recordDate,
+          pet: { householdId: context.household.id, species: "CAT" }
+        },
+        orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+        include: { createdBy: { select: { name: true } } }
+      })
+    : [];
 
   return {
     context,
@@ -79,6 +104,8 @@ export async function getPetCarePageData({
     selectedCareDate,
     currentCareDate,
     feedingRecords,
-    waterRecords
+    waterRecords,
+    walkRecords,
+    litterRecords
   };
 }

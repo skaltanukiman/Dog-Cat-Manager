@@ -105,6 +105,14 @@ function waterActionLabel(value: string | null) {
   return value === "REPLACED" ? "交換" : value === "REFILLED" ? "補充" : null;
 }
 
+function litterActionLabel(value: string | null) {
+  if (value === "URINATION") return "おしっこ";
+  if (value === "DEFECATION") return "うんち";
+  if (value === "BOTH") return "おしっこ・うんち";
+  if (value === "CLEANED") return "トイレ掃除";
+  return null;
+}
+
 export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
   const actor = activity.actorNameSnapshot || ACTOR_NAME_FALLBACK;
   const target = activity.targetNameSnapshot || "対象";
@@ -202,6 +210,29 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
         return {
           summary: `${actor}さんが「${target}」の水の${action ? `${action}記録` : "記録"}を削除しました`,
           detail: formatTimestamp(stringDetail(details, "caredAt"))
+        };
+      }
+      case "PET_WALK_CREATED":
+      case "PET_WALK_UPDATED":
+      case "PET_WALK_DELETED": {
+        const action = activity.eventType === "PET_WALK_CREATED" ? "記録" : activity.eventType === "PET_WALK_UPDATED" ? "更新" : "削除";
+        const timestamp = formatTimestamp(stringDetail(details, "startedAt"));
+        const duration = numberDetail(details, "durationMinutes");
+        return {
+          summary: `${actor}さんが「${target}」の散歩${action === "記録" ? "を記録" : action === "更新" ? "記録を更新" : "記録を削除"}しました`,
+          detail: [timestamp, duration !== null ? `${duration}分` : null].filter(Boolean).join("・") || null
+        };
+      }
+      case "PET_LITTER_CREATED":
+      case "PET_LITTER_UPDATED":
+      case "PET_LITTER_DELETED": {
+        const action = activity.eventType === "PET_LITTER_CREATED" ? "記録" : activity.eventType === "PET_LITTER_UPDATED" ? "更新" : "削除";
+        return {
+          summary: `${actor}さんが「${target}」の猫トイレ${action === "記録" ? "を記録" : action === "更新" ? "記録を更新" : "記録を削除"}しました`,
+          detail: [
+            formatTimestamp(stringDetail(details, "occurredAt")),
+            litterActionLabel(stringDetail(details, "action"))
+          ].filter(Boolean).join("・") || null
         };
       }
       case "CLEANING_MONTH_SAVED": {

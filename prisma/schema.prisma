@@ -55,6 +55,8 @@ model Pet {
   weightRecords        PetWeightRecord[]
   feedingRecords       PetFeedingRecord[]
   waterRecords         PetWaterRecord[]
+  walkRecords          PetWalkRecord[]
+  litterRecords        PetLitterRecord[]
 
   @@unique([householdId, name])
   @@index([householdId, createdAt])
@@ -120,6 +122,53 @@ model PetWaterRecord {
 enum PetWaterAction {
   REPLACED
   REFILLED
+}
+
+model PetWalkRecord {
+  id              String   @id @default(cuid())
+  petId           String   @map("pet_id")
+  pet             Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  // 記録時点のHousehold日替わり時刻で確定し、設定変更では再計算しない。
+  recordDate      DateTime @map("record_date") @db.Date
+  startedAt       DateTime @map("started_at")
+  durationMinutes Int?     @map("duration_minutes")
+  memo            String?  @db.VarChar(500)
+  createdByUserId String?  @map("created_by_user_id")
+  createdBy       User?    @relation("PetWalkRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // DOGの散歩はイベント履歴のため、同じPet・同じお世話日の複数記録を許可する。
+  @@index([petId, recordDate, startedAt])
+  @@index([createdByUserId])
+  @@map("pet_walk_records")
+}
+
+model PetLitterRecord {
+  id              String          @id @default(cuid())
+  petId           String          @map("pet_id")
+  pet             Pet             @relation(fields: [petId], references: [id], onDelete: Cascade)
+  // 記録時点のHousehold日替わり時刻で確定し、設定変更では再計算しない。
+  recordDate      DateTime        @map("record_date") @db.Date
+  occurredAt      DateTime        @map("occurred_at")
+  action          PetLitterAction
+  memo            String?         @db.VarChar(500)
+  createdByUserId String?         @map("created_by_user_id")
+  createdBy       User?           @relation("PetLitterRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  // CATの猫トイレはイベント履歴のため、同じPet・同じお世話日の複数記録を許可する。
+  @@index([petId, recordDate, occurredAt])
+  @@index([createdByUserId])
+  @@map("pet_litter_records")
+}
+
+enum PetLitterAction {
+  URINATION
+  DEFECATION
+  BOTH
+  CLEANED
 }
 
 enum PetSpecies {
@@ -268,6 +317,8 @@ model User {
   createdWaterReplacementRecords WaterReplacementRecord[]   @relation("WaterReplacementRecordCreator")
   createdPetFeedingRecords       PetFeedingRecord[]         @relation("PetFeedingRecordCreator")
   createdPetWaterRecords         PetWaterRecord[]           @relation("PetWaterRecordCreator")
+  createdPetWalkRecords          PetWalkRecord[]            @relation("PetWalkRecordCreator")
+  createdPetLitterRecords        PetLitterRecord[]          @relation("PetLitterRecordCreator")
   createdSavedMemoryTags         SavedMemoryTag[]           @relation("SavedMemoryTagCreator")
   householdActivities            HouseholdActivity[]        @relation("HouseholdActivityActor")
   suspendedBy                    User?                      @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
@@ -532,6 +583,12 @@ enum HouseholdActivityEvent {
   PET_WATER_CREATED
   PET_WATER_UPDATED
   PET_WATER_DELETED
+  PET_WALK_CREATED
+  PET_WALK_UPDATED
+  PET_WALK_DELETED
+  PET_LITTER_CREATED
+  PET_LITTER_UPDATED
+  PET_LITTER_DELETED
   CLEANING_MONTH_SAVED
   HEALTH_RECORD_CREATED
   HEALTH_RECORD_UPDATED
