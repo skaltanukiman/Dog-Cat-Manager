@@ -17,6 +17,7 @@ import type { HouseholdDeleteRepository } from "../src/lib/household-delete";
 import { deleteHouseholdImageDirectoriesSafely } from "../src/lib/household-delete-images";
 import type { HouseholdLeaveRepository } from "../src/lib/household-leave";
 import { deleteHamsterImageHouseholdDirectory } from "../src/lib/hamster-image";
+import { deletePetImageHouseholdDirectory } from "../src/lib/pet-image";
 import { deleteRecordImageHouseholdDirectory } from "../src/lib/record-image";
 import {
   requiresAccountDeleteAttention,
@@ -525,23 +526,29 @@ test("単独グループの画像だけをcommit後の削除対象にし、安�
   if (result.status !== "deleted") return;
 
   const hamsterRoot = await mkdtemp(join(tmpdir(), "account-delete-hamsters-"));
+  const petRoot = await mkdtemp(join(tmpdir(), "account-delete-pets-"));
   const recordRoot = await mkdtemp(join(tmpdir(), "account-delete-records-"));
   for (const householdId of ["household-solo", "household-shared"]) {
     await mkdir(join(hamsterRoot, householdId));
+    await mkdir(join(petRoot, householdId));
     await mkdir(join(recordRoot, householdId));
     await writeFile(join(hamsterRoot, householdId, "image.webp"), householdId);
+    await writeFile(join(petRoot, householdId, "image.webp"), householdId);
     await writeFile(join(recordRoot, householdId, "image.webp"), householdId);
   }
   for (const householdId of result.deletedHouseholdIds) {
     await deleteHouseholdImageDirectoriesSafely(householdId, {
       deleteHamsterDirectory: (id) => deleteHamsterImageHouseholdDirectory(id, hamsterRoot),
+      deletePetDirectory: (id) => deletePetImageHouseholdDirectory(id, petRoot),
       deleteRecordDirectory: (id) => deleteRecordImageHouseholdDirectory(id, recordRoot)
     });
   }
 
   await assert.rejects(readFile(join(hamsterRoot, "household-solo", "image.webp")));
+  await assert.rejects(readFile(join(petRoot, "household-solo", "image.webp")));
   await assert.rejects(readFile(join(recordRoot, "household-solo", "image.webp")));
   assert.equal(await readFile(join(hamsterRoot, "household-shared", "image.webp"), "utf8"), "household-shared");
+  assert.equal(await readFile(join(petRoot, "household-shared", "image.webp"), "utf8"), "household-shared");
   assert.equal(await readFile(join(recordRoot, "household-shared", "image.webp"), "utf8"), "household-shared");
   await assert.rejects(deleteHamsterImageHouseholdDirectory("../household-shared", hamsterRoot));
 
@@ -550,6 +557,7 @@ test("単独グループの画像だけをcommit後の削除対象にし、安�
     deleteHamsterDirectory: async () => {
       throw new Error("filesystem failure");
     },
+    deletePetDirectory: async () => undefined,
     deleteRecordDirectory: async () => undefined,
     warn: (kind) => warnings.push(kind)
   });

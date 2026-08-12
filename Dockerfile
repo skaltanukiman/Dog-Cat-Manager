@@ -25,9 +25,9 @@ ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs \
-  && mkdir -p /app/logs /app/uploads/hamsters \
+  && mkdir -p /app/logs /app/uploads/hamsters /app/uploads/pets /app/uploads/records \
   && chown -R nextjs:nodejs /app/logs /app/uploads \
-  && chmod 750 /app/logs /app/uploads /app/uploads/hamsters
+  && chmod 750 /app/logs /app/uploads /app/uploads/hamsters /app/uploads/pets /app/uploads/records
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules

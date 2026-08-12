@@ -109,7 +109,7 @@ test("Pet更新Actionはspeciesを取得・差分判定・更新データに含�
   assert.match(action, /updatePetSchema\.safeParse\(Object\.fromEntries\(formData\)\)/);
   assert.doesNotMatch(action, /species:\s*true/);
   assert.doesNotMatch(action, /pet\.species|data\.species/);
-  assert.match(action, /data\s*$/m);
+  assert.match(action, /data: \{\s*\.\.\.data,/);
 });
 
 test("管理終了はisActive更新だけを行いPet本体を保持する", async () => {
@@ -135,5 +135,6 @@ test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規�
   for (const label of ["犬", "猫", "オス", "メス", "不明", "管理中", "管理終了"]) {
     assert.match(page, new RegExp(label));
   }
-  assert.doesNotMatch(page, /profileImage/);
+  assert.match(page, /<PetImageField petName="新しいPet"/);
+  assert.match(page, /currentFileName=\{pet\.profileImageFileName\}/);
 });

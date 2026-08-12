@@ -12,6 +12,7 @@ import {
 } from "../src/lib/household-delete";
 import { deleteHouseholdImageDirectoriesSafely } from "../src/lib/household-delete-images";
 import { deleteHamsterImageHouseholdDirectory } from "../src/lib/hamster-image";
+import { deletePetImageHouseholdDirectory } from "../src/lib/pet-image";
 import { deleteRecordImageHouseholdDirectory } from "../src/lib/record-image";
 
 type StoredMembership = {
@@ -173,12 +174,17 @@ test("画像ディレクトリは対象Householdだけを削除し、不正IDで
   assert.equal(await readFile(join(other, "image.webp"), "utf8"), "other");
   await deleteRecordImageHouseholdDirectory("household-2", root);
   await assert.rejects(readFile(join(other, "image.webp")));
+  await mkdir(other);
+  await writeFile(join(other, "image.webp"), "pet");
+  await deletePetImageHouseholdDirectory("household-2", root);
+  await assert.rejects(readFile(join(other, "image.webp")));
 });
 
 test("画像削除失敗はwarning対象にして後処理全体を失敗扱いにしない", async () => {
   const warnings: string[] = [];
   const result = await deleteHouseholdImageDirectoriesSafely("household-1", {
     deleteHamsterDirectory: async () => { throw new Error("internal path"); },
+    deletePetDirectory: async () => undefined,
     deleteRecordDirectory: async () => undefined,
     warn: (kind) => warnings.push(kind)
   });

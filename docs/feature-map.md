@@ -48,6 +48,7 @@
 - **関連テスト:** `tests/household-cookie-isolation.test.ts`（Dog-Cat専用Cookie名、取得・切替・削除、旧Hamster Cookie非干渉）、`tests/household-name.test.ts`（表示名との分離、初回命名、OWNER限定更新、競合、revision、同名切替表示、UI）、`tests/invitations.test.ts`（tokenをクエリではなくフラグメントへ格納し、不正tokenと無効化済みtokenを拒否する）、`tests/invitation-management.test.ts`（30秒・1時間・別ユーザー・別Household・同時実行・無効化・権限）、`tests/invitation-cleanup.test.ts`（使用済み90日・未使用期限切れ30日の削除条件）、`tests/authorization.test.ts`（招待・削除・権限変更・自己退出ポリシー）、`tests/household-leave.test.ts`（退出・所有権移譲・設定削除・共有データ保持・競合・Cookie切替・UI）、`tests/household-delete.test.ts`（唯一OWNER認可、権限不整合拒否、Cascade範囲、二重実行、画像パス安全性、削除後分岐、招待受諾lock、UI）、`tests/audit-log.test.ts`（成功監査ログ）。
 - **関連設定:** `src/lib/auth-context.ts` の Cookie 名・個人用 Household 名、`src/lib/invitations.ts` の有効期限、`src/lib/invitation-cleanup.ts`、`scripts/cleanup-invitations.ts`、`npm run invitations:cleanup`。
 - **依存関係:** 招待の平文 token は管理画面URLへ載せず、作成直後のAction stateと受諾画面のメモリ内でのみ扱い、DBにはhashのみ保存する。共有URLはHTTPへ送信されないフラグメントを使い、未ログイン時はOAuth往復中だけ同一タブの `sessionStorage` に保持する。読み込み直後にアドレスバーから、ログイン後にstorageから削除する。共有画面はメンバー一覧の下に有効な招待だけの作成日時・期限・状態・作成者を表示し、有効な招待が0件なら一覧自体を表示しない。未使用かつ期限内だけOWNER / ADMINが無効化できる。受諾は未使用・未無効化・期限内を同一更新条件で確定し、アカウント削除と共通のユーザー単位lockを先に、Household削除と共通のHousehold単位lockを後に取る。使用済みは90日、未使用（無効化済みを含む）の期限切れは元の期限から30日保持してVPS cronから整理し、有効な招待は削除しない。自己退出は `src/lib/household-leave.ts` がHousehold単位のlock内で最新ロール・OWNER数・メンバー数・移譲先所属を再確認し、唯一OWNERなら移譲先を先にOWNERへ更新してから本人の `AppSetting` とmembershipを削除する。共有データは削除しない。唯一のメンバーかつOWNERの完全削除は `src/lib/household-delete.ts` が同じlock内で最新状態と確認名を再検証し、`Household` のCascade削除を起点にする。DB commit後だけ `HAMSTER_IMAGE_DIR/{householdId}` と `RECORD_IMAGE_DIR/{householdId}` を安全検証して削除し、失敗はwarningに留める。削除後は `auth-context.ts` の既存選択順序を再利用し、membershipが残れば切替、0件の場合だけユーザー単位lock付き初期Household作成を行ってCookieを更新する。成功監査イベントは `household_deleted`。メンバーの削除・権限変更は最後の OWNER、自分自身、操作権限の制約と、現在選択 Cookie の整合性に注意する。
+- **画像cleanup補足:** Household完全削除とHouseholdを伴うアカウント削除では、DB commit後に既存のHamster・思い出画像に加えて `PET_IMAGE_DIR/{householdId}` も独立して削除し、個別の失敗はwarningに留める。
 
 ## 共有グループの操作履歴
 
@@ -75,12 +76,12 @@
 ## Pet一覧・登録・編集
 
 - **画面または URL:** `/pets`。
-- **主なコンポーネント:** `src/app/(app)/pets/page.tsx` の新規登録フォーム、Petカード型一覧、編集フォーム、管理状態変更フォーム、`DirtySubmitButton`、`StatusMessage`。
-- **Server Action または API:** `createPet`、`updatePet`、`updatePetActiveStatus`（`src/app/actions/pets.ts`）。物理削除Actionとプロフィール画像APIは初期段階では持たない。
-- **データアクセス・Prismaモデル:** `Pet`、`PetSpecies`、`PetSex`。一覧は `getRequiredHouseholdContext()` が確定した現在のHousehold IDをDB条件へ含める。PetはHousehold必須かつCascade削除で、名前は `@@unique([householdId, name])` によりHousehold内だけ一意とする。`profileImageFileName` は将来の画像対応用にモデルへ保持するが、今回のUIでは編集しない。
+- **主なコンポーネント:** `src/app/(app)/pets/page.tsx` の新規登録フォーム、Petカード型一覧、編集フォーム、管理状態変更フォーム、`PetImageField`、`PetThumbnail`、`DirtySubmitButton`、`StatusMessage`。
+- **Server Action または API:** `createPet`、`updatePet`、`updatePetActiveStatus`（`src/app/actions/pets.ts`）、認証付き `GET /api/pets/[id]/image`。物理削除Actionは持たない。
+- **データアクセス・Prismaモデル:** `Pet`、`PetSpecies`、`PetSex`。一覧と画像APIは現在のHousehold IDをDB条件へ含める。PetはHousehold必須かつCascade削除で、名前は `@@unique([householdId, name])` によりHousehold内だけ一意とする。`profileImageFileName` にはUUID形式のWebPファイル名だけを保存する。画像は `PET_IMAGE_DIR/{householdId}` の非公開ディレクトリで管理し、認証済みPet画像API経由でのみ配信する。Dockerのデフォルト保存先は `/app/uploads/pets`。
 - **バリデーション:** `createPetSchema`、`updatePetSchema`、`updatePetActiveStatusSchema`（`src/lib/schemas.ts`）。新規登録時のspeciesは `DOG` / `CAT` の選択必須で、登録後は更新schema・Action・編集フォームのいずれからも変更できない。sexは `MALE` / `FEMALE` / `UNKNOWN` だけを許可し、誕生日・お迎え日は実在する未来でない暦日に限定する。
 - **認可・管理終了:** VIEWERは画面とActionの両方で登録・更新・状態変更を拒否する。各Actionは現在のHouseholdで対象を絞り、更新と同じtransaction内でも最新membershipを再確認する。管理終了は `isActive=false` とし、Pet本体を物理削除しない。
-- **関連テスト:** `tests/pets.test.ts`（DOG/CATとenum拒否、日付の暦日維持、Household単位一意性、VIEWER拒否、Household境界、管理終了時の非削除、画面項目）。
+- **関連テスト:** `tests/pets.test.ts`（DOG/CATとenum拒否、日付の暦日維持、Household単位一意性、VIEWER拒否、Household境界、管理終了時の非削除、画面項目）、`tests/pet-image.test.tsx`（画像変換・保存・配信境界・UI・Action・cleanup・Docker/env分離）。
 - **設計資料:** `docs/dog-cat-manager-design.md`。将来の `/care`、`/weights`、`/records` と別DB・別Session方針を記録する。
 
 ## ハムスター一覧・登録・編集・削除
@@ -229,4 +230,4 @@
 - **対象:** `prisma/schema.prisma`、`prisma/migrations/`、`prisma/seed-demo.ts`、`src/lib/prisma.ts`、`src/lib/health.ts`、`src/app/api/health/route.ts`、`docker-compose.yml`、`Dockerfile`、`next.config.mjs`、`.env*.example`、`package.json`。
 - **役割:** PostgreSQL 接続と Prisma Client、migration、Docker の app / db 分離、standalone build、環境変数・依存ライブラリを定義する。app のホスト側ポートはDog & Cat Manager専用の `127.0.0.1:3002` に限定し、本番アクセスは Nginx / HTTPS を経由させる。`/api/health` とapp healthcheckでNext.js応答・DB接続を確認し、`next.config.mjs` で最低限のセキュリティヘッダーと `X-Powered-By` 無効化を設定する。
 - **関連テスト:** `tests/logger.test.ts`（ログ出力）、`tests/audit-log.test.ts`（Household管理操作の成功監査ログ）、`tests/health.test.ts`（DBヘルス判定）、`tests/security-headers.test.ts`（セキュリティヘッダー設定）、`scripts/log-smoke.ts`。変更内容に応じて `npm.cmd run lint`、`npm.cmd run build`、`npm.cmd test` を実行する。
-- **依存関係:** Prismaモデル変更は migration・生成 Client・関連 Action / query / schema の更新が必要。`Dockerfile` は Prisma generate と migrate deploy を行う。デプロイは `docker compose up -d --wait --wait-timeout 120` でDB・app双方のhealthyを確認する。プロフィール画像は `HAMSTER_IMAGE_DIR`、思い出画像は `RECORD_IMAGE_DIR` を使い、どちらもComposeの `./uploads:/app/uploads` で永続化する。CSV 上限を変更する際は `next.config.mjs` の Action body size と整合させる。
+- **依存関係:** Prismaモデル変更は migration・生成 Client・関連 Action / query / schema の更新が必要。`Dockerfile` は Prisma generate と migrate deploy を行う。デプロイは `docker compose up -d --wait --wait-timeout 120` でDB・app双方のhealthyを確認する。旧Hamsterプロフィール画像は `HAMSTER_IMAGE_DIR`、Petプロフィール画像は `PET_IMAGE_DIR`、思い出画像は `RECORD_IMAGE_DIR` を使い、Composeの `./uploads:/app/uploads` で永続化する。移行期間中は `/app/uploads/hamsters` と `/app/uploads/pets` を共存させ、Hamster機能撤去後にだけ `HAMSTER_IMAGE_DIR` の削除を検討する。CSV 上限を変更する際は `next.config.mjs` の Action body size と整合させる。

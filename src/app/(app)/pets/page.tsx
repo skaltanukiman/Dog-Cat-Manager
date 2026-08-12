@@ -2,6 +2,7 @@ import { Archive, Plus, RotateCcw, Save } from "lucide-react";
 
 import { createPet, updatePet, updatePetActiveStatus } from "@/app/actions/pets";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
+import { PetImageField } from "@/components/pet-image-field";
 import { StatusMessage } from "@/components/status-message";
 import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
@@ -89,6 +90,9 @@ export default async function PetsPage({
               メモ
               <input name="memo" maxLength={2000} placeholder="性格、注意点など" />
             </label>
+            <div className="md:col-span-2 lg:col-span-4">
+              <PetImageField petName="新しいPet" />
+            </div>
             <button
               type="submit"
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-moss px-4 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-2 lg:col-span-4 lg:justify-self-end"
@@ -177,6 +181,14 @@ export default async function PetsPage({
                     メモ
                     <input name="memo" maxLength={2000} defaultValue={pet.memo ?? ""} readOnly={!canEdit} />
                   </label>
+                  <div className="md:col-span-2 lg:col-span-4">
+                    <PetImageField
+                      petId={pet.id}
+                      petName={pet.name}
+                      currentFileName={pet.profileImageFileName}
+                      disabled={!canEdit}
+                    />
+                  </div>
                   {canEdit ? (
                     <DirtySubmitButton className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-moss px-4 text-sm font-semibold text-moss hover:bg-moss hover:text-white md:col-span-2 lg:col-span-4 lg:justify-self-end">
                       <Save className="h-4 w-4" aria-hidden />

@@ -17,6 +17,13 @@ Hamster Manager とは別DB・別Sessionで運用する。開発用Docker環境�
 - 通常の管理終了は物理削除ではなく `isActive` で表し、Pet本体と将来の履歴を保持する。
 - 誕生日とお迎え日は時刻を持たない暦日として保存し、タイムゾーン変換しない。
 
+### Petプロフィール画像
+
+- Petプロフィール画像は `PET_IMAGE_DIR` で管理し、Dockerのデフォルト保存先は `/app/uploads/pets` とする。
+- `PET_IMAGE_DIR/{householdId}/{uuid}.webp` の非公開ディレクトリへ保存し、認証済みのPet画像API経由でのみ配信する。`Pet.profileImageFileName` にはUUID形式のWebPファイル名だけを保持する。
+- 旧Hamster画像の `HAMSTER_IMAGE_DIR` とはコード・保存先を分離する。移行期間中は `/app/uploads/hamsters` と `/app/uploads/pets` を共存させ、Hamster機能撤去後に `HAMSTER_IMAGE_DIR` を削除する。
+- 管理終了では画像を削除せず、管理中へ戻した際も同じ画像を使用する。
+
 ### Pet体重履歴
 
 - Pet体重履歴はPet専用の `PetWeightRecord` で管理し、旧Hamsterの `WeightRecord` とは移行期間中共存する。既存モデルのリネームやカラム変更は行わない。

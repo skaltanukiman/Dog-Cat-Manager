@@ -6,6 +6,14 @@ import type { ZodIssue } from "zod";
 
 import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdMutationContext } from "@/lib/auth-context";
+import { writeServerLog } from "@/lib/logger";
+import {
+  commitWithNewPetImage,
+  deletePetImage,
+  getOptionalPetImageFile,
+  PetImageError,
+  preparePetImage
+} from "@/lib/pet-image";
 import { prisma } from "@/lib/prisma";
 import { commitHouseholdMutation, publishHouseholdChangeSafely } from "@/lib/realtime";
 import { revalidatePathsSafely } from "@/lib/safe-side-effects";
@@ -62,29 +70,61 @@ function petValidationStatus(issues: ZodIssue[]) {
   return "invalid";
 }
 
+function petImageValidationStatus(error: InstanceType<typeof PetImageError>) {
+  if (error.code === "tooLarge") return "petImageTooLarge";
+  if (error.code === "unsupported") return "petImageUnsupported";
+  return "petImageInvalid";
+}
+
+/** DB更新後の画像削除失敗は更新結果を戻さず、安全な識別子だけをwarningへ残す。 */
+async function deletePetImageAfterMutation(
+  householdId: string,
+  fileName: string,
+  operation: string,
+  petId: string
+) {
+  try {
+    await deletePetImage(householdId, fileName);
+  } catch (error) {
+    writeServerLog("warn", {
+      event: "pet_image_delete_failed",
+      message: "Petプロフィール更新後の画像削除に失敗しました。",
+      operation,
+      context: { householdId, petId, errorName: error instanceof Error ? error.name : typeof error }
+    });
+  }
+}
+
 export async function createPet(formData: FormData) {
   try {
     const context = await getRequiredHouseholdMutationContext("/pets");
     const result = createPetSchema.safeParse(Object.fromEntries(formData));
     if (!result.success) redirect(`/pets?status=${petValidationStatus(result.error.issues)}`);
 
-    const { change } = await commitHouseholdMutation({
-      householdId: context.household.id,
-      source: "pet",
-      actorUserId: context.user.id,
-      mutate: async (tx) => {
-        await assertCurrentPetMutationPermission(tx, context.household.id, context.user.id);
-        return tx.pet.create({
-          data: { ...result.data, householdId: context.household.id }
-        });
-      }
-    });
+    const imageFile = getOptionalPetImageFile(formData.get("profileImage"));
+    const preparedImage = imageFile ? await preparePetImage(imageFile) : null;
+    const commit = (profileImageFileName?: string) =>
+      commitHouseholdMutation({
+        householdId: context.household.id,
+        source: "pet",
+        actorUserId: context.user.id,
+        mutate: async (tx) => {
+          await assertCurrentPetMutationPermission(tx, context.household.id, context.user.id);
+          return tx.pet.create({
+            data: { ...result.data, householdId: context.household.id, profileImageFileName }
+          });
+        }
+      });
+    const { change } = preparedImage
+      ? await commitWithNewPetImage({ householdId: context.household.id, image: preparedImage, commit })
+      : await commit();
     publishHouseholdChangeSafely(change);
     revalidatePathsSafely([{ path: "/pets" }], "pets.create.revalidate", {
       householdId: context.household.id
     });
     redirect("/pets?status=created");
   } catch (error) {
+    if (error instanceof PetImageError) redirect(`/pets?status=${petImageValidationStatus(error)}`);
     if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
     if (isPrismaUniqueConstraintError(error)) redirect("/pets?status=petDuplicate");
     handleServerActionError(error, { operation: "pets.create", pathname: "/pets" });
@@ -107,10 +147,14 @@ export async function updatePet(formData: FormData) {
         birthDate: true,
         adoptionDate: true,
         memo: true,
+        profileImageFileName: true,
         updatedAt: true
       }
     });
     if (!pet) redirect("/pets?status=invalid");
+
+    const imageFile = getOptionalPetImageFile(formData.get("profileImage"));
+    const removeProfileImage = formData.get("removeProfileImage") === "true";
 
     if (
       pet.name === data.name &&
@@ -118,32 +162,51 @@ export async function updatePet(formData: FormData) {
       pet.sex === data.sex &&
       isSameNullableDate(pet.birthDate, data.birthDate) &&
       isSameNullableDate(pet.adoptionDate, data.adoptionDate) &&
-      pet.memo === data.memo
+      pet.memo === data.memo &&
+      !imageFile &&
+      !(removeProfileImage && pet.profileImageFileName)
     ) {
       redirect("/pets?status=unchanged");
     }
 
-    const { change } = await commitHouseholdMutation({
-      householdId: context.household.id,
-      source: "pet",
-      actorUserId: context.user.id,
-      mutate: async (tx) => {
-        await assertCurrentPetMutationPermission(tx, context.household.id, context.user.id);
-        const updated = await tx.pet.updateMany({
-          where: { id, householdId: context.household.id, updatedAt: pet.updatedAt },
-          data
-        });
-        if (updated.count !== 1) redirect("/pets?status=invalid");
-        return updated;
-      }
-    });
+    const preparedImage = imageFile ? await preparePetImage(imageFile) : null;
+    const commit = (profileImageFileName?: string | null) =>
+      commitHouseholdMutation({
+        householdId: context.household.id,
+        source: "pet",
+        actorUserId: context.user.id,
+        mutate: async (tx) => {
+          await assertCurrentPetMutationPermission(tx, context.household.id, context.user.id);
+          const updated = await tx.pet.updateMany({
+            where: { id, householdId: context.household.id, updatedAt: pet.updatedAt },
+            data: {
+              ...data,
+              ...(profileImageFileName !== undefined ? { profileImageFileName } : {})
+            }
+          });
+          if (updated.count !== 1) redirect("/pets?status=invalid");
+          return updated;
+        }
+      });
+    const { change } = preparedImage
+      ? await commitWithNewPetImage({ householdId: context.household.id, image: preparedImage, commit })
+      : await commit(removeProfileImage ? null : undefined);
     publishHouseholdChangeSafely(change);
+    if ((preparedImage || removeProfileImage) && pet.profileImageFileName) {
+      await deletePetImageAfterMutation(
+        context.household.id,
+        pet.profileImageFileName,
+        "pets.update.deleteOldImage",
+        id
+      );
+    }
     revalidatePathsSafely([{ path: "/pets" }], "pets.update.revalidate", {
       householdId: context.household.id,
       petId: id
     });
     redirect("/pets?status=updated");
   } catch (error) {
+    if (error instanceof PetImageError) redirect(`/pets?status=${petImageValidationStatus(error)}`);
     if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
     if (isPrismaUniqueConstraintError(error)) redirect("/pets?status=petDuplicate");
     handleServerActionError(error, { operation: "pets.update", pathname: "/pets" });
