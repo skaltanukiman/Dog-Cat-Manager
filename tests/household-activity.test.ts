@@ -87,6 +87,56 @@ test("第2段階イベントを最小限のdetailsから表示し、不正値は
   assert.deepEqual(formatHouseholdActivity(item({ eventType: "UNKNOWN_EVENT" as HouseholdActivityListItem["eventType"] })), { summary: "林 勇希さんが操作しました", detail: null });
 });
 
+test("Pet Records 15イベントをPet向け日本語とJST暦日で表示し、不正detailsを安全に扱う", () => {
+  const expected = [
+    ["PET_HEALTH_RECORD_CREATED", "健康記録を追加しました"],
+    ["PET_HEALTH_RECORD_UPDATED", "健康記録を更新しました"],
+    ["PET_HEALTH_RECORD_DELETED", "健康記録を削除しました"],
+    ["PET_MEDICAL_RECORD_CREATED", "通院記録を追加しました"],
+    ["PET_MEDICAL_RECORD_UPDATED", "通院記録を更新しました"],
+    ["PET_MEDICAL_RECORD_DELETED", "通院記録を削除しました"],
+    ["PET_MEDICATION_RECORD_CREATED", "投薬記録を追加しました"],
+    ["PET_MEDICATION_RECORD_UPDATED", "投薬記録を更新しました"],
+    ["PET_MEDICATION_RECORD_DELETED", "投薬記録を削除しました"],
+    ["PET_VACCINATION_RECORD_CREATED", "ワクチン記録を追加しました"],
+    ["PET_VACCINATION_RECORD_UPDATED", "ワクチン記録を更新しました"],
+    ["PET_VACCINATION_RECORD_DELETED", "ワクチン記録を削除しました"],
+    ["PET_MEMORY_RECORD_CREATED", "思い出を追加しました"],
+    ["PET_MEMORY_RECORD_UPDATED", "思い出を更新しました"],
+    ["PET_MEMORY_RECORD_DELETED", "思い出を削除しました"]
+  ] as const;
+
+  for (const [eventType, operation] of expected) {
+    assert.deepEqual(
+      formatHouseholdActivity(item({
+        eventType: eventType as HouseholdActivityListItem["eventType"],
+        targetNameSnapshot: "こむぎ",
+        details: { recordDate: "2026-08-12" }
+      })),
+      { summary: `林 勇希さんが「こむぎ」の${operation}`, detail: "2026年8月12日" }
+    );
+  }
+  assert.equal(expected.length, 15);
+  assert.equal(formatHouseholdActivity(item({
+    eventType: "PET_HEALTH_RECORD_CREATED" as HouseholdActivityListItem["eventType"],
+    details: { recordDate: "invalid", memo: "Activityへ出してはいけない本文" }
+  })).detail, null);
+});
+
+test("Pet Records Activityは5 target・15 eventへ最小detailsだけを渡す", () => {
+  const mutations = source("src/lib/pet-record-mutations.ts");
+  for (const type of ["HEALTH", "MEDICAL", "MEDICATION", "VACCINATION", "MEMORY"]) {
+    assert.match(mutations, new RegExp(`${type}: \\{[\\s\\S]*targetType: "PET_${type}_RECORD"`));
+    for (const operation of ["CREATED", "UPDATED", "DELETED"]) {
+      assert.match(mutations, new RegExp(`PET_${type}_RECORD_${operation}`));
+    }
+  }
+  assert.match(mutations, /targetId: record\.id/);
+  assert.match(mutations, /targetNameSnapshot: record\.pet\.name/);
+  assert.match(mutations, /details: \{ recordDate: toDateInputValue\(record\.recordDate\) \}/);
+  assert.doesNotMatch(mutations, /details: \{[^}]+(?:memo|diagnosis|symptoms|medication|content|tags|fileName)/i);
+});
+
 test("不正なカテゴリーとページ番号は安全な既定値へ補正する", () => {
   assert.equal(parseActivityCategory("CARE_RECORD"), "CARE_RECORD");
   assert.equal(parseActivityCategory("invalid"), null);

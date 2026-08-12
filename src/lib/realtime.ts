@@ -7,7 +7,7 @@ import {
   type HouseholdActivityCreateInput
 } from "@/lib/household-activity";
 import { prisma } from "@/lib/prisma";
-import { logUnexpectedError } from "@/lib/server-errors";
+import { logUnexpectedError, type UnexpectedErrorLogOptions } from "@/lib/server-errors";
 
 export type HouseholdChangeSource =
   | "hamster"
@@ -25,7 +25,8 @@ export type HouseholdChangeSource =
   | "household"
   | "member"
   | "profile"
-  | "record";
+  | "record"
+  | "petRecord";
 
 export type HouseholdChangeEvent = {
   id: number;
@@ -42,6 +43,11 @@ type HouseholdChangeListener = (event: HouseholdChangeEvent) => void;
 export type CommittedHouseholdChange = Omit<HouseholdChangeEvent, "createdAt" | "id">;
 
 export type TransactionExecutor = <T>(operation: (tx: Prisma.TransactionClient) => Promise<T>) => Promise<T>;
+
+type HouseholdChangeErrorReporter = (
+  error: unknown,
+  options: UnexpectedErrorLogOptions
+) => void;
 
 type RealtimeBus = {
   nextId: number;
@@ -227,7 +233,7 @@ export async function commitHouseholdMutation<T>(
 export function publishHouseholdChangeSafely(
   change: CommittedHouseholdChange,
   publisher: (change: CommittedHouseholdChange) => void = publishHouseholdChange,
-  reportError: typeof logUnexpectedError = logUnexpectedError
+  reportError: HouseholdChangeErrorReporter = logUnexpectedError
 ) {
   try {
     publisher(change);

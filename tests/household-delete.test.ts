@@ -13,6 +13,7 @@ import {
 import { deleteHouseholdImageDirectoriesSafely } from "../src/lib/household-delete-images";
 import { deleteHamsterImageHouseholdDirectory } from "../src/lib/hamster-image";
 import { deletePetImageHouseholdDirectory } from "../src/lib/pet-image";
+import { deletePetRecordImageHouseholdDirectory } from "../src/lib/pet-record-image";
 import { deleteRecordImageHouseholdDirectory } from "../src/lib/record-image";
 
 type StoredMembership = {
@@ -178,18 +179,39 @@ test("画像ディレクトリは対象Householdだけを削除し、不正IDで
   await writeFile(join(other, "image.webp"), "pet");
   await deletePetImageHouseholdDirectory("household-2", root);
   await assert.rejects(readFile(join(other, "image.webp")));
+  await mkdir(other);
+  await writeFile(join(other, "image.webp"), "pet-record");
+  await deletePetRecordImageHouseholdDirectory("household-2", root);
+  await assert.rejects(readFile(join(other, "image.webp")));
+  await mkdir(other);
+  await writeFile(join(other, "image.webp"), "pet-record");
+  await assert.rejects(deletePetRecordImageHouseholdDirectory("../household-2", root));
+  assert.equal(await readFile(join(other, "image.webp"), "utf8"), "pet-record");
 });
 
 test("画像削除失敗はwarning対象にして後処理全体を失敗扱いにしない", async () => {
   const warnings: string[] = [];
+  const deleted: string[] = [];
   const result = await deleteHouseholdImageDirectoriesSafely("household-1", {
     deleteHamsterDirectory: async () => { throw new Error("internal path"); },
-    deletePetDirectory: async () => undefined,
-    deleteRecordDirectory: async () => undefined,
+    deletePetDirectory: async () => { deleted.push("pet"); },
+    deleteRecordDirectory: async () => { deleted.push("record"); },
+    deletePetRecordDirectory: async () => { deleted.push("petRecord"); },
     warn: (kind) => warnings.push(kind)
   });
   assert.deepEqual(result.failedKinds, ["hamster"]);
   assert.deepEqual(warnings, ["hamster"]);
+  assert.deepEqual(deleted.sort(), ["pet", "petRecord", "record"]);
+});
+
+test("Household画像cleanupは旧Hamster・Petプロフィール・旧Record・Pet Recordを別rootのまま追加削除する", async () => {
+  const cleanup = await readFile(join(process.cwd(), "src/lib/household-delete-images.ts"), "utf8");
+  assert.match(cleanup, /deleteHamsterImageHouseholdDirectory/);
+  assert.match(cleanup, /deletePetImageHouseholdDirectory/);
+  assert.match(cleanup, /deleteRecordImageHouseholdDirectory/);
+  assert.match(cleanup, /deletePetRecordImageHouseholdDirectory/);
+  assert.match(cleanup, /"hamster" \| "pet" \| "record" \| "petRecord"/);
+  assert.equal((cleanup.match(/Directory\(householdId\)/g) ?? []).length, 4);
 });
 
 test("本番削除は同一transactionのHousehold lockとCascade起点のhousehold.deleteを使う", async () => {
@@ -203,6 +225,12 @@ test("本番削除は同一transactionのHousehold lockとCascade起点のhouseh
   assert.match(schema, /household\s+Household\s+@relation\([^\n]+onDelete: Cascade\)/);
   assert.match(schema, /hamster\s+Hamster\s+@relation\([^\n]+onDelete: Cascade\)/);
   assert.match(schema, /memoryRecord\s+MemoryRecordDetail\s+@relation\([^\n]+onDelete: Cascade\)/);
+  assert.match(schema, /pet\s+Pet\s+@relation\([^\n]+onDelete: Cascade\)/);
+  for (const model of [
+    "PetHealthRecordDetail", "PetMedicalVisitDetail", "PetMedicationRecordDetail",
+    "PetVaccinationRecordDetail", "PetMemoryRecordDetail", "PetMemoryRecordPet",
+    "PetMemoryRecordImage"
+  ]) assert.match(schema, new RegExp(`model ${model}`));
 });
 
 test("Action・画面は再認可、確認入力、削除後分岐、Cookie、集約、招待受諾lockを備える", async () => {

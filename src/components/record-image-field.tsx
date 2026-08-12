@@ -9,9 +9,15 @@ type RecordImageFieldProps = {
   recordId?: string;
   hasCurrentImage?: boolean;
   disabled?: boolean;
+  imageApiBase?: "/api/records" | "/api/pet-records";
 };
 
-export function RecordImageField({ recordId, hasCurrentImage = false, disabled = false }: RecordImageFieldProps) {
+export function RecordImageField({
+  recordId,
+  hasCurrentImage = false,
+  disabled = false,
+  imageApiBase = "/api/records"
+}: RecordImageFieldProps) {
   const inputId = useId();
   const errorId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +64,7 @@ export function RecordImageField({ recordId, hasCurrentImage = false, disabled =
           ) : hasCurrentImage && recordId && !removeCurrent && !imageFailed ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`/api/records/${encodeURIComponent(recordId)}/image`}
+              src={`${imageApiBase}/${encodeURIComponent(recordId)}/image`}
               alt="登録済みの思い出写真"
               className="h-full w-full object-cover"
               onError={() => setImageFailed(true)}

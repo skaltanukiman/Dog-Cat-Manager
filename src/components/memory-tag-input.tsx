@@ -6,7 +6,9 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 
 import { deleteSavedMemoryTags } from "@/app/actions/records";
+import { deletePetSavedMemoryTags } from "@/app/actions/pet-memory-records";
 import { AutoDismissSuccessMessage } from "@/components/status-message";
+import { PET_MEMORY_TAG_SUGGESTIONS } from "@/lib/pet-records";
 import { MEMORY_TAG_SUGGESTIONS } from "@/lib/records";
 import { normalizeTagStorageValue } from "@/lib/tags";
 
@@ -25,7 +27,13 @@ function dedupeTags(tags: readonly string[]) {
   return Array.from(byNormalizedName.values());
 }
 
-export function MemoryTagInput({ savedTags }: { savedTags: string[] }) {
+export function MemoryTagInput({
+  savedTags,
+  recordDomain = "hamster"
+}: {
+  savedTags: string[];
+  recordDomain?: "hamster" | "pet";
+}) {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -39,7 +47,8 @@ export function MemoryTagInput({ savedTags }: { savedTags: string[] }) {
   const enteredTagNames = new Set(splitTags(value).map(normalizeTagStorageValue));
   const reusableTags = dedupeTags(savedTags);
   const reusableTagNames = new Set(reusableTags.map(normalizeTagStorageValue));
-  const initialSuggestions = dedupeTags(MEMORY_TAG_SUGGESTIONS).filter(
+  const tagSuggestions = recordDomain === "pet" ? PET_MEMORY_TAG_SUGGESTIONS : MEMORY_TAG_SUGGESTIONS;
+  const initialSuggestions = dedupeTags(tagSuggestions).filter(
     (tag) => !reusableTagNames.has(normalizeTagStorageValue(tag))
   );
 
@@ -101,7 +110,9 @@ export function MemoryTagInput({ savedTags }: { savedTags: string[] }) {
     const formData = new FormData();
     selectedTags.forEach((tag) => formData.append("tags", tag));
     startDeleteTransition(async () => {
-      const result = await deleteSavedMemoryTags(formData);
+      const result = recordDomain === "pet"
+        ? await deletePetSavedMemoryTags(formData)
+        : await deleteSavedMemoryTags(formData);
       if (!result.success) {
         setDeleteError({ message: result.errorMessage, errorId: result.errorId });
         return;
@@ -222,7 +233,7 @@ export function MemoryTagInput({ savedTags }: { savedTags: string[] }) {
           value={value}
           onChange={(event) => setValue(event.target.value)}
           maxLength={619}
-          placeholder={MEMORY_TAG_SUGGESTIONS.slice(0, 4).join("、")}
+          placeholder={tagSuggestions.slice(0, 4).join("、")}
         />
       </label>
       {reusableTags.length > 0 ? (

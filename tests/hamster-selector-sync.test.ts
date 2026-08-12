@@ -69,26 +69,26 @@ test("コンボボックスのprops同期は送信せず、ユーザーが候補
   assert.match(combobox, /onClick=\{\(\) => selectOption\(option\)\}/);
 });
 
-test("記録カードのハムスターリンク後はURL・選択UI・登録先・取得対象が同じIDになる", () => {
+test("Pet記録カードのリンク後はURL・選択UI・登録先・取得対象が同じIDになる", () => {
   const page = source("src/app/(app)/records/page.tsx");
-  const timeline = source("src/components/record-timeline.tsx");
-  const queries = source("src/lib/record-queries.ts");
-  const records = source("src/lib/records.ts");
+  const timeline = source("src/components/pet-record-timeline.tsx");
+  const queries = source("src/lib/pet-record-queries.ts");
+  const records = source("src/lib/pet-records.ts");
 
   assert.match(
     timeline,
-    /recordsUrl\(\{ basePath, scope: "hamster", includeScope: true, hamsterId: hamster\.id \}\)/
+    /petRecordsUrl\(\{ scope: "pet", includeScope: true, petId: pet\.id, includeInactive: includeInactive \|\| !pet\.isActive \}\)/
   );
-  assert.match(timeline, /\{hamster\.name\}<\/Link>/);
+  assert.match(timeline, /\{pet\.name\}（\{speciesLabel\[pet\.species\]\}）<\/Link>/);
   assert.match(
     records,
-    /options\.scope === "household" \|\| \(options\.includeScope && options\.scope === "hamster"\)/
+    /options\.scope === "household" \|\| \(options\.includeScope && options\.scope === "pet"\)/
   );
-  assert.match(page, /selectedHamsterId: filters\.hamsterId/);
-  assert.match(queries, /hamsters\.find\(\(hamster\) => hamster\.id === filters\.selectedHamsterId\)/);
-  assert.match(page, /selectedId=\{selectedHamsterId\}/);
-  assert.match(page, /<RecordCreateForms hamsterId=\{selectedHamsterId\}/);
-  assert.match(page, /<RecordTimeline records=\{data\.records\} hamsters=\{data\.hamsters\} scope=\{scope\} returnHamsterId=\{selectedHamsterId\}/);
+  assert.match(page, /selectedPetId: filters\.petId/);
+  assert.match(queries, /pets\.find\(\(pet\) => pet\.id === filters\.selectedPetId\)/);
+  assert.match(page, /defaultValue=\{selectedPetId\}/);
+  assert.match(page, /<PetRecordCreateForms key=\{data\.selectedPet\.id\} petId=\{data\.selectedPet\.id\}/);
+  assert.match(page, /<PetRecordTimeline[\s\S]*records=\{data\.records\}[\s\S]*pets=\{data\.pets\}[\s\S]*scope=\{scope\}[\s\S]*returnPetId=\{selectedPetId\}/);
 });
 
 test("共通Hamster選択コンポーネントを使う清掃・CSV出力の既存利用形態を維持する", () => {

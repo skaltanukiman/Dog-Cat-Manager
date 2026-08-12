@@ -287,6 +287,51 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
           detail: formatDateInput(stringDetail(details, "recordDate"))
         };
       }
+      case "PET_HEALTH_RECORD_CREATED":
+      case "PET_HEALTH_RECORD_UPDATED":
+      case "PET_HEALTH_RECORD_DELETED": {
+        const action = activity.eventType === "PET_HEALTH_RECORD_CREATED" ? "追加" : activity.eventType === "PET_HEALTH_RECORD_UPDATED" ? "更新" : "削除";
+        return {
+          summary: `${actor}さんが「${target}」の健康記録を${action}しました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
+      }
+      case "PET_MEDICAL_RECORD_CREATED":
+      case "PET_MEDICAL_RECORD_UPDATED":
+      case "PET_MEDICAL_RECORD_DELETED": {
+        const action = activity.eventType === "PET_MEDICAL_RECORD_CREATED" ? "追加" : activity.eventType === "PET_MEDICAL_RECORD_UPDATED" ? "更新" : "削除";
+        return {
+          summary: `${actor}さんが「${target}」の通院記録を${action}しました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
+      }
+      case "PET_MEDICATION_RECORD_CREATED":
+      case "PET_MEDICATION_RECORD_UPDATED":
+      case "PET_MEDICATION_RECORD_DELETED": {
+        const action = activity.eventType === "PET_MEDICATION_RECORD_CREATED" ? "追加" : activity.eventType === "PET_MEDICATION_RECORD_UPDATED" ? "更新" : "削除";
+        return {
+          summary: `${actor}さんが「${target}」の投薬記録を${action}しました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
+      }
+      case "PET_VACCINATION_RECORD_CREATED":
+      case "PET_VACCINATION_RECORD_UPDATED":
+      case "PET_VACCINATION_RECORD_DELETED": {
+        const action = activity.eventType === "PET_VACCINATION_RECORD_CREATED" ? "追加" : activity.eventType === "PET_VACCINATION_RECORD_UPDATED" ? "更新" : "削除";
+        return {
+          summary: `${actor}さんが「${target}」のワクチン記録を${action}しました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
+      }
+      case "PET_MEMORY_RECORD_CREATED":
+      case "PET_MEMORY_RECORD_UPDATED":
+      case "PET_MEMORY_RECORD_DELETED": {
+        const action = activity.eventType === "PET_MEMORY_RECORD_CREATED" ? "追加" : activity.eventType === "PET_MEMORY_RECORD_UPDATED" ? "更新" : "削除";
+        return {
+          summary: `${actor}さんが「${target}」の思い出を${action}しました`,
+          detail: formatDateInput(stringDetail(details, "recordDate"))
+        };
+      }
       case "HAMSTER_PROFILE_IMAGE_UPDATED": {
         const action = stringDetail(details, "imageAction");
         const label = action === "ADDED" ? "登録" : action === "REPLACED" ? "変更" : action === "REMOVED" ? "削除" : "更新";

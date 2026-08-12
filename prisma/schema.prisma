@@ -36,32 +36,159 @@ model Hamster {
 }
 
 model Pet {
-  id                   String             @id @default(cuid())
-  householdId          String             @map("household_id")
-  household            Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  id                   String               @id @default(cuid())
+  householdId          String               @map("household_id")
+  household            Household            @relation(fields: [householdId], references: [id], onDelete: Cascade)
   // ペット名はHousehold内だけで重複を避け、別Householdでは同名を許可する。
   name                 String
   species              PetSpecies
   breed                String?
-  sex                  PetSex             @default(UNKNOWN)
-  birthDate            DateTime?          @map("birth_date") @db.Date
-  adoptionDate         DateTime?          @map("adoption_date") @db.Date
-  profileImageFileName String?            @map("profile_image_file_name")
-  memo                 String?            @db.Text
+  sex                  PetSex               @default(UNKNOWN)
+  birthDate            DateTime?            @map("birth_date") @db.Date
+  adoptionDate         DateTime?            @map("adoption_date") @db.Date
+  profileImageFileName String?              @map("profile_image_file_name")
+  memo                 String?              @db.Text
   // 管理終了後もPet本体を保持し、将来追加する履歴の参照先を維持する。
-  isActive             Boolean            @default(true) @map("is_active")
-  createdAt            DateTime           @default(now()) @map("created_at")
-  updatedAt            DateTime           @updatedAt @map("updated_at")
+  isActive             Boolean              @default(true) @map("is_active")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
   weightRecords        PetWeightRecord[]
   feedingRecords       PetFeedingRecord[]
   waterRecords         PetWaterRecord[]
   walkRecords          PetWalkRecord[]
   litterRecords        PetLitterRecord[]
+  records              PetRecord[]
+  memoryRecords        PetMemoryRecordPet[]
 
   @@unique([householdId, name])
   @@index([householdId, createdAt])
   @@index([householdId, species])
   @@map("pets")
+}
+
+model PetRecord {
+  id                String                      @id @default(cuid())
+  petId             String                      @map("pet_id")
+  pet               Pet                         @relation(fields: [petId], references: [id], onDelete: Cascade)
+  recordType        PetRecordType               @map("record_type")
+  // 通常のJST暦日であり、Householdのお世話日境界は適用しない。
+  recordDate        DateTime                    @map("record_date") @db.Date
+  // 任意の記録時刻はUTC timestampではなく、JST壁時計の0:00からの分数で保持する。
+  recordTimeMinutes Int?                        @map("record_time_minutes") @db.SmallInt
+  title             String
+  memo              String?                     @db.Text
+  searchText        String                      @map("search_text") @db.Text
+  createdByUserId   String?                     @map("created_by_user_id")
+  createdBy         User?                       @relation("PetRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+  healthDetail      PetHealthRecordDetail?
+  medicalDetail     PetMedicalVisitDetail?
+  medicationDetail  PetMedicationRecordDetail?
+  vaccinationDetail PetVaccinationRecordDetail?
+  memoryDetail      PetMemoryRecordDetail?
+
+  @@index([petId, recordDate, recordTimeMinutes, createdAt])
+  @@index([petId, recordType, recordDate])
+  @@map("pet_records")
+}
+
+model PetHealthRecordDetail {
+  petRecordId      String                   @id @map("pet_record_id")
+  petRecord        PetRecord                @relation(fields: [petRecordId], references: [id], onDelete: Cascade)
+  overallCondition HealthOverallCondition   @map("overall_condition")
+  appetite         HealthAmountCondition
+  activityLevel    HealthAmountCondition    @map("activity_level")
+  stoolCondition   HealthExcretionCondition @map("stool_condition")
+  urineCondition   HealthExcretionCondition @map("urine_condition")
+  symptoms         HealthSymptom[]          @default([])
+
+  @@map("pet_health_record_details")
+}
+
+model PetMedicalVisitDetail {
+  petRecordId            String    @id @map("pet_record_id")
+  petRecord              PetRecord @relation(fields: [petRecordId], references: [id], onDelete: Cascade)
+  hospitalName           String?   @map("hospital_name")
+  reason                 String    @db.Text
+  diagnosis              String?   @db.Text
+  examination            String?   @db.Text
+  treatment              String?   @db.Text
+  // 通院時に病院で処方された薬と指示であり、実際の投薬履歴とは分離する。
+  medication             String?   @db.Text
+  medicationInstructions String?   @map("medication_instructions") @db.Text
+  nextVisitDate          DateTime? @map("next_visit_date") @db.Date
+  consultationFee        Decimal?  @map("consultation_fee") @db.Decimal(10, 0)
+
+  @@index([nextVisitDate])
+  @@map("pet_medical_visit_details")
+}
+
+model PetMedicationRecordDetail {
+  petRecordId    String    @id @map("pet_record_id")
+  petRecord      PetRecord @relation(fields: [petRecordId], references: [id], onDelete: Cascade)
+  medicationName String    @map("medication_name") @db.VarChar(200)
+  // 錠数、容量、滴数など単位を含む自由な投与量を保持する。
+  dosage         String?   @db.VarChar(100)
+
+  @@map("pet_medication_record_details")
+}
+
+model PetVaccinationRecordDetail {
+  petRecordId  String    @id @map("pet_record_id")
+  petRecord    PetRecord @relation(fields: [petRecordId], references: [id], onDelete: Cascade)
+  vaccineName  String    @map("vaccine_name") @db.VarChar(200)
+  hospitalName String?   @map("hospital_name") @db.VarChar(200)
+  nextDueDate  DateTime? @map("next_due_date") @db.Date
+
+  @@index([nextDueDate])
+  @@map("pet_vaccination_record_details")
+}
+
+model PetMemoryRecordDetail {
+  petRecordId String                 @id @map("pet_record_id")
+  petRecord   PetRecord              @relation(fields: [petRecordId], references: [id], onDelete: Cascade)
+  tags        String[]               @default([])
+  searchTags  String[]               @default([]) @map("search_tags")
+  isFavorite  Boolean                @default(false) @map("is_favorite")
+  images      PetMemoryRecordImage[]
+  pets        PetMemoryRecordPet[]
+
+  @@index([isFavorite])
+  @@index([searchTags], type: Gin)
+  @@map("pet_memory_record_details")
+}
+
+model PetMemoryRecordPet {
+  petRecordId  String                @map("pet_record_id")
+  petId        String                @map("pet_id")
+  sortOrder    Int                   @default(0) @map("sort_order")
+  memoryRecord PetMemoryRecordDetail @relation(fields: [petRecordId], references: [petRecordId], onDelete: Cascade)
+  pet          Pet                   @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@id([petRecordId, petId])
+  @@index([petId])
+  @@map("pet_memory_record_pets")
+}
+
+model PetMemoryRecordImage {
+  id             String                @id @default(cuid())
+  memoryRecordId String                @map("memory_record_id")
+  memoryRecord   PetMemoryRecordDetail @relation(fields: [memoryRecordId], references: [petRecordId], onDelete: Cascade)
+  fileName       String                @map("file_name")
+  sortOrder      Int                   @default(0) @map("sort_order")
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  @@unique([memoryRecordId, sortOrder])
+  @@map("pet_memory_record_images")
+}
+
+enum PetRecordType {
+  HEALTH
+  MEDICAL
+  MEDICATION
+  VACCINATION
+  MEMORY
 }
 
 model PetWeightRecord {
@@ -313,6 +440,7 @@ model User {
   appSettings                    AppSetting[]
   createdHouseholdInvitations    HouseholdInvitation[]      @relation("HouseholdInvitationCreator")
   createdHamsterRecords          HamsterRecord[]            @relation("HamsterRecordCreator")
+  createdPetRecords              PetRecord[]                @relation("PetRecordCreator")
   createdFeedingRecords          FeedingRecord[]            @relation("FeedingRecordCreator")
   createdWaterReplacementRecords WaterReplacementRecord[]   @relation("WaterReplacementRecordCreator")
   createdPetFeedingRecords       PetFeedingRecord[]         @relation("PetFeedingRecordCreator")
@@ -605,6 +733,21 @@ enum HouseholdActivityEvent {
   FEEDING_UNMARKED
   WATER_REPLACEMENT_MARKED
   WATER_REPLACEMENT_UNMARKED
+  PET_HEALTH_RECORD_CREATED
+  PET_HEALTH_RECORD_UPDATED
+  PET_HEALTH_RECORD_DELETED
+  PET_MEDICAL_RECORD_CREATED
+  PET_MEDICAL_RECORD_UPDATED
+  PET_MEDICAL_RECORD_DELETED
+  PET_MEDICATION_RECORD_CREATED
+  PET_MEDICATION_RECORD_UPDATED
+  PET_MEDICATION_RECORD_DELETED
+  PET_VACCINATION_RECORD_CREATED
+  PET_VACCINATION_RECORD_UPDATED
+  PET_VACCINATION_RECORD_DELETED
+  PET_MEMORY_RECORD_CREATED
+  PET_MEMORY_RECORD_UPDATED
+  PET_MEMORY_RECORD_DELETED
 }
 
 model ContactInquiry {

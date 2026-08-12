@@ -482,20 +482,22 @@ test("体重登録プレビューは通常画面と同じカード配置・項�
   assertPreviewControlsAreDisabled(markup);
 });
 
-test("通常画面の登録UIと更新Action接続は維持する", async () => {
+test("通常画面の登録UIと更新Action接続はPet Records移行後も維持する", async () => {
   const [hamsters, recordsPage, recordForms, weights] = await Promise.all([
     readFile("src/app/(app)/hamsters/page.tsx", "utf8"),
     readFile("src/app/(app)/records/page.tsx", "utf8"),
-    readFile("src/components/record-create-forms.tsx", "utf8"),
+    readFile("src/components/pet-record-create-forms.tsx", "utf8"),
     readFile("src/app/(app)/weights/page.tsx", "utf8")
   ]);
 
   assert.match(hamsters, /import \{ createHamster \}/);
   assert.match(hamsters, /action=\{createHamster\}/);
-  assert.match(recordsPage, /<RecordCreateForms/);
-  assert.match(recordForms, /createHealthRecord/);
-  assert.match(recordForms, /createMedicalRecord/);
-  assert.match(recordForms, /createMemoryRecord/);
+  assert.match(recordsPage, /<PetRecordCreateForms/);
+  assert.match(recordForms, /createPetHealthRecord/);
+  assert.match(recordForms, /createPetMedicalRecord/);
+  assert.match(recordForms, /createPetMedicationRecord/);
+  assert.match(recordForms, /createPetVaccinationRecord/);
+  assert.match(recordForms, /createPetMemoryRecord/);
   assert.match(recordForms, /onSubmit=\{submitRecord/);
   assert.match(weights, /import \{ createPetWeightRecord \}/);
   assert.match(weights, /action=\{createPetWeightRecord\}/);

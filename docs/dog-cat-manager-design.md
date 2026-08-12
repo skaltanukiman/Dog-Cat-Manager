@@ -49,3 +49,12 @@ Hamster Manager とは別DB・別Sessionで運用する。開発用Docker環境�
 - DOG専用の `PetWalkRecord` は `startedAt`・任意の `durationMinutes`・memoを持つ。CAT専用の `PetLitterRecord` は `occurredAt`・`PetLitterAction`（`URINATION` / `DEFECATION` / `BOTH` / `CLEANED`）・memoを持つ。どちらも同一お世話日に複数件を許可する。
 - species固有記録の変更可否はDBから `Pet.species` を再取得して保証する。WalkはDOG、LitterはCATだけを変更できる。
 - GPS・散歩ルート・猫トイレの健康判定・通知はPhase 3B対象外とし、1日1回完了を前提とする既存Hamster通知はPet Careへ移植しない。
+
+## Pet記録
+
+- `/records` はPet専用の共通タイムラインとし、`PetRecord` をbaseに `HEALTH`、`MEDICAL`、`MEDICATION`、`VACCINATION`、`MEMORY` の5種類を扱う。各種類の固有値は `PetHealthRecordDetail`、`PetMedicalVisitDetail`、`PetMedicationRecordDetail`、`PetVaccinationRecordDetail`、`PetMemoryRecordDetail` に分離する。
+- 記録日はHouseholdのお世話日ではなく通常のJST暦日であり、`careDayStartMinutes`を使わない。任意時刻はUTC timestampへ変換せず、JST壁時計の0時からの分数として保存する。
+- VIEWERと管理終了Petは既存記録の閲覧・検索・絞り込みだけを許可し、登録・編集・削除を拒否する。変更時はtransaction内で最新membership、Demo状態、対象PetのHousehold所属と管理状態を再確認する。
+- 思い出は同一Householdの複数Pet、タグ、お気に入り、写真1枚に対応する。関連Petに管理終了Petが含まれる間は思い出全体を閲覧専用とする。
+- Pet思い出画像は `PET_RECORD_IMAGE_DIR`（Docker既定 `/app/uploads/pet-records`）へHousehold別のUUID WebPとして保存し、認証付き `/api/pet-records/[id]/image` だけから配信する。旧Hamster思い出の `RECORD_IMAGE_DIR` とは相互利用せず、既存画像を移動しない。
+- 旧Hamster Recordsのモデル、Action、query、component、画像保存先は移行期間中そのまま残す。投薬・ワクチン通知、Dashboard表示、複数画像UIは後続Phaseとする。

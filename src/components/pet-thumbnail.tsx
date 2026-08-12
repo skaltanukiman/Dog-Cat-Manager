@@ -7,7 +7,7 @@ type PetThumbnailProps = {
   petId: string;
   petName: string;
   profileImageFileName: string | null;
-  size?: "card" | "management";
+  size?: "card" | "management" | "timeline";
 };
 
 export function PetThumbnail({ petId, petName, profileImageFileName, size = "card" }: PetThumbnailProps) {
@@ -15,7 +15,11 @@ export function PetThumbnail({ petId, petName, profileImageFileName, size = "car
   const [failedVersion, setFailedVersion] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const showImage = Boolean(profileImageFileName && failedVersion !== profileImageFileName);
-  const sizeClass = size === "card" ? "h-20 w-20 sm:h-24 sm:w-24" : "h-24 w-24";
+  const sizeClass = size === "timeline"
+    ? "h-12 w-12"
+    : size === "card"
+      ? "h-20 w-20 sm:h-24 sm:w-24"
+      : "h-24 w-24";
   const imageUrl = `/api/pets/${encodeURIComponent(petId)}/image?v=${encodeURIComponent(profileImageFileName ?? "")}`;
 
   useEffect(() => {
