@@ -497,8 +497,8 @@ test("通常画面の登録UIと更新Action接続は維持する", async () => 
   assert.match(recordForms, /createMedicalRecord/);
   assert.match(recordForms, /createMemoryRecord/);
   assert.match(recordForms, /onSubmit=\{submitRecord/);
-  assert.match(weights, /import \{ createWeightRecord \}/);
-  assert.match(weights, /action=\{createWeightRecord\}/);
+  assert.match(weights, /import \{ createPetWeightRecord \}/);
+  assert.match(weights, /action=\{createPetWeightRecord\}/);
   assert.match(weights, /lg:grid-cols-\[minmax\(280px,360px\)_1fr\]/);
 });
 

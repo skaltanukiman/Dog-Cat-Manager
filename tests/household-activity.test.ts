@@ -53,6 +53,9 @@ test("主要イベントを日本語表示へ集約し、不正detailsでも例�
   assert.equal(formatHouseholdActivity(item({ eventType: "WEIGHTS_BULK_DELETED", details: { count: 3 } })).summary, "林 勇希さんが体重記録を3件削除しました");
   assert.equal(formatHouseholdActivity(item({ eventType: "WEIGHT_CSV_APP_IMPORTED", details: { createdCount: 10, updatedCount: 4, skippedCount: 2 } })).detail, "新規10件・更新4件・スキップ2件");
   assert.equal(formatHouseholdActivity(item({ eventType: "WEIGHT_CSV_GAS_IMPORTED", details: { createdCount: 2, updatedCount: 0, skippedCount: 1 } })).detail, "新規2件・更新0件・スキップ1件");
+  assert.deepEqual(formatHouseholdActivity(item({ eventType: "PET_WEIGHT_CREATED", details: { recordDate: "2026-07-21", weightKg: 5.25 } })), { summary: "林 勇希さんが「きなこ」の体重を記録しました", detail: "5.25kg・2026年7月21日" });
+  assert.deepEqual(formatHouseholdActivity(item({ eventType: "PET_WEIGHT_UPDATED", details: { previousWeightKg: 5.2, newWeightKg: 5.25 } })), { summary: "林 勇希さんが「きなこ」の体重を更新しました", detail: "5.2kg → 5.25kg" });
+  assert.equal(formatHouseholdActivity(item({ eventType: "PET_WEIGHT_DELETED", details: "invalid" })).detail, null);
   assert.equal(formatHouseholdActivity(item({ eventType: "CLEANING_MONTH_SAVED", details: { yearMonth: "2026-07", changedDayCount: 3 } })).detail, "2026年7月・3日分");
   assert.deepEqual(formatHouseholdActivity(item({ eventType: "FEEDING_MARKED", details: { recordDate: "2026-07-28" } })), { summary: "林 勇希さんが「きなこ」の食事を実施済みにしました", detail: "2026年7月28日" });
   assert.deepEqual(formatHouseholdActivity(item({ eventType: "FEEDING_UNMARKED", details: { recordDate: "2026-07-28" } })), { summary: "林 勇希さんが「きなこ」の食事記録を取り消しました", detail: "2026年7月28日" });

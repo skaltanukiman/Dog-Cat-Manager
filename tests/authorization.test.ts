@@ -178,6 +178,11 @@ test("共有データ更新Server Actionは直接呼び出されても共通更�
       "importGasWeightRecordsCsv",
       "importAppWeightRecordsCsv"
     ],
+    "src/app/actions/pet-weights.ts": [
+      "createPetWeightRecord",
+      "updatePetWeightRecord",
+      "deletePetWeightRecord"
+    ],
     "src/app/actions/records.ts": [
       "createHealthRecord",
       "createMedicalRecord",

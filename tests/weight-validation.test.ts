@@ -11,17 +11,14 @@ import {
 } from "../src/lib/weight-chart-filter";
 import { isWeightInTenths } from "../src/lib/weight-rules";
 
-test("体重履歴は管理一覧と同じ共通ページングを上下に使用する", async () => {
+test("Pet体重履歴は管理一覧と同じ共通ページングを上下に使用する", async () => {
   const pageSource = await readFile("src/app/(app)/weights/page.tsx", "utf8");
   const paginationSource = await readFile("src/components/pagination.tsx", "utf8");
 
   assert.equal(pageSource.match(/<PaginationLayout/g)?.length, 2);
   assert.equal(pageSource.match(/scroll=\{false\}/g)?.length, 2);
   assert.equal(pageSource.match(/preserveScroll/g)?.length, 2);
-  assert.match(
-    pageSource,
-    /<PaginationLayout[\s\S]*?<WeightHistoryList[\s\S]*?<PaginationLayout/
-  );
+  assert.match(pageSource, /<PaginationLayout[\s\S]*?<PetWeightHistoryList[\s\S]*?<PaginationLayout/);
   assert.doesNotMatch(pageSource, /ChevronsLeft|ChevronsRight|最初へ|最後へ/);
   assert.match(paginationSource, /getPaginationItems/);
   assert.match(paginationSource, /aria-current="page"/);
@@ -44,24 +41,13 @@ test("体重履歴の数字リンクは遷移先で保存したスクロール�
   assert.match(source, /scroll=\{false\}/);
 });
 
-test("体重履歴のページ移動は既存の表示条件を共通URL生成関数へ渡す", async () => {
+test("Pet体重履歴のページ移動はPet選択と管理終了表示条件を維持する", async () => {
   const source = await readFile("src/app/(app)/weights/page.tsx", "utf8");
 
-  assert.match(source, /const buildWeightPageHref = \(page: number\)/);
-  for (const property of [
-    "hamsterId: selectedHamster.id",
-    "filterMode",
-    "month: selectedMonth",
-    "chartFrom: chartRange.from",
-    "chartTo: chartRange.to",
-    "page",
-    "sortTarget",
-    "sortDirection",
-    "includeInactive"
-  ]) {
-    assert.match(source, new RegExp(property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  }
-  assert.equal(source.match(/buildHref=\{buildWeightPageHref\}/g)?.length, 2);
+  assert.match(source, /const buildPageHref = \(page: number\)/);
+  assert.match(source, /new URLSearchParams\(\{ petId: selectedPet\.id \}\)/);
+  assert.match(source, /if \(includeInactive\) query\.set\("includeInactive", "1"\)/);
+  assert.equal(source.match(/buildHref=\{buildPageHref\}/g)?.length, 2);
 });
 
 test("グラフ期間は実在する開始日と終了日だけを受け付ける", () => {

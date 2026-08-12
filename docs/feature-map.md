@@ -55,7 +55,7 @@
 - **主なコンポーネント:** `HouseholdActivityList`、既存 `PaginationLayout`。一覧フィルターは「すべて」「飼育記録」「メンバー」「グループ設定」で、変更時は1ページ目へ戻る。
 - **Server Action または API:** `commitHouseholdMutation` の任意 `activity` を業務更新後・revision更新前に実行する。名称・招待・退出の専用Mutation Repository、招待受諾、CSV import、健康・通院・思い出記録、プロフィール画像、管理状態も各既存Prisma transaction内で `createHouseholdActivity` を実行する。別WebSocketや独自pollは追加せず既存Household revision / SSE / revision pollを利用する。期限切れ履歴は `scripts/cleanup-household-activities.ts` のCLIだけから全Householdを対象に整理し、revision更新・SSE通知・操作履歴追加は行わない。
 - **データアクセス・Prismaモデル:** `HouseholdActivity`、`HouseholdActivityEvent`、`HouseholdActivityCategory`。`getCurrentHouseholdActivityPage` は `getRequiredHouseholdContext` で現在所属を確定し、Household IDと任意カテゴリーをDB条件に含め、`createdAt desc, id desc`、20件でページングする。最新表示も同じHousehold条件で5件だけ取得する。全Householdの期限切れ検索用に `createdAt` 単独indexを持つ。
-- **対象イベント:** 第一段階はグループ名変更、招待作成・無効化・参加、権限変更・参加解除・退出・所有権移譲退出、ハムスター登録・削除、体重登録・更新・削除・一括削除、アプリ版/GAS版CSV import、掃除月保存。第二段階は健康・通院・思い出の作成・更新・削除、プロフィール画像の登録・差し替え・削除、管理中・管理外切り替え。本日の食事と水替えの実施済み化・取消も `CARE_RECORD` に分類する。bulk/CSV/掃除、写真を含む思い出操作は1操作1件の要約。
+- **対象イベント:** 第一段階はグループ名変更、招待作成・無効化・参加、権限変更・参加解除・退出・所有権移譲退出、ハムスター登録・削除、Hamster体重登録・更新・削除・一括削除、アプリ版/GAS版CSV import、掃除月保存。第二段階は健康・通院・思い出の作成・更新・削除、プロフィール画像の登録・差し替え・削除、管理中・管理外切り替え。本日の食事と水替えの実施済み化・取消も `CARE_RECORD` に分類する。Pet体重はkgの専用イベントで登録・更新・削除を記録する。bulk/CSV/掃除、写真を含む思い出操作は1操作1件の要約。
 - **認可・プライバシー:** 現在所属する OWNER / ADMIN / MEMBER / VIEWER のみ閲覧可能。アプリ全体 ADMIN / SUPER_ADMIN も未所属なら取得不可。操作者・対象名は操作時snapshotを保存し、未設定名は安全な固定文言を使いメールを代用しない。token/URL、メール、CSV本文・ファイル名、フォーム、掃除メモ、健康・通院・思い出の内容、画像ファイル情報等は保存しない。第二段階は記録日、画像操作種別、管理状態の変更前後だけをdetailsへ保存する。
 - **削除・監査:** Household削除はCascade、User削除は参照をSetNullにして名前snapshotを残す。`HOUSEHOLD_ACTIVITY_RETENTION_DAYS`（初期設定90日）より古い履歴は日次cron向け専用CLIで削除し、基準日時と同時刻は残す。既存 `writeHouseholdAuditLog` / サーバーログは障害調査・内部監査用として維持し、利用者向けDB履歴へ置換しない。
 - **関連テスト:** `tests/household-activity.test.ts`（formatter、snapshot、transaction rollback、Household分離、安定順、ページング、filter、最新5件、保持日数のServer Component表示、第二段階Mutation、機密情報の非保存、enum migration）、`tests/household-activity-cleanup.test.ts`（自動削除・画面表示で共用する環境変数検証、基準日時、`lt`境界、deleteMany、dry-run）と各既存Mutationテスト。
@@ -108,17 +108,17 @@
 - **関連設定:** `AppSetting.recordTimelineDefaultScope`、migration `20260724090000_add_record_timeline_default_scope`、`src/lib/records.ts` の許可値・正規化・URL生成、`RECORD_IMAGE_DIR`（Dockerは `/app/uploads/records`）、`docker-compose.yml` の `./uploads:/app/uploads`、migration `20260715120000_add_hamster_records` / `20260716130000_separate_record_keyword_and_tag_search` / `20260716160000_add_saved_memory_tags` / `20260716190000_normalize_memory_tag_width_preserve_case` / `20260716210000_add_memory_record_search_tags`、`package.json` のテスト列挙。
 - **依存関係:** OWNER / ADMIN / MEMBERは更新可能、VIEWERは閲覧・検索・絞り込み・ページ移動だけでActionも拒否する。全取得・更新は対象ハムスターが現在のHousehold所属であることをDB条件に含める。編集・削除フォームの `hamsterId` は各記録自身の所属を使い、`returnHamsterId` と正規化済み `viewScope` で処理後の表示範囲を維持する。管理外ハムスターの健康・通院は閲覧のみ、思い出は登録・編集・削除可能。全更新は `source: "record"` の realtime mutation を通し、業務データ・`CARE_RECORD` 操作履歴・revisionを同一トランザクションで確定する。履歴detailsは記録日だけとし、健康・通院・思い出の入力内容や画像情報は保存しない。画像差し替え・記録削除・ハムスター削除後は旧ファイルを削除し、失敗は警告ログへ残す。初回は1記録1枚だが画像別テーブルと表示順で複数枚へ拡張できる。
 
-## 体重履歴
+## Pet体重履歴
 
-- **ハムスター候補順:** `getWeightPageData` が現在のユーザー・Householdのダッシュボード設定と `orderHamstersForSelector` を使って候補順を確定する。「管理外も含む」がオフなら管理外を除外した候補だけを返す。
-- **画面または URL:** `/weights`。
-- **主なコンポーネント:** `WeightHistoryList`、`WeightChart`、`HamsterSelectorInput`、`AutoSubmitInput` / `AutoSubmitSelect`、`SelectionActionBar`。
-- **Server Action または API:** `createWeightRecord`、`updateWeightRecord`、`deleteWeightRecord`、`deleteWeightRecords`（`src/app/actions/weights.ts`）。
-- **データアクセス・Prismaモデル:** `getWeightPageData`（DB 側の履歴フィルター・ソート・ページングとグラフ専用期間フィルター）、`Hamster`、`WeightRecord`、`AppSetting`。
-- **バリデーション:** `createWeightRecordSchema`、`updateWeightRecordSchema`、削除 schema、`MAX_WEIGHT_G`（1〜500g、0.1g、未来日不可）。`@@unique([hamsterId, recordDate])` が日次重複を保証する。
-- **関連テスト:** `tests/weight-validation.test.ts`（通常登録・編集・CSVの0.1g単位検証）、`tests/csv-and-realtime.test.ts`（CSVの体重上限・未来日検証）、`tests/authorization.test.ts`（Household所属判定）。
-- **関連設定:** `src/lib/weight-rules.ts`、`src/lib/date.ts`、`src/lib/dashboard-settings.ts`（選択 UI）。
-- **依存関係:** 管理外ハムスターとVIEWERは作成・編集・削除不可。VIEWERは検索・フィルター・並び替え・ページ移動・グラフ・CSVエクスポートを利用できる。履歴一覧は 20 件ページング。「全件」表示では開始日と終了日が揃うとグラフだけを自動で絞り込み、クリア操作で全期間へ戻す。「月ごと」表示では従来どおり履歴の対象月とグラフを連動させる。
+- **画面または URL:** `/weights`。現在Householdの犬・猫をspecies付きで選択し、管理終了Petも明示的に表示できる。Pet未登録時は `/pets` へ案内する。
+- **主なコンポーネント:** `PetWeightHistoryList`、`PetWeightChart`、`AutoSubmitInput` / `AutoSubmitSelect`、`PaginationLayout`。
+- **Server Action:** `createPetWeightRecord`、`updatePetWeightRecord`、`deletePetWeightRecord`（`src/app/actions/pet-weights.ts`）。すべて共通mutation contextとtransaction内の最新membership確認を通り、Pet・記録を現在Household IDで絞る。
+- **データアクセス・Prismaモデル:** `getPetWeightPageData`、`Pet`、`PetWeightRecord`。体重は `Decimal(5,2)` のkg単位、測定日は時刻変換しない暦日、メモは500文字まで。`@@unique([petId, recordDate])` によりPetごとに1日1件とする。履歴は日付降順20件ページング、グラフは直近365点までをnumberへ変換してClient Componentへ渡す。
+- **バリデーション:** `createPetWeightRecordSchema`、`updatePetWeightRecordSchema`、`deletePetWeightRecordSchema`、`src/lib/pet-weight-rules.ts`。正の値・0.01kg単位・999.99kg以下・未来日不可を画面とServer Actionの両方で保証し、空のメモはnullにする。
+- **認可・管理終了:** VIEWERは履歴・グラフの閲覧だけ可能。管理終了Petは既存履歴を保持して閲覧できるが、登録・編集・削除はUIとServer Actionの両方で拒否する。管理中へ戻すと同じ履歴を再編集できる。
+- **Realtime・操作履歴:** 更新は `petWeight` sourceでHousehold revisionを進め、`PET_WEIGHT_CREATED` / `PET_WEIGHT_UPDATED` / `PET_WEIGHT_DELETED` をkgのPet専用イベントとして記録する。
+- **関連テスト:** `tests/pet-weight-validation.test.ts`、`tests/pet-weights.test.ts`、`tests/pets.test.ts`、`tests/authorization.test.ts`、`tests/weight-validation.test.ts`。
+- **移行:** 旧Hamsterの `WeightRecord`、`src/app/actions/weights.ts`、Hamster用component・CSV route・ルール・テストは移行期間中そのまま共存するが、Pet版 `/weights` からHamster用CSV import/exportへリンクしない。Pet版安定後にHamster体重機能を段階的に撤去し、必要なら将来 `PetWeightRecord` から `WeightRecord` への名称整理を検討する。
 
 ## 体重 CSV エクスポート
 

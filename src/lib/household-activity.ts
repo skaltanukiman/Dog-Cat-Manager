@@ -142,6 +142,21 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
         const skipped = numberDetail(details, "skippedCount") ?? 0;
         return { summary: `${actor}さんがCSVから体重記録を取り込みました`, detail: `新規${created}件・更新${updated}件・スキップ${skipped}件` };
       }
+      case "PET_WEIGHT_CREATED": {
+        const weight = numberDetail(details, "weightKg");
+        const date = formatDateInput(stringDetail(details, "recordDate"));
+        return { summary: `${actor}さんが「${target}」の体重を記録しました`, detail: weight !== null && date ? `${weight}kg・${date}` : null };
+      }
+      case "PET_WEIGHT_UPDATED": {
+        const before = numberDetail(details, "previousWeightKg");
+        const after = numberDetail(details, "newWeightKg");
+        return { summary: `${actor}さんが「${target}」の体重を更新しました`, detail: before !== null && after !== null ? `${before}kg → ${after}kg` : null };
+      }
+      case "PET_WEIGHT_DELETED": {
+        const weight = numberDetail(details, "weightKg");
+        const date = formatDateInput(stringDetail(details, "recordDate"));
+        return { summary: `${actor}さんが「${target}」の体重記録を削除しました`, detail: weight !== null && date ? `${weight}kg・${date}` : null };
+      }
       case "CLEANING_MONTH_SAVED": {
         const month = formatMonthInput(stringDetail(details, "yearMonth"));
         const count = numberDetail(details, "changedDayCount");

@@ -4,6 +4,11 @@ import { CLEANING_MOBILE_DEFAULT_DATE_FILTERS } from "@/lib/cleaning-settings";
 import { HAMSTER_SELECTOR_MODES, MAX_DASHBOARD_BOARD_COUNT, MIN_DASHBOARD_BOARD_COUNT } from "@/lib/dashboard-settings";
 import { isValidDateInput, isValidYearMonthInput, parseDateInput, todayInputJst } from "@/lib/date";
 import { RECORD_SCOPES } from "@/lib/records";
+import {
+  isPetWeightInHundredths,
+  MAX_PET_WEIGHT_KG,
+  PET_WEIGHT_MEMO_MAX_LENGTH
+} from "@/lib/pet-weight-rules";
 import { isWeightInTenths, MAX_WEIGHT_G } from "@/lib/weight-rules";
 
 export const idSchema = z.string().min(1);
@@ -94,6 +99,38 @@ export const updatePetSchema = createPetSchema.omit({
 export const updatePetActiveStatusSchema = z.object({
   id: idSchema,
   isActive: z.enum(["true", "false"]).transform((value) => value === "true")
+});
+
+const petWeightRecordDateSchema = z
+  .string()
+  .refine(isValidDateInput, { message: "invalidDate" })
+  .refine((value) => !isValidDateInput(value) || value <= todayInputJst(), { message: "future" });
+
+// Pet体重メモは空文字を未入力として統一し、DBのVARCHAR(500)上限に合わせる。
+const nullablePetWeightMemoSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}, z.string().max(PET_WEIGHT_MEMO_MAX_LENGTH).nullable());
+
+export const createPetWeightRecordSchema = z.object({
+  petId: idSchema,
+  recordDate: petWeightRecordDateSchema,
+  weightKg: z.coerce
+    .number()
+    .positive({ message: "positive" })
+    .max(MAX_PET_WEIGHT_KG, { message: "max" })
+    .refine(isPetWeightInHundredths, { message: "weightIncrement" }),
+  memo: nullablePetWeightMemoSchema
+});
+
+export const updatePetWeightRecordSchema = createPetWeightRecordSchema.extend({
+  id: idSchema
+});
+
+export const deletePetWeightRecordSchema = z.object({
+  id: idSchema,
+  petId: idSchema
 });
 
 export const createWeightRecordSchema = z.object({

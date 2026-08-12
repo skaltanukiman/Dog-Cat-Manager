@@ -52,11 +52,28 @@ model Pet {
   isActive             Boolean    @default(true) @map("is_active")
   createdAt            DateTime   @default(now()) @map("created_at")
   updatedAt            DateTime   @updatedAt @map("updated_at")
+  weightRecords        PetWeightRecord[]
 
   @@unique([householdId, name])
   @@index([householdId, createdAt])
   @@index([householdId, species])
   @@map("pets")
+}
+
+model PetWeightRecord {
+  id         String   @id @default(cuid())
+  petId      String   @map("pet_id")
+  pet        Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  recordDate DateTime @map("record_date") @db.Date
+  weightKg   Decimal  @map("weight_kg") @db.Decimal(5, 2)
+  memo       String?  @db.VarChar(500)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Petの体重は暦日単位で管理し、同じPetには1日1件だけ保存する。
+  @@unique([petId, recordDate])
+  @@index([recordDate])
+  @@map("pet_weight_records")
 }
 
 enum PetSpecies {
@@ -458,6 +475,9 @@ enum HouseholdActivityEvent {
   WEIGHTS_BULK_DELETED
   WEIGHT_CSV_APP_IMPORTED
   WEIGHT_CSV_GAS_IMPORTED
+  PET_WEIGHT_CREATED
+  PET_WEIGHT_UPDATED
+  PET_WEIGHT_DELETED
   CLEANING_MONTH_SAVED
   HEALTH_RECORD_CREATED
   HEALTH_RECORD_UPDATED

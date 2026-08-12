@@ -91,14 +91,12 @@ test("記録カードのハムスターリンク後はURL・選択UI・登録先
   assert.match(page, /<RecordTimeline records=\{data\.records\} hamsters=\{data\.hamsters\} scope=\{scope\} returnHamsterId=\{selectedHamsterId\}/);
 });
 
-test("共通選択コンポーネントを使う記録・清掃・体重・CSV出力の既存利用形態を維持する", () => {
+test("共通Hamster選択コンポーネントを使う清掃・CSV出力の既存利用形態を維持する", () => {
   const selector = source("src/components/hamster-selector-input.tsx");
   const cleaning = source("src/app/(app)/cleaning/page.tsx");
-  const weights = source("src/app/(app)/weights/page.tsx");
   const exportForm = source("src/components/weight-csv-export-form.tsx");
 
   assert.match(cleaning, /<HamsterSelectorInput[\s\S]*selectedId=\{selectedHamster\?\.id \?\? ""\}/);
-  assert.match(weights, /<HamsterSelectorInput[\s\S]*selectedId=\{selectedHamster\?\.id \?\? ""\}/);
   assert.match(exportForm, /<HamsterSelectorInput[\s\S]*allOptionLabel="すべて"[\s\S]*autoSubmit=\{false\}/);
   assert.match(selector, /if \(!autoSubmit\)/);
   assert.match(selector, /<select[\s\S]*onChange=\{\(event\) => setSelectValue\(event\.currentTarget\.value\)\}/);
@@ -109,6 +107,7 @@ test("通常画面は現在ユーザー・Householdのダッシュボード設�
   const recordQueries = source("src/lib/record-queries.ts");
   const cleaningPage = source("src/app/(app)/cleaning/page.tsx");
   const weightsPage = source("src/app/(app)/weights/page.tsx");
+  const petWeightQueries = source("src/lib/pet-weight-queries.ts");
   const getOptionsSource = queries.slice(
     queries.indexOf("export async function getHamsterOptions"),
     queries.indexOf("export async function getHamsterSelectorMode")
@@ -137,7 +136,8 @@ test("通常画面は現在ユーザー・Householdのダッシュボード設�
   assert.match(weightSource, /orderHamstersForSelector\([\s\S]*includeInactive\s*\)/);
   assert.match(recordQueries, /orderHamstersForSelector\([\s\S]*true\s*\)/);
   assert.match(cleaningPage, /options=\{hamsters\}/);
-  assert.match(weightsPage, /options=\{hamsters\}/);
+  assert.match(petWeightQueries, /where: \{ householdId: context\.household\.id \}/);
+  assert.match(weightsPage, /pets\.map\(\(pet\) =>/);
 });
 
 test("プルダウンとコンボボックスは候補配列順を共有し、検索時にも並べ替えない", () => {

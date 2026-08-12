@@ -12,6 +12,7 @@ import { logUnexpectedError } from "@/lib/server-errors";
 export type HouseholdChangeSource =
   | "hamster"
   | "pet"
+  | "petWeight"
   | "cleaning"
   | "feeding"
   | "waterReplacement"
