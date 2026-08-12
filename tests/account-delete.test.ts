@@ -639,7 +639,7 @@ test("設定・確認UIは確認導線、件数サマリー、グループ別表
   assert.match(loginPage, /アカウントの削除が完了しました/);
   assert.match(loginPage, /同じGoogleアカウントで再度ログインした場合は、新しいアカウントとして開始されます/);
   assert.match(authContext, /cookieStore\.delete\(CURRENT_HOUSEHOLD_COOKIE\)/);
-  assert.match(authContext, /authjs\.session-token/);
+  assert.match(authContext, /DOG_CAT_AUTH_SESSION_COOKIE_NAMES/);
 });
 
 test("アカウント削除の対応要否は移譲とblockedだけを対象にする", () => {

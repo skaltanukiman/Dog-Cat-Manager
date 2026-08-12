@@ -202,7 +202,7 @@ Docker Compose v1 の `docker-compose` で `KeyError: 'ContainerConfig'` が出�
 - `src/proxy.ts` で未ログインユーザーを `/login` へリダイレクト。
 - DBアクセス前は `src/lib/auth-context.ts` の `getRequiredHouseholdContext()` でログインユーザーと現在の Household を取得する。
 - 初回ログインで Household がなければ個人用 Household を自動作成。同じユーザーの初期作成は PostgreSQL advisory transaction lock で直列化し、並行初期表示による二重作成を防ぐ。
-- 現在は cookie `hamster_current_household` があればその Household を使う。cookie がない場合は招待参加した共有中 Household を優先し、なければ最初の membership を操作対象にする。
+- 現在はDog-Cat専用cookie `dog_cat_manager_current_household` があればその Household を使う。cookie がない場合は招待参加した共有中 Household を優先し、なければ最初の membership を操作対象にする。Hamster ManagerのHousehold選択cookieは読み取り・書き込み・削除しない。
 - 複数の Household に所属している場合は `src/components/household-switcher.tsx` がヘッダーに「操作対象」を出し、`switchCurrentHousehold()` で cookie を更新する。
 - `/settings/members` でメンバー一覧、招待リンク作成、メンバー参加解除。
 - 招待リンクを作成できるのは Household の `OWNER` / `ADMIN`。

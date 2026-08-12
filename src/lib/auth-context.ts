@@ -8,7 +8,7 @@ import { canEditHouseholdSharedData, hasAuthenticatedUserId } from "@/lib/author
 import { DEFAULT_DASHBOARD_BOARD_COUNT, DEFAULT_HAMSTER_SELECTOR_MODE } from "@/lib/dashboard-settings";
 import { prisma } from "@/lib/prisma";
 
-export const CURRENT_HOUSEHOLD_COOKIE = "hamster_current_household";
+export const CURRENT_HOUSEHOLD_COOKIE = "dog_cat_manager_current_household";
 export const DEFAULT_HOUSEHOLD_NAME_SUFFIX = "の犬・猫管理";
 
 export type SessionUser = {

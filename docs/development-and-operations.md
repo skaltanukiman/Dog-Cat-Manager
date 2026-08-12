@@ -993,7 +993,7 @@ CIが失敗した場合は、GitHub Actionsの `Quality, Tests, Build & Migratio
 
 初回 Google ログイン時に、そのユーザーがどの Household にも所属していなければ個人用 Household を自動作成します。以降のハムスター登録、衛生記録、体重記録は現在の Household に紐づきます。
 
-複数の Household に所属している場合は、ヘッダーの「操作対象」で現在の Household を切り替えます。選択結果は `hamster_current_household` cookie に保存します。cookie がない場合は、招待参加した共有中 Household を優先し、それもなければ最初の membership を操作対象にします。
+複数の Household に所属している場合は、ヘッダーの「操作対象」で現在の Household を切り替えます。選択結果はDog-Cat専用の `dog_cat_manager_current_household` cookie に保存します。cookie がない場合は、招待参加した共有中 Household を優先し、それもなければ最初の membership を操作対象にします。Hamster ManagerのHousehold選択cookieは読み取り・書き込み・削除の対象にしません。
 
 共有メンバーを招待する手順:
 
