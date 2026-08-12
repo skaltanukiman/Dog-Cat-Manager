@@ -34,9 +34,17 @@ Hamster Manager とは別DB・別Sessionで運用する。開発用Docker環境�
 
 ## 段階的な拡張予定
 
-- `/care` に犬猫共通の食事・水管理を追加する。
+- `/care` は犬猫共通のPetお世話画面とし、食事と水をイベント履歴として管理する。
 - DOGには散歩、CATには猫トイレの管理を追加する。
 - `/weights` をPet向けの体重履歴・グラフとして追加する。
 - `/records` にPet向けの健康・通院・投薬・ワクチン・思い出を追加する。
 
 これらはPetを中心に関連付けるが、基本プロフィール機能の段階では先行実装しない。Hamster固有機能はPet側の代替機能を実装・確認してから段階的に置換し、動作確認前に一括削除または一括リネームしない。
+
+## Petお世話履歴
+
+- 食事はPet専用の `PetFeedingRecord`、水はPet専用の `PetWaterRecord` で管理し、旧Hamsterの `FeedingRecord` / `WaterReplacementRecord` とは移行期間中共存する。
+- Pet Careは1日1回の完了状態ではなくイベント履歴型であり、同一Pet・同一お世話日に食事・水を複数件登録できる。食事は日時とmemo、水は日時・`REPLACED`（交換）/ `REFILLED`（補充）・memoを持つ。
+- timestampはUTCで保存し、画面入出力はJSTへ明示変換する。`recordDate` は作成・日時更新時点の `Household.careDayStartMinutes` から算出し、設定変更後も既存履歴を再計算しない。
+- VIEWERと管理終了Petは履歴閲覧だけを許可する。変更ActionはHousehold境界とtransaction内の最新membershipを再確認する。
+- DOG散歩・CATトイレは後続Phaseとする。1日1回完了を前提とする既存Hamster通知はPet Careへ移植しない。

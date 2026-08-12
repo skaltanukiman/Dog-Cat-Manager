@@ -19,7 +19,7 @@ const primaryNavItems = [
   { href: "/", label: "ダッシュボード", mobileLabel: "ホーム", icon: LayoutDashboard },
   { href: "/pets", label: "犬・猫", mobileLabel: "犬・猫", icon: PawPrint },
   { href: "/records", label: "記録", mobileLabel: "記録", icon: BookHeart },
-  { href: "/cleaning", label: "衛生管理", mobileLabel: "衛生", icon: ClipboardCheck },
+  { href: "/care", label: "お世話管理", mobileLabel: "お世話", icon: ClipboardCheck },
   { href: "/weights", label: "体重管理", mobileLabel: "体重", icon: LineChart }
 ];
 

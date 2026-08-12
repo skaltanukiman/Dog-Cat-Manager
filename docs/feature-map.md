@@ -121,6 +121,17 @@
 - **関連テスト:** `tests/pet-weight-validation.test.ts`、`tests/pet-weights.test.ts`、`tests/pets.test.ts`、`tests/authorization.test.ts`、`tests/weight-validation.test.ts`。
 - **移行:** 旧Hamsterの `WeightRecord`、`src/app/actions/weights.ts`、Hamster用component・CSV route・ルール・テストは移行期間中そのまま共存するが、Pet版 `/weights` からHamster用CSV import/exportへリンクしない。Pet版安定後にHamster体重機能を段階的に撤去し、必要なら将来 `PetWeightRecord` から `WeightRecord` への名称整理を検討する。
 
+## Petお世話履歴
+
+- **画面または URL:** `/care`。現在Householdの犬・猫をspecies付きで選択し、`date=YYYY-MM-DD`で1 Pet・1お世話日を表示する。現在のお世話日は `Household.careDayStartMinutes` を基準に算出し、未来日・不正日は現在のお世話日へ正規化する。
+- **主なコンポーネント:** `PetThumbnail`、`AutoSubmitInput` / `AutoSubmitSelect`、`StatusMessage`。食事と水の登録・編集・1件削除を提供し、管理終了Petも切替表示できる。
+- **Server Action:** `createPetFeedingRecord` / `updatePetFeedingRecord` / `deletePetFeedingRecord`（`src/app/actions/pet-feeding.ts`）、`createPetWaterRecord` / `updatePetWaterRecord` / `deletePetWaterRecord`（`src/app/actions/pet-water.ts`）。全Actionが現在Householdとtransaction内の最新membership、Pet管理状態を再確認する。
+- **データアクセス・Prismaモデル:** `getPetCarePageData`、`PetFeedingRecord`、`PetWaterRecord`、`PetWaterAction`。旧Hamsterの `FeedingRecord` / `WaterReplacementRecord` とは独立したイベント履歴型で、同一Pet・同一お世話日に複数件を許可する。食事はUTC timestampの日時と500文字memo、水は日時・`REPLACED` / `REFILLED`・500文字memoを保存する。
+- **日時・お世話日:** `src/lib/pet-care.ts` でJSTの厳密な `datetime-local` をUTCへ変換する。`recordDate` は記録作成・日時更新時点の `careDayStartMinutes` から算出し、設定変更時に過去行を再計算しない。未来日時と表示中のお世話日外への登録・編集をServer Actionで拒否する。
+- **認可・管理終了:** VIEWERと管理終了Petは履歴閲覧のみ。別HouseholdのPet・記録IDを直接送信しても閲覧・登録・編集・削除できない。
+- **Realtime・操作履歴:** 食事は `petFeeding`、水は `petWater` sourceを使用する。`PET_FEEDING_*` / `PET_WATER_*` の6イベントへJST表示用日時と水actionだけを記録し、memo本文は複製しない。
+- **対象外:** DOG散歩・CATトイレ、Pet Care通知、Dashboard・`/records` のPet化は後続Phase。既存Hamster通知は変更しない。
+
 ## 体重 CSV エクスポート
 
 - **ハムスター候補順:** `getHamsterOptions` が現在のユーザー・Householdのダッシュボード設定と `orderHamstersForSelector` を使って管理外を含む候補順を確定する。画面の「すべて」は候補配列より前に置く。

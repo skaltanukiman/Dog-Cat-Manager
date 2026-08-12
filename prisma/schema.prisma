@@ -36,23 +36,25 @@ model Hamster {
 }
 
 model Pet {
-  id                   String     @id @default(cuid())
-  householdId          String     @map("household_id")
-  household            Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  id                   String             @id @default(cuid())
+  householdId          String             @map("household_id")
+  household            Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
   // ペット名はHousehold内だけで重複を避け、別Householdでは同名を許可する。
   name                 String
   species              PetSpecies
   breed                String?
-  sex                  PetSex     @default(UNKNOWN)
-  birthDate            DateTime?  @map("birth_date") @db.Date
-  adoptionDate         DateTime?  @map("adoption_date") @db.Date
-  profileImageFileName String?    @map("profile_image_file_name")
-  memo                 String?    @db.Text
+  sex                  PetSex             @default(UNKNOWN)
+  birthDate            DateTime?          @map("birth_date") @db.Date
+  adoptionDate         DateTime?          @map("adoption_date") @db.Date
+  profileImageFileName String?            @map("profile_image_file_name")
+  memo                 String?            @db.Text
   // 管理終了後もPet本体を保持し、将来追加する履歴の参照先を維持する。
-  isActive             Boolean    @default(true) @map("is_active")
-  createdAt            DateTime   @default(now()) @map("created_at")
-  updatedAt            DateTime   @updatedAt @map("updated_at")
+  isActive             Boolean            @default(true) @map("is_active")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
   weightRecords        PetWeightRecord[]
+  feedingRecords       PetFeedingRecord[]
+  waterRecords         PetWaterRecord[]
 
   @@unique([householdId, name])
   @@index([householdId, createdAt])
@@ -74,6 +76,50 @@ model PetWeightRecord {
   @@unique([petId, recordDate])
   @@index([recordDate])
   @@map("pet_weight_records")
+}
+
+model PetFeedingRecord {
+  id              String   @id @default(cuid())
+  petId           String   @map("pet_id")
+  pet             Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  // 記録時点のHousehold日替わり時刻で確定したお世話日。設定変更では再計算しない。
+  recordDate      DateTime @map("record_date") @db.Date
+  fedAt           DateTime @map("fed_at")
+  memo            String?  @db.VarChar(500)
+  createdByUserId String?  @map("created_by_user_id")
+  createdBy       User?    @relation("PetFeedingRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Pet Careはイベント履歴のため、同じPet・同じお世話日の複数記録を許可する。
+  @@index([petId, recordDate, fedAt])
+  @@index([createdByUserId])
+  @@map("pet_feeding_records")
+}
+
+model PetWaterRecord {
+  id              String         @id @default(cuid())
+  petId           String         @map("pet_id")
+  pet             Pet            @relation(fields: [petId], references: [id], onDelete: Cascade)
+  // 記録時点のHousehold日替わり時刻で確定したお世話日。設定変更では再計算しない。
+  recordDate      DateTime       @map("record_date") @db.Date
+  caredAt         DateTime       @map("cared_at")
+  action          PetWaterAction
+  memo            String?        @db.VarChar(500)
+  createdByUserId String?        @map("created_by_user_id")
+  createdBy       User?          @relation("PetWaterRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  // Pet Careはイベント履歴のため、同じPet・同じお世話日の複数記録を許可する。
+  @@index([petId, recordDate, caredAt])
+  @@index([createdByUserId])
+  @@map("pet_water_records")
+}
+
+enum PetWaterAction {
+  REPLACED
+  REFILLED
 }
 
 enum PetSpecies {
@@ -220,6 +266,8 @@ model User {
   createdHamsterRecords          HamsterRecord[]            @relation("HamsterRecordCreator")
   createdFeedingRecords          FeedingRecord[]            @relation("FeedingRecordCreator")
   createdWaterReplacementRecords WaterReplacementRecord[]   @relation("WaterReplacementRecordCreator")
+  createdPetFeedingRecords       PetFeedingRecord[]         @relation("PetFeedingRecordCreator")
+  createdPetWaterRecords         PetWaterRecord[]           @relation("PetWaterRecordCreator")
   createdSavedMemoryTags         SavedMemoryTag[]           @relation("SavedMemoryTagCreator")
   householdActivities            HouseholdActivity[]        @relation("HouseholdActivityActor")
   suspendedBy                    User?                      @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
@@ -478,6 +526,12 @@ enum HouseholdActivityEvent {
   PET_WEIGHT_CREATED
   PET_WEIGHT_UPDATED
   PET_WEIGHT_DELETED
+  PET_FEEDING_CREATED
+  PET_FEEDING_UPDATED
+  PET_FEEDING_DELETED
+  PET_WATER_CREATED
+  PET_WATER_UPDATED
+  PET_WATER_DELETED
   CLEANING_MONTH_SAVED
   HEALTH_RECORD_CREATED
   HEALTH_RECORD_UPDATED

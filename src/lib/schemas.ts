@@ -9,6 +9,7 @@ import {
   MAX_PET_WEIGHT_KG,
   PET_WEIGHT_MEMO_MAX_LENGTH
 } from "@/lib/pet-weight-rules";
+import { isValidJstDateTimeLocal, PET_CARE_MEMO_MAX_LENGTH } from "@/lib/pet-care";
 import { isWeightInTenths, MAX_WEIGHT_G } from "@/lib/weight-rules";
 
 export const idSchema = z.string().min(1);
@@ -129,6 +130,46 @@ export const updatePetWeightRecordSchema = createPetWeightRecordSchema.extend({
 });
 
 export const deletePetWeightRecordSchema = z.object({
+  id: idSchema,
+  petId: idSchema
+});
+
+const petCareDateTimeSchema = z.string().refine(isValidJstDateTimeLocal, { message: "invalidDateTime" });
+
+// Pet Careのメモは空白だけなら未入力として扱い、DBのVARCHAR(500)と上限を揃える。
+const nullablePetCareMemoSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}, z.string().max(PET_CARE_MEMO_MAX_LENGTH).nullable());
+
+export const createPetFeedingRecordSchema = z.object({
+  petId: idSchema,
+  fedAt: petCareDateTimeSchema,
+  memo: nullablePetCareMemoSchema
+});
+
+export const updatePetFeedingRecordSchema = createPetFeedingRecordSchema.extend({
+  id: idSchema
+});
+
+export const deletePetFeedingRecordSchema = z.object({
+  id: idSchema,
+  petId: idSchema
+});
+
+export const createPetWaterRecordSchema = z.object({
+  petId: idSchema,
+  caredAt: petCareDateTimeSchema,
+  action: z.enum(["REPLACED", "REFILLED"]),
+  memo: nullablePetCareMemoSchema
+});
+
+export const updatePetWaterRecordSchema = createPetWaterRecordSchema.extend({
+  id: idSchema
+});
+
+export const deletePetWaterRecordSchema = z.object({
   id: idSchema,
   petId: idSchema
 });

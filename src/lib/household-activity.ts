@@ -4,6 +4,7 @@ import type {
   HouseholdRole,
   Prisma
 } from "@prisma/client";
+import { formatDateTimeJst } from "@/lib/date";
 
 export const HOUSEHOLD_ACTIVITY_PAGE_SIZE = 20;
 export const ACTOR_NAME_FALLBACK = "名前未設定";
@@ -94,6 +95,16 @@ function formatMonthInput(value: string | null) {
   return match ? `${Number(match[1])}年${Number(match[2])}月` : null;
 }
 
+function formatTimestamp(value: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? formatDateTimeJst(date) : null;
+}
+
+function waterActionLabel(value: string | null) {
+  return value === "REPLACED" ? "交換" : value === "REFILLED" ? "補充" : null;
+}
+
 export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
   const actor = activity.actorNameSnapshot || ACTOR_NAME_FALLBACK;
   const target = activity.targetNameSnapshot || "対象";
@@ -156,6 +167,42 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
         const weight = numberDetail(details, "weightKg");
         const date = formatDateInput(stringDetail(details, "recordDate"));
         return { summary: `${actor}さんが「${target}」の体重記録を削除しました`, detail: weight !== null && date ? `${weight}kg・${date}` : null };
+      }
+      case "PET_FEEDING_CREATED":
+        return {
+          summary: `${actor}さんが「${target}」の食事を記録しました`,
+          detail: formatTimestamp(stringDetail(details, "fedAt"))
+        };
+      case "PET_FEEDING_UPDATED":
+        return {
+          summary: `${actor}さんが「${target}」の食事を更新しました`,
+          detail: formatTimestamp(stringDetail(details, "fedAt"))
+        };
+      case "PET_FEEDING_DELETED":
+        return {
+          summary: `${actor}さんが「${target}」の食事記録を削除しました`,
+          detail: formatTimestamp(stringDetail(details, "fedAt"))
+        };
+      case "PET_WATER_CREATED": {
+        const action = waterActionLabel(stringDetail(details, "action"));
+        return {
+          summary: `${actor}さんが「${target}」の水を${action ?? "お世話"}しました`,
+          detail: formatTimestamp(stringDetail(details, "caredAt"))
+        };
+      }
+      case "PET_WATER_UPDATED": {
+        const action = waterActionLabel(stringDetail(details, "action"));
+        return {
+          summary: `${actor}さんが「${target}」の水のお世話を更新しました`,
+          detail: [formatTimestamp(stringDetail(details, "caredAt")), action].filter(Boolean).join("・") || null
+        };
+      }
+      case "PET_WATER_DELETED": {
+        const action = waterActionLabel(stringDetail(details, "action"));
+        return {
+          summary: `${actor}さんが「${target}」の水の${action ? `${action}記録` : "記録"}を削除しました`,
+          detail: formatTimestamp(stringDetail(details, "caredAt"))
+        };
       }
       case "CLEANING_MONTH_SAVED": {
         const month = formatMonthInput(stringDetail(details, "yearMonth"));

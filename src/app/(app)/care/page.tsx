@@ -1,0 +1,310 @@
+import Link from "next/link";
+
+import {
+  createPetFeedingRecord,
+  deletePetFeedingRecord,
+  updatePetFeedingRecord
+} from "@/app/actions/pet-feeding";
+import { createPetWaterRecord, deletePetWaterRecord, updatePetWaterRecord } from "@/app/actions/pet-water";
+import { AutoSubmitInput } from "@/components/auto-submit-input";
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { EmptyState } from "@/components/empty-state";
+import { PetThumbnail } from "@/components/pet-thumbnail";
+import { StatusMessage } from "@/components/status-message";
+import { canEditHouseholdSharedData } from "@/lib/authorization";
+import { formatTimeJst } from "@/lib/date";
+import {
+  careDateStartDateTimeLocal,
+  formatJstDateTimeLocal,
+  PET_CARE_MEMO_MAX_LENGTH,
+  PET_WATER_ACTION_LABELS
+} from "@/lib/pet-care";
+import { getPetCarePageData } from "@/lib/pet-care-queries";
+
+export const dynamic = "force-dynamic";
+
+const SPECIES_LABELS = { DOG: "犬", CAT: "猫" } as const;
+
+function getParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function creatorName(value: string | null | undefined) {
+  return value?.trim() || "記録者不明";
+}
+
+function MutationHiddenFields({
+  petId,
+  careDate,
+  includeInactive
+}: {
+  petId: string;
+  careDate: string;
+  includeInactive: boolean;
+}) {
+  return (
+    <>
+      <input type="hidden" name="petId" value={petId} />
+      <input type="hidden" name="careDate" value={careDate} />
+      {includeInactive ? <input type="hidden" name="includeInactive" value="1" /> : null}
+    </>
+  );
+}
+
+export default async function CarePage({
+  searchParams
+}: {
+  searchParams: Promise<{
+    petId?: string | string[];
+    date?: string | string[];
+    status?: string | string[];
+    errorId?: string | string[];
+    includeInactive?: string | string[];
+  }>;
+}) {
+  const params = await searchParams;
+  const includeInactive = getParam(params.includeInactive) === "1";
+  const now = new Date();
+  const {
+    context,
+    pets,
+    totalPets,
+    selectedPet,
+    selectedCareDate,
+    currentCareDate,
+    feedingRecords,
+    waterRecords
+  } = await getPetCarePageData({
+    selectedPetId: getParam(params.petId),
+    requestedCareDate: getParam(params.date),
+    includeInactive,
+    now
+  });
+  const canEdit = canEditHouseholdSharedData(context.membership.role);
+  const canMutateSelectedPet = canEdit && Boolean(selectedPet?.isActive);
+  const maxDateTime = formatJstDateTimeLocal(now);
+  const defaultDateTime =
+    selectedCareDate === currentCareDate
+      ? maxDateTime
+      : careDateStartDateTimeLocal(selectedCareDate, context.household.careDayStartMinutes);
+  const todayQuery = new URLSearchParams();
+  if (selectedPet) todayQuery.set("petId", selectedPet.id);
+  if (includeInactive) todayQuery.set("includeInactive", "1");
+  const todayHref = todayQuery.size > 0 ? `/care?${todayQuery.toString()}` : "/care";
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h2 className="text-xl font-bold text-ink">お世話管理</h2>
+        <p className="mt-1 text-sm text-slate-600">犬・猫の食事や水のお世話を記録します。</p>
+      </header>
+
+      <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
+
+      {totalPets === 0 ? (
+        canEdit ? (
+          <EmptyState title="先に犬・猫を登録してください。" href="/pets" actionLabel="犬・猫を登録する" />
+        ) : (
+          <p className="rounded-md border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+            閲覧できる犬・猫はまだ登録されていません。
+          </p>
+        )
+      ) : (
+        <>
+          <form method="get" className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              犬・猫
+              <AutoSubmitSelect name="petId" defaultValue={selectedPet?.id ?? ""} disabled={pets.length === 0}>
+                <option value="">選択してください</option>
+                {pets.map((pet) => (
+                  <option key={pet.id} value={pet.id}>
+                    {pet.name}（{SPECIES_LABELS[pet.species]}）{pet.isActive ? "" : "・管理終了"}
+                  </option>
+                ))}
+              </AutoSubmitSelect>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              お世話日
+              <AutoSubmitInput type="date" name="date" defaultValue={selectedCareDate} max={currentCareDate} />
+            </label>
+            <label className="inline-flex h-10 items-center gap-2 text-sm font-medium text-slate-700">
+              <AutoSubmitInput type="checkbox" name="includeInactive" value="1" defaultChecked={includeInactive} />
+              管理終了したPetも含む
+            </label>
+            <div className="flex items-center md:justify-end">
+              <Link href={todayHref} className="text-sm font-semibold text-moss hover:underline">
+                今日に戻る
+              </Link>
+            </div>
+          </form>
+
+          {!selectedPet ? (
+            <p className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              {pets.length > 0
+                ? "犬・猫を選択すると、食事と水のお世話履歴を表示します。"
+                : "管理中の犬・猫がいません。履歴を見る場合は「管理終了したPetも含む」を選択してください。"}
+            </p>
+          ) : (
+            <div className="space-y-6">
+              <section className="flex items-center gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+                <PetThumbnail
+                  petId={selectedPet.id}
+                  petName={selectedPet.name}
+                  profileImageFileName={selectedPet.profileImageFileName}
+                />
+                <div>
+                  <h3 className="text-lg font-bold text-ink">{selectedPet.name}</h3>
+                  <p className="text-sm text-slate-600">{SPECIES_LABELS[selectedPet.species]}・お世話日 {selectedCareDate.replaceAll("-", "/")}</p>
+                </div>
+              </section>
+
+              {!canEdit ? (
+                <p className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  閲覧者はお世話履歴を閲覧できますが、登録・編集・削除は実行できません。
+                </p>
+              ) : !selectedPet.isActive ? (
+                <p className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  この犬・猫は管理終了済みのため、お世話履歴の閲覧のみ可能です。
+                </p>
+              ) : null}
+
+              <section className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-bold text-ink">食事</h3>
+                  <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
+                </div>
+                {canMutateSelectedPet ? (
+                  <form action={createPetFeedingRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+                    <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
+                    <label className="grid gap-1 text-sm font-medium text-slate-700">
+                      日時
+                      <input type="datetime-local" name="fedAt" defaultValue={defaultDateTime} max={maxDateTime} required />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-slate-700">
+                      メモ
+                      <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="朝ごはん" />
+                    </label>
+                    <button type="submit" className="rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-2">
+                      登録
+                    </button>
+                  </form>
+                ) : null}
+                {feedingRecords.length === 0 ? (
+                  <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">食事記録はありません。</p>
+                ) : (
+                  <div className="space-y-3">
+                    {feedingRecords.map((record) => (
+                      <article key={record.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="text-lg font-bold text-ink">{formatTimeJst(record.fedAt)}</p>
+                          <p className="text-xs text-slate-500">記録: {creatorName(record.createdBy?.name)}</p>
+                        </div>
+                        {!canMutateSelectedPet ? (
+                          record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
+                        ) : (
+                          <div className="mt-4 grid gap-3">
+                            <form action={updatePetFeedingRecord} className="grid gap-3 md:grid-cols-2">
+                              <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
+                              <input type="hidden" name="id" value={record.id} />
+                              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                                日時
+                                <input type="datetime-local" name="fedAt" defaultValue={formatJstDateTimeLocal(record.fedAt)} max={maxDateTime} required />
+                              </label>
+                              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                                メモ
+                                <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
+                              </label>
+                              <button type="submit" className="rounded-md border border-moss px-4 py-2 text-sm font-semibold text-moss hover:bg-moss/5 md:col-span-2">更新</button>
+                            </form>
+                            <form action={deletePetFeedingRecord}>
+                              <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
+                              <input type="hidden" name="id" value={record.id} />
+                              <button type="submit" className="text-sm font-semibold text-red-600 hover:underline">この食事記録を削除</button>
+                            </form>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-bold text-ink">水</h3>
+                  <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
+                </div>
+                {canMutateSelectedPet ? (
+                  <form action={createPetWaterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
+                    <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
+                    <label className="grid gap-1 text-sm font-medium text-slate-700">
+                      日時
+                      <input type="datetime-local" name="caredAt" defaultValue={defaultDateTime} max={maxDateTime} required />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-slate-700">
+                      内容
+                      <select name="action" defaultValue="REPLACED" required>
+                        <option value="REPLACED">水を交換</option>
+                        <option value="REFILLED">水を補充</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-slate-700">
+                      メモ
+                      <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="容器も洗浄" />
+                    </label>
+                    <button type="submit" className="rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-3">登録</button>
+                  </form>
+                ) : null}
+                {waterRecords.length === 0 ? (
+                  <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">水の記録はありません。</p>
+                ) : (
+                  <div className="space-y-3">
+                    {waterRecords.map((record) => (
+                      <article key={record.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="text-lg font-bold text-ink">{formatTimeJst(record.caredAt)}・{PET_WATER_ACTION_LABELS[record.action]}</p>
+                          <p className="text-xs text-slate-500">記録: {creatorName(record.createdBy?.name)}</p>
+                        </div>
+                        {!canMutateSelectedPet ? (
+                          record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
+                        ) : (
+                          <div className="mt-4 grid gap-3">
+                            <form action={updatePetWaterRecord} className="grid gap-3 md:grid-cols-3">
+                              <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
+                              <input type="hidden" name="id" value={record.id} />
+                              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                                日時
+                                <input type="datetime-local" name="caredAt" defaultValue={formatJstDateTimeLocal(record.caredAt)} max={maxDateTime} required />
+                              </label>
+                              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                                内容
+                                <select name="action" defaultValue={record.action} required>
+                                  <option value="REPLACED">水を交換</option>
+                                  <option value="REFILLED">水を補充</option>
+                                </select>
+                              </label>
+                              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                                メモ
+                                <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
+                              </label>
+                              <button type="submit" className="rounded-md border border-moss px-4 py-2 text-sm font-semibold text-moss hover:bg-moss/5 md:col-span-3">更新</button>
+                            </form>
+                            <form action={deletePetWaterRecord}>
+                              <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
+                              <input type="hidden" name="id" value={record.id} />
+                              <button type="submit" className="text-sm font-semibold text-red-600 hover:underline">この水の記録を削除</button>
+                            </form>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

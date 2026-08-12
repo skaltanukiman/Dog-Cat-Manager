@@ -183,6 +183,16 @@ test("共有データ更新Server Actionは直接呼び出されても共通更�
       "updatePetWeightRecord",
       "deletePetWeightRecord"
     ],
+    "src/app/actions/pet-feeding.ts": [
+      "createPetFeedingRecord",
+      "updatePetFeedingRecord",
+      "deletePetFeedingRecord"
+    ],
+    "src/app/actions/pet-water.ts": [
+      "createPetWaterRecord",
+      "updatePetWaterRecord",
+      "deletePetWaterRecord"
+    ],
     "src/app/actions/records.ts": [
       "createHealthRecord",
       "createMedicalRecord",
