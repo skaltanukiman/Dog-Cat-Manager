@@ -49,7 +49,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Docker コンテナを起動しました。"
 
 # ブラウザで localhost を開く
-Start-Process "http://localhost:3001"
+Start-Process "http://localhost:3002"
 
 Write-Host ""
 Write-Host "準備が完了しました。"

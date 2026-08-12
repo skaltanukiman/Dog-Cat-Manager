@@ -3,13 +3,13 @@ import { redirect } from "next/navigation";
 import type { AppRole, HouseholdRole, UserAccessStatus } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { DOG_CAT_AUTH_SESSION_COOKIE_NAMES } from "@/lib/auth-cookies";
 import { canEditHouseholdSharedData, hasAuthenticatedUserId } from "@/lib/authorization";
 import { DEFAULT_DASHBOARD_BOARD_COUNT, DEFAULT_HAMSTER_SELECTOR_MODE } from "@/lib/dashboard-settings";
 import { prisma } from "@/lib/prisma";
 
 export const CURRENT_HOUSEHOLD_COOKIE = "hamster_current_household";
 export const DEFAULT_HOUSEHOLD_NAME_SUFFIX = "の犬・猫管理";
-export const AUTH_SESSION_COOKIE_NAMES = ["authjs.session-token", "__Secure-authjs.session-token"] as const;
 
 export type SessionUser = {
   id: string;
@@ -291,14 +291,14 @@ export async function setCurrentHouseholdCookie(householdId: string) {
 
 export async function clearDeletedAccountCookies() {
   const cookieStore = await cookies();
-  const sessionCookieNames = new Set<string>(AUTH_SESSION_COOKIE_NAMES);
+  const sessionCookieNames = new Set<string>(DOG_CAT_AUTH_SESSION_COOKIE_NAMES);
 
   cookieStore.delete(CURRENT_HOUSEHOLD_COOKIE);
   // DB SessionはUserのCascadeで消える。ブラウザー側も通常・Secure双方と分割cookieを破棄する。
   for (const cookie of cookieStore.getAll()) {
     if (
       sessionCookieNames.has(cookie.name) ||
-      AUTH_SESSION_COOKIE_NAMES.some((name) => cookie.name.startsWith(`${name}.`))
+      DOG_CAT_AUTH_SESSION_COOKIE_NAMES.some((name) => cookie.name.startsWith(`${name}.`))
     ) {
       cookieStore.delete(cookie.name);
     }

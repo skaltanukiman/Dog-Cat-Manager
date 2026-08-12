@@ -6,8 +6,10 @@ import { writeServerLog } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { logUnexpectedError } from "@/lib/server-errors";
 import { isSuspendedUserForSignIn } from "@/lib/user-access";
+import { createDogCatAuthCookieConfig } from "@/lib/auth-cookies";
 
 const baseAdapter = PrismaAdapter(prisma);
+const authCookieConfig = createDogCatAuthCookieConfig();
 
 const suspensionAwareAdapter = {
   ...baseAdapter,
@@ -41,6 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     updateAge: 24 * 60 * 60
   },
   trustHost: true,
+  ...authCookieConfig,
   logger: {
     error(error) {
       logUnexpectedError(error, { operation: "auth.nextAuth" });

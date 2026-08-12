@@ -44,7 +44,7 @@
   - `dog-cat-manager-web`
   - `dog-cat-manager-db`
 - ホスト側ポート:
-  - Next.js: `3001`
+  - Next.js: `3002`
   - PostgreSQL: `127.0.0.1:5433`
 - コンテナ内ポート:
   - Next.js: `3000`
@@ -86,7 +86,7 @@ Auth.js / Google OAuth 用:
 AUTH_SECRET=
 AUTH_GOOGLE_ID=
 AUTH_GOOGLE_SECRET=
-AUTH_URL="http://localhost:3001"
+AUTH_URL="http://localhost:3002"
 AUTH_TRUST_HOST=true
 
 LOG_LEVEL=debug
@@ -96,7 +96,7 @@ LOG_MAX_FILE_SIZE_MB=20
 HAMSTER_IMAGE_DIR=/app/uploads/hamsters
 ```
 
-現行 Auth.js v5 系では `NEXTAUTH_URL` ではなく `AUTH_URL` を使う。Google OAuth の Callback URL は `/api/auth/callback/google`。Docker Compose の app はホストの `127.0.0.1:3001` のみに公開し、本番では Nginx / HTTPS を経由させる。`.env.production.example` の `AUTH_URL` は実際のHTTPSドメインへ変更する。
+現行 Auth.js v5 系では `NEXTAUTH_URL` ではなく `AUTH_URL` を使う。Google OAuth の Callback URL は `/api/auth/callback/google`。Docker Compose の app はDog & Cat Manager専用のホストポート `127.0.0.1:3002` のみに公開し、本番では Nginx / HTTPS を経由させる。Auth.js Cookieは `dog-cat-manager.authjs` prefixで分離し、HTTPSではAuth.jsの規則どおり `__Secure-`（CSRFは `__Host-`）を付ける。`.env.production.example` の `AUTH_URL` は実際のHTTPSドメインへ変更する。
 
 ホスト PC で `npm run dev` し、DB だけ Docker で動かす場合:
 
@@ -131,7 +131,7 @@ docker compose up -d
 
 app コンテナは起動時に `prisma migrate deploy` を自動実行し、成功後に Next.js を起動する。新しい Prisma Client と未更新DBの不整合を残さない。
 
-サーバーログは `src/lib/logger.ts` のWinstonロガーからDocker標準出力・標準エラーと `/app/logs/application-YYYY-MM-DD.log` へJSON Lines形式で二重出力する。プロフィール画像は `./uploads:/app/uploads` へバインドし、`HAMSTER_IMAGE_DIR=/app/uploads/hamsters` に保存する。VPSでは事前に `mkdir -p logs uploads/hamsters && sudo chown -R 1001:1001 logs uploads && chmod 750 logs uploads uploads/hamsters` を実行する。`errorId` は両ログ出力で一致する。ループバック限定のため、LANやTailscale IPから `:3001` へ直接アクセスするスマートフォン確認には別の開発用公開設定が必要。
+サーバーログは `src/lib/logger.ts` のWinstonロガーからDocker標準出力・標準エラーと `/app/logs/application-YYYY-MM-DD.log` へJSON Lines形式で二重出力する。プロフィール画像は `./uploads:/app/uploads` へバインドし、`HAMSTER_IMAGE_DIR=/app/uploads/hamsters` に保存する。VPSでは事前に `mkdir -p logs uploads/hamsters && sudo chown -R 1001:1001 logs uploads && chmod 750 logs uploads uploads/hamsters` を実行する。`errorId` は両ログ出力で一致する。ループバック限定のため、LANやTailscale IPから `:3002` へ直接アクセスするスマートフォン確認には別の開発用公開設定が必要。
 
 確認:
 

@@ -560,7 +560,7 @@ Auth.js / Google OAuth 用の環境変数も設定します。秘密情報は `.
 AUTH_SECRET=
 AUTH_GOOGLE_ID=
 AUTH_GOOGLE_SECRET=
-AUTH_URL="http://localhost:3001"
+AUTH_URL="http://localhost:3002"
 AUTH_TRUST_HOST=true
 
 LOG_LEVEL=debug
@@ -584,11 +584,11 @@ Google Cloud Console の OAuth クライアントには、利用するURLごと�
 
 ```text
 http://localhost:3000/api/auth/callback/google
-http://localhost:3001/api/auth/callback/google
+http://localhost:3002/api/auth/callback/google
 https://your-domain.example/api/auth/callback/google
 ```
 
-ホスト PC の `npm run dev` は通常 `http://localhost:3000`、Docker Compose はホスト側 `http://localhost:3001` です。本番では実際の HTTPS ドメインを登録してください。
+ホスト PC の `npm run dev` は通常 `http://localhost:3000`、Dog & Cat Manager の Docker Compose はホスト側 `http://localhost:3002` です。本番では実際の HTTPS ドメインを登録してください。同じGoogle OAuth ClientをHamster Managerと共有する開発環境では、Hamster側の `http://localhost:3001/api/auth/callback/google` も削除せず、両方のURIを登録します。
 
 ## ローカル開発
 
@@ -674,24 +674,24 @@ docker compose logs -f app
 
 app コンテナは起動時に `prisma migrate deploy` を実行し、成功してから Next.js を起動します。未適用 migration がある状態で新しい app だけが起動し、DB 列不足で画面が壊れることを防ぎます。
 
-Docker Compose でブラウザから `http://localhost:3001` を開く場合は、`.env` の `AUTH_URL` も必要に応じて次の値にします。
+Docker Compose でブラウザから `http://localhost:3002` を開く場合は、`.env` の `AUTH_URL` も必要に応じて次の値にします。
 
 ```env
-AUTH_URL="http://localhost:3001"
+AUTH_URL="http://localhost:3002"
 ```
 
 ブラウザで開きます。
 
 ```text
-http://localhost:3001
+http://localhost:3002
 ```
 
-app のホスト側ポートは `127.0.0.1` のみに公開します。そのため、このPC自身のブラウザからはアクセスできますが、同じLANのスマートフォンや別PCから `PCのIPアドレス:3001` へ直接アクセスすることはできません。スマートフォン実機確認が必要な場合は、信頼できる開発ネットワーク内に限って開発用Compose設定で一時的に公開し、確認後はループバック限定へ戻してください。
+app のホスト側ポートは `127.0.0.1` のみに公開します。そのため、このPC自身のブラウザからはアクセスできますが、同じLANのスマートフォンや別PCから `PCのIPアドレス:3002` へ直接アクセスすることはできません。スマートフォン実機確認が必要な場合は、信頼できる開発ネットワーク内に限って開発用Compose設定で一時的に公開し、確認後はループバック限定へ戻してください。
 
 ポートは次の対応です。
 
 ```text
-Next.js ホスト側:     127.0.0.1:3001
+Next.js ホスト側:     127.0.0.1:3002
 Next.js コンテナ側:   3000
 PostgreSQL ホスト側:  127.0.0.1:5433
 PostgreSQL コンテナ側: 5432
@@ -847,7 +847,7 @@ PowerShell から直接起動したい場合:
 - Docker が利用可能になるまで待機
 - `ENV_FILE` に `.env.development` を設定
 - `docker compose up -d app` で app と依存するコンテナを起動
-- `http://localhost:3001` をブラウザで開く
+- `http://localhost:3002` をブラウザで開く
 
 初回起動前に `.env.development.example` をコピーして `.env.development` を作成してください。Prisma migrate や seed は自動実行しないため、初回セットアップ時やスキーマ変更時は必要に応じて別途実行します。
 
@@ -1247,21 +1247,21 @@ docker compose logs -f app
 `--wait` はDBとappが `healthy` になるまで待機し、120秒以内に正常化しなければコマンドを失敗させます。デプロイ後は次でも状態を確認できます。
 
 ```bash
-curl --fail http://127.0.0.1:3001/api/health
+curl --fail http://127.0.0.1:3002/api/health
 ```
 
 Docker Compose v1 の `docker-compose` で `KeyError: 'ContainerConfig'` が出る場合は、壊れた作成途中コンテナを削除するか、可能なら Compose v2 の `docker compose` を使ってください。
 
 ## Nginx リバースプロキシ設定例
 
-Nginx は VPS ホスト側に置き、`127.0.0.1:3001` で待ち受ける Docker 上の Next.js アプリへ転送します。app ポートは外部インターフェースへ公開しないため、インターネットからは Nginx と HTTPS を経由してアクセスします。
+Nginx は VPS ホスト側に置き、`127.0.0.1:3002` で待ち受ける Docker 上の Next.js アプリへ転送します。app ポートは外部インターフェースへ公開しないため、インターネットからは Nginx と HTTPS を経由してアクセスします。
 
 ```nginx
 server {
     server_name hamster.example.com;
 
     location / {
-        proxy_pass http://127.0.0.1:3001;
+        proxy_pass http://127.0.0.1:3002;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -1284,20 +1284,20 @@ HTTPS 化する場合は Certbot などで証明書を発行します。
 
 個人用で外出先のスマホから使うだけなら、アプリをインターネット全体へ公開せず、Tailscale 経由で VPS にアクセスする運用もできます。
 
-標準のCompose設定ではappを `127.0.0.1:3001` のみに公開するため、Tailscale IP とポート `3001` へ直接アクセスはできません。Tailscale経由で利用する場合も、VPS上のNginxを経由させるか、開発・個人利用専用のCompose設定で公開先をTailscale IPへ限定してください。
+標準のCompose設定ではappを `127.0.0.1:3002` のみに公開するため、Tailscale IP とポート `3002` へ直接アクセスはできません。Tailscale経由で利用する場合も、VPS上のNginxを経由させるか、開発・個人利用専用のCompose設定で公開先をTailscale IPへ限定してください。
 
 ```text
 https://<tailscaleで到達できるホスト名>
 ```
 
-Tailscale側のアクセス制御に加えて、OSのファイアウォールでも不要なインターフェースから `3001` へ到達できないようにしてください。
+Tailscale側のアクセス制御に加えて、OSのファイアウォールでも不要なインターフェースから `3002` へ到達できないようにしてください。
 
 ## 既存アプリとの同居時の注意
 
 - このアプリは Docker Compose で管理し、PM2 には登録しません。
 - App コンテナ名は `dog-cat-manager-web` です。
 - DB コンテナ名は `dog-cat-manager-db` です。
-- App のホスト側ポートは `127.0.0.1:3001` に限定しています。既存アプリと衝突する場合は `docker-compose.yml` の `127.0.0.1:3001:3000` を変更してください。
+- App のホスト側ポートはDog & Cat Manager専用の `127.0.0.1:3002` に限定しています。
 - PostgreSQL の DB 名、ユーザー名、パスワードはこのアプリ専用にします。
 - `.env` はこのアプリ専用にします。
 - Docker コンテナ内の Node.js を使うため、VPS ホスト側の Node.js バージョンには依存しません。

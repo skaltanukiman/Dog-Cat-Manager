@@ -7,7 +7,7 @@ services:
     env_file:
       - ${ENV_FILE:-.env}
     ports:
-      - "127.0.0.1:3001:3000"
+      - "127.0.0.1:3002:3000"
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads

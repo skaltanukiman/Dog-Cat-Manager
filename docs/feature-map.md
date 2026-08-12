@@ -6,7 +6,7 @@
 
 | 項目 | 主なファイル | 注意点 |
 | --- | --- | --- |
-| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/app/api/device/care/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`、`/api/device/care`と境界一致する`/demo`配下だけが公開。デバイスお世話APIはAuth.jsセッションの代わりにRoute内でBearer tokenを必須とする。通常画面は認証必須。Auth.js は DB セッションを使用し、認証・認可ポリシーは `tests/authorization.test.ts` と `tests/public-demo.test.tsx` で検証する。 |
+| 認証ガード・ログイン遷移 | `src/proxy.ts`, `src/auth.ts`, `src/lib/auth-cookies.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts`, `src/app/api/device/care/route.ts`, `src/lib/public-demo.ts` | `/login`、`/api/auth`、`/api/health`、`/api/device/care`と境界一致する`/demo`配下だけが公開。デバイスお世話APIはAuth.jsセッションの代わりにRoute内でBearer tokenを必須とする。通常画面は認証必須。Auth.js はDog-Cat専用名のCookieとDBセッションを使用し、認証・認可ポリシーは `tests/auth-isolation.test.ts`、`tests/authorization.test.ts`、`tests/public-demo.test.tsx` で検証する。 |
 | 現在の Household と権限 | `src/lib/authorization.ts`, `src/lib/auth-context.ts`, `src/app/actions/households.ts`, `src/components/household-switcher.tsx` | `OWNER` / `ADMIN` / `MEMBER` / `VIEWER` の閲覧・共有データ編集・招待・解除・権限変更を共通判定する。`hamster_current_household` Cookie は所属確認後にのみ更新する。 |
 | レイアウト・ナビゲーション | `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/app/demo/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | 永続するRootLayoutは全経路共通の`html`・`body`・メタデータだけを担当する。通常URLは`(app)` Route Groupに置き、同Groupのlayoutが認証・Household切替・リアルタイム監視・通常ヘッダー・main幅を構成する。デモURLは別のlayout枝で専用ヘッダー・ナビ・main幅を構成するため、クライアント遷移や戻る操作でも両シェルが混在しない。1024px 未満では主要5画面をアイコンなしの均等幅タブで表示し、設定・共有・管理は補助メニューにまとめる。`lg` 以上では従来のボタン型ナビゲーションを1行で表示する。 |
 | PWA メタデータ・プッシュ通知 | `src/app/manifest.ts`, `src/components/service-worker-registration.tsx`, `public/sw.js`, `public/icons/*`, `src/app/api/push/subscriptions/*`, `src/lib/care-notification-dispatch.ts` | Manifestとアイコンに加え、認証済み通常画面で通知専用Service Workerを登録する。Service Workerはpush/clickだけを扱い、オフラインキャッシュは持たない。購読APIは認証・同一origin・入力上限を検証する。 |
@@ -21,8 +21,8 @@
 - **Server Action または API:** `signIn` / `signOut`（`src/auth.ts`。ログアウト Action は`(app)/layout.tsx`内）。Auth.js Handler は `src/app/api/auth/[...nextauth]/route.ts`。
 - **データアクセス・Prismaモデル:** `PrismaAdapter(prisma)` が `User`、`Account`、`Session`、`VerificationToken` を利用。セッション callback が `User.appRole` を拡張セッションへ載せる。
 - **バリデーション:** OAuth プロバイダー設定と Auth.js が担当。画面アクセス制御は `src/proxy.ts`。
-- **関連テスト:** `tests/authorization.test.ts`（セッションユーザーID必須、アプリロール判定）、`tests/logger.test.ts`（例外処理）。
-- **関連設定:** `.env*.example` の `AUTH_SECRET`、`AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`AUTH_URL`、`src/types/next-auth.d.ts`。
+- **関連テスト:** `tests/auth-isolation.test.ts`（Auth.js Cookie名・secure prefix・開発ポート分離）、`tests/authorization.test.ts`（セッションユーザーID必須、アプリロール判定）、`tests/logger.test.ts`（例外処理）。
+- **関連設定:** `.env*.example` の `AUTH_SECRET`、`AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`AUTH_URL`、`src/lib/auth-cookies.ts` のDog-Cat専用Cookie名、`src/types/next-auth.d.ts`。
 - **依存関係:** ログイン後の通常データ機能は `auth-context.ts` の初期 Household 作成に依存する。アカウント削除ページ・Actionだけは所属0件で再作成しないよう `getRequiredSessionUser()` を使う。`proxy.ts` の matcher / 公開パス変更は OAuth コールバックを遮断しないよう注意する。
 
 ## 匿名・読み取り専用デモ
@@ -227,6 +227,6 @@
 ## インフラ・永続化
 
 - **対象:** `prisma/schema.prisma`、`prisma/migrations/`、`prisma/seed-demo.ts`、`src/lib/prisma.ts`、`src/lib/health.ts`、`src/app/api/health/route.ts`、`docker-compose.yml`、`Dockerfile`、`next.config.mjs`、`.env*.example`、`package.json`。
-- **役割:** PostgreSQL 接続と Prisma Client、migration、Docker の app / db 分離、standalone build、環境変数・依存ライブラリを定義する。app のホスト側ポートは `127.0.0.1:3001` に限定し、本番アクセスは Nginx / HTTPS を経由させる。`/api/health` とapp healthcheckでNext.js応答・DB接続を確認し、`next.config.mjs` で最低限のセキュリティヘッダーと `X-Powered-By` 無効化を設定する。
+- **役割:** PostgreSQL 接続と Prisma Client、migration、Docker の app / db 分離、standalone build、環境変数・依存ライブラリを定義する。app のホスト側ポートはDog & Cat Manager専用の `127.0.0.1:3002` に限定し、本番アクセスは Nginx / HTTPS を経由させる。`/api/health` とapp healthcheckでNext.js応答・DB接続を確認し、`next.config.mjs` で最低限のセキュリティヘッダーと `X-Powered-By` 無効化を設定する。
 - **関連テスト:** `tests/logger.test.ts`（ログ出力）、`tests/audit-log.test.ts`（Household管理操作の成功監査ログ）、`tests/health.test.ts`（DBヘルス判定）、`tests/security-headers.test.ts`（セキュリティヘッダー設定）、`scripts/log-smoke.ts`。変更内容に応じて `npm.cmd run lint`、`npm.cmd run build`、`npm.cmd test` を実行する。
 - **依存関係:** Prismaモデル変更は migration・生成 Client・関連 Action / query / schema の更新が必要。`Dockerfile` は Prisma generate と migrate deploy を行う。デプロイは `docker compose up -d --wait --wait-timeout 120` でDB・app双方のhealthyを確認する。プロフィール画像は `HAMSTER_IMAGE_DIR`、思い出画像は `RECORD_IMAGE_DIR` を使い、どちらもComposeの `./uploads:/app/uploads` で永続化する。CSV 上限を変更する際は `next.config.mjs` の Action body size と整合させる。

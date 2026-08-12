@@ -43,7 +43,7 @@ async function getInvitationOrigin() {
   const headerList = await headers();
   const host = headerList.get("host");
   const protocol = headerList.get("x-forwarded-proto") === "https" ? "https" : "http";
-  return host ? `${protocol}://${host}` : "http://localhost:3001";
+  return host ? `${protocol}://${host}` : "http://localhost:3002";
 }
 
 async function getMembersPageData() {

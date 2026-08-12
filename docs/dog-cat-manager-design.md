@@ -4,7 +4,7 @@
 
 このリポジトリは Hamster Manager から派生した、犬・猫専用の独立サービス `Dog & Cat Manager` である。移行期間中は既存の Hamster ドメインと新しい Pet ドメインが同じリポジトリ内に共存する。
 
-Hamster Manager とは別DB・別Sessionで運用する。開発用Docker環境は `dog_cat_manager_dev`、`dog-cat-manager-db`、`dog_cat_manager_pgdata` を使い、Hamster ManagerのDBコンテナ・volumeを共有しない。現時点では共通認証、Session共有、Cookie共有、SSO、Household同期を実装しない。将来は環境変数で各サービスのURLを設定する `ServiceSwitcher` により、Hamster Manager と Dog & Cat Manager を相互移動できるようにする。
+Hamster Manager とは別DB・別Sessionで運用する。開発用Docker環境は `dog_cat_manager_dev`、`dog-cat-manager-db`、`dog_cat_manager_pgdata` を使い、Hamster ManagerのDBコンテナ・volumeを共有しない。Dog & Cat ManagerのDocker appは `http://localhost:3002` で公開し、Auth.jsのsecretとCookie名もサービス専用にする。SessionはDog-Cat専用DBへ保存し、現時点では共通認証、Session共有、Cookie共有、SSO、Household同期を実装しない。Google OAuth Clientは当面共有し、Hamster側とDog-Cat側のredirect URIを両方登録する。将来は環境変数で各サービスのURLを設定する `ServiceSwitcher` により、Hamster Manager と Dog & Cat Manager を相互移動できるようにする。
 
 ## Petドメイン
 
