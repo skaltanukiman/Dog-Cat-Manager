@@ -20,13 +20,13 @@ import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   MAX_DASHBOARD_BOARD_COUNT,
   MIN_DASHBOARD_BOARD_COUNT,
-  getDashboardHamsterRemovalPosition,
+  getDashboardPetRemovalPosition,
   getDashboardDropPosition,
-  moveDashboardHamsterId,
-  resizeDashboardHamsterIds,
-  toggleDashboardHamsterId,
+  moveDashboardPetId,
+  resizeDashboardPetIds,
+  toggleDashboardPetId,
   type DashboardDropPosition,
-  type DashboardHamsterRemovalPosition,
+  type DashboardPetRemovalPosition,
   type HamsterSelectorMode
 } from "@/lib/dashboard-settings";
 import type { RecordScope } from "@/lib/records";
@@ -37,9 +37,10 @@ import {
   isCommittedSettingsSave
 } from "@/lib/settings-save-state";
 
-type HamsterOption = {
+type PetOption = {
   id: string;
   name: string;
+  species: "DOG" | "CAT";
   memo: string | null;
   isActive: boolean;
 };
@@ -51,8 +52,8 @@ type DashboardSettingsFormProps = {
   hamsterSelectorMode: HamsterSelectorMode;
   recordTimelineDefaultScope: RecordScope;
   cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
-  hamsters: HamsterOption[];
-  selectedHamsterIds: string[];
+  pets: PetOption[];
+  selectedPetIds: string[];
 };
 
 type HamsterStatusFilter = "all" | "active" | "inactive" | "selected";
@@ -73,11 +74,12 @@ type PendingScrollRequest = {
 const HAMSTER_STATUS_FILTERS: { value: HamsterStatusFilter; label: string }[] = [
   { value: "all", label: "すべて" },
   { value: "active", label: "管理中" },
-  { value: "inactive", label: "管理外" },
+  { value: "inactive", label: "管理終了" },
   { value: "selected", label: "選択済み" }
 ];
 const MOVE_FEEDBACK_DURATION_MS = 800;
 const MOVE_ANIMATION_DURATION_MS = 240;
+const SPECIES_LABELS = { DOG: "犬", CAT: "猫" } as const;
 
 function clampBoardCount(value: number) {
   return Math.min(MAX_DASHBOARD_BOARD_COUNT, Math.max(MIN_DASHBOARD_BOARD_COUNT, Math.trunc(value)));
@@ -90,9 +92,12 @@ export function DashboardSettingsForm({
   hamsterSelectorMode,
   recordTimelineDefaultScope,
   cleaningMobileDefaultDateFilter,
-  hamsters,
-  selectedHamsterIds
+  pets,
+  selectedPetIds
 }: DashboardSettingsFormProps) {
+  // 並び替えUXの内部状態は旧名を保ち、送受信する設定契約はPet IDへ切り替える。
+  const hamsters = pets;
+  const selectedHamsterIds = selectedPetIds;
   const [limit, setLimit] = useState(boardCount);
   const [selectedIds, setSelectedIds] = useState(selectedHamsterIds);
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,7 +110,7 @@ export function DashboardSettingsForm({
   const [saveState, saveAction, isSaving] = useActionState(saveSettings, INITIAL_SETTINGS_SAVE_STATE);
   const orderListRef = useRef<HTMLOListElement>(null);
   const pendingOrderPositionsRef = useRef<Map<string, number> | null>(null);
-  const removedSelectionPositionsRef = useRef<Map<string, DashboardHamsterRemovalPosition>>(new Map());
+  const removedSelectionPositionsRef = useRef<Map<string, DashboardPetRemovalPosition>>(new Map());
   const pendingSelectionDirtyReevaluationRef = useRef(false);
   const pendingScrollRequestRef = useRef<PendingScrollRequest | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
@@ -122,7 +127,7 @@ export function DashboardSettingsForm({
     () =>
       selectedIds
         .map((id) => hamsterById.get(id))
-        .filter((hamster): hamster is HamsterOption => Boolean(hamster)),
+        .filter((hamster): hamster is PetOption => Boolean(hamster)),
     [hamsterById, selectedIds]
   );
   const filteredHamsters = useMemo(() => {
@@ -164,7 +169,7 @@ export function DashboardSettingsForm({
         removedSelectionPositionsRef.current.clear();
         pendingSelectionDirtyReevaluationRef.current = false;
         setLimit(savedSettings.dashboardBoardCount);
-        setSelectedIds(savedSettings.hamsterIds);
+        setSelectedIds(savedSettings.petIds);
       }
 
       const nameControl = form?.elements.namedItem("name");
@@ -308,7 +313,7 @@ export function DashboardSettingsForm({
     removedSelectionPositionsRef.current.clear();
     pendingSelectionDirtyReevaluationRef.current = true;
     setLimit(nextLimit);
-    setSelectedIds(resizeDashboardHamsterIds(hamsterIds, selectedIds, nextLimit));
+    setSelectedIds(resizeDashboardPetIds(hamsterIds, selectedIds, nextLimit));
   }
 
   function handleToggle(hamsterId: string) {
@@ -318,10 +323,10 @@ export function DashboardSettingsForm({
 
     const isSelected = selectedIds.includes(hamsterId);
     const restorePosition = removedSelectionPositionsRef.current.get(hamsterId);
-    const nextIds = toggleDashboardHamsterId(selectedIds, hamsterId, limit, restorePosition);
+    const nextIds = toggleDashboardPetId(selectedIds, hamsterId, limit, restorePosition);
 
     if (isSelected) {
-      const removalPosition = getDashboardHamsterRemovalPosition(selectedIds, hamsterId);
+      const removalPosition = getDashboardPetRemovalPosition(selectedIds, hamsterId);
       if (removalPosition) {
         removedSelectionPositionsRef.current.set(hamsterId, removalPosition);
       }
@@ -338,7 +343,7 @@ export function DashboardSettingsForm({
     targetHamsterId: string,
     position: DashboardDropPosition
   ) {
-    const nextIds = moveDashboardHamsterId(selectedIds, hamsterId, targetHamsterId, position);
+    const nextIds = moveDashboardPetId(selectedIds, hamsterId, targetHamsterId, position);
     const nextIndex = nextIds.indexOf(hamsterId);
     const hamster = hamsterById.get(hamsterId);
 
@@ -347,7 +352,7 @@ export function DashboardSettingsForm({
     }
 
     setSelectedIds(nextIds);
-    setOrderAnnouncement(`${hamster?.name ?? "ハムスター"}を${nextIndex + 1}番目へ移動しました。`);
+    setOrderAnnouncement(`${hamster?.name ?? "Pet"}を${nextIndex + 1}番目へ移動しました。`);
     requestFormDirtyReevaluation(formRef.current);
     return true;
   }
@@ -571,7 +576,7 @@ export function DashboardSettingsForm({
               </h3>
             </div>
             <p className="text-sm leading-6 text-slate-600">
-              ダッシュボードに表示する件数、カードの並び順とハムスターを設定します。
+              ダッシュボードに表示する件数、カードの並び順とPetを設定します。
             </p>
           </header>
 
@@ -597,10 +602,10 @@ export function DashboardSettingsForm({
                 表示ボード数の上限は {MAX_DASHBOARD_BOARD_COUNT} 件です。
               </span>
               {needsSelection ? (
-                <span className="block pt-1">表示するハムスターを {targetCount} 件選択します。</span>
+                <span className="block pt-1">表示するPetを {targetCount} 件選択します。</span>
               ) : (
                 <span className="block pt-1">
-                  登録数が表示数以下のため、全ハムスターを表示します。
+                  登録数が表示数以下のため、全Petを表示します。
                 </span>
               )}
               {!canSave ? (
@@ -632,7 +637,7 @@ export function DashboardSettingsForm({
 
             {orderedHamsters.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-300 p-5 text-center text-sm text-slate-500">
-                表示対象のハムスターはいません。
+                表示対象のPetはいません。
               </div>
             ) : (
               <ol
@@ -713,6 +718,9 @@ export function DashboardSettingsForm({
                             <span className="block break-words text-sm font-semibold text-ink">
                               {hamster.name}
                             </span>
+                            <span className="mt-1 block text-xs text-slate-500">
+                              {SPECIES_LABELS[hamster.species]}
+                            </span>
                             <span
                               className={`mt-1 inline-flex shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${
                                 hamster.isActive
@@ -720,7 +728,7 @@ export function DashboardSettingsForm({
                                   : "bg-slate-200 text-slate-600"
                               }`}
                             >
-                              {hamster.isActive ? "管理中" : "管理外"}
+                              {hamster.isActive ? "管理中" : "管理終了"}
                             </span>
                           </span>
                         </div>
@@ -766,9 +774,9 @@ export function DashboardSettingsForm({
             </p>
           </section>
 
-          {/* disabled の checkbox は送信されないため、保存対象IDは hidden input に正規化して渡す。 */}
+          {/* disabled の checkbox は送信されないため、保存対象Pet IDは hidden input に正規化して渡す。 */}
           {selectedIds.map((id) => (
-            <input key={id} type="hidden" name="hamsterIds" value={id} data-dirty-control />
+            <input key={id} type="hidden" name="petIds" value={id} data-dirty-control />
           ))}
 
           <section
@@ -777,11 +785,11 @@ export function DashboardSettingsForm({
             data-dashboard-hamster-selection
           >
             <h4 id="dashboard-hamster-selection-heading" className="text-base font-bold text-ink">
-              ダッシュボードに表示するハムスター
+              ダッシュボードに表示するPet
             </h4>
         {hamsters.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-            ハムスターがまだ登録されていません。
+            Petがまだ登録されていません。
           </div>
         ) : (
           <>
@@ -795,7 +803,7 @@ export function DashboardSettingsForm({
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.currentTarget.value)}
                     className="pl-9"
-                    placeholder="ハムスター名で検索"
+                    placeholder="Pet名で検索"
                   />
                 </span>
               </label>
@@ -803,7 +811,7 @@ export function DashboardSettingsForm({
                 <span className="block text-sm font-medium text-slate-700">状態</span>
                 <div
                   className="grid grid-cols-4 rounded-xl bg-slate-100 p-1 sm:flex sm:flex-wrap sm:gap-2 sm:rounded-none sm:bg-transparent sm:p-0"
-                  aria-label="ハムスターの状態で絞り込む"
+                  aria-label="Petの状態で絞り込む"
                 >
                   {HAMSTER_STATUS_FILTERS.map((filter) => {
                     const isSelected = statusFilter === filter.value;
@@ -835,8 +843,8 @@ export function DashboardSettingsForm({
             {filteredHamsters.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
                 {statusFilter === "selected"
-                  ? "選択中のハムスターはいません。"
-                  : "条件に一致するハムスターはいません。"}
+                  ? "選択中のPetはいません。"
+                  : "条件に一致するPetはいません。"}
               </div>
             ) : (
               <div className="max-h-[50vh] divide-y divide-slate-200 overflow-y-auto rounded-md border border-slate-200 sm:max-h-96 lg:max-h-[28rem]">
@@ -862,11 +870,18 @@ export function DashboardSettingsForm({
                       <span className="min-w-0">
                         <span className="flex flex-wrap items-center gap-2 font-semibold text-ink">
                           {hamster.name}
-                          {hamster.isActive ? null : (
-                            <span className="rounded-md bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                              管理外
-                            </span>
-                          )}
+                          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                            {SPECIES_LABELS[hamster.species]}
+                          </span>
+                          <span
+                            className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
+                              hamster.isActive
+                                ? "bg-straw/40 text-slate-700"
+                                : "bg-slate-200 text-slate-600"
+                            }`}
+                          >
+                            {hamster.isActive ? "管理中" : "管理終了"}
+                          </span>
                         </span>
                         {hamster.memo ? <span className="mt-1 block truncate text-slate-500">{hamster.memo}</span> : null}
                       </span>

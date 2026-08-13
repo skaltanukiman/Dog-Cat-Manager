@@ -53,9 +53,10 @@ test("共有設定保存は変更なしを判定し、Household・dispatch・rev
   assert.match(action, /\{ path: "\/" \}, \{ path: "\/settings" \}/);
   assert.doesNotMatch(action, /feedingRecord\.(update|updateMany)/);
   assert.doesNotMatch(action, /waterReplacementRecord\.(update|updateMany)/);
+  assert.doesNotMatch(action, /pet(?:Feeding|Water|Walk|Litter)Record\.(update|updateMany)/);
 });
 
-test("ダッシュボードは同じnowと対象日を食事・水替えへ一括適用し通常日付を分離する", () => {
+test("Petダッシュボードは同じnowと対象日を4種Careへ一括適用し体重日付を分離する", () => {
   const queries = source("src/lib/queries.ts");
   const dashboard = queries.slice(
     queries.indexOf("export async function getDashboardData"),
@@ -65,10 +66,10 @@ test("ダッシュボードは同じnowと対象日を食事・水替えへ一�
   assert.equal(dashboard.match(/const now = new Date\(\)/g)?.length, 1);
   assert.match(dashboard, /careDayStartMinutes = normalizeCareDayStartMinutes\(context\.household\.careDayStartMinutes\)/);
   assert.match(dashboard, /careDayRecordDate = getCareDayRecordDate\(now, careDayStartMinutes\)/);
-  assert.equal(dashboard.match(/recordDate: careDayRecordDate/g)?.length, 2);
-  assert.match(dashboard, /hamsterId: \{ in: dashboardHamsterIds \}/);
-  assert.doesNotMatch(dashboard, /for \([\s\S]*prisma\.(feedingRecord|waterReplacementRecord)\.find/);
-  assert.match(dashboard, /cleaningRecord\.findMany\([\s\S]*toiletCleaned: true/);
+  assert.equal(dashboard.match(/recordDate: careDayRecordDate/g)?.length, 4);
+  assert.match(dashboard, /petId: \{ in: dashboardPetIds \}/);
+  assert.doesNotMatch(dashboard, /for \([\s\S]*prisma\.pet(?:Feeding|Water|Walk|Litter)Record\.find/);
+  assert.doesNotMatch(dashboard, /cleaningRecord\.findMany/);
   assert.match(dashboard, /weightRecords:[\s\S]*orderBy: \[\{ recordDate: "desc" \}/);
 });
 

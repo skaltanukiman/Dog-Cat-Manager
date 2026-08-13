@@ -17,7 +17,7 @@ const current: SettingsSnapshot = {
   hamsterSelectorMode: "select",
   recordTimelineDefaultScope: "hamster",
   cleaningMobileDefaultDateFilter: "today",
-  hamsterIds: ["hamster-1", "hamster-2"]
+  petIds: ["pet-1", "pet-2"]
 };
 
 test("設定が同一ならプロフィール・ダッシュボードとも変更なしになる", () => {
@@ -42,19 +42,19 @@ test("表示件数・選択方式・対象順序の変更をそれぞれ検知�
   assert.equal(getSettingsChanges(current, { ...current, dashboardBoardCount: 3 }).dashboardChanged, true);
   assert.equal(getSettingsChanges(current, { ...current, hamsterSelectorMode: "combobox" }).dashboardChanged, true);
   assert.equal(
-    getSettingsChanges(current, { ...current, hamsterIds: ["hamster-2", "hamster-1"] }).dashboardChanged,
+    getSettingsChanges(current, { ...current, petIds: ["pet-2", "pet-1"] }).dashboardChanged,
     true
   );
 });
 
-test("ダッシュボード設定は重複したハムスターIDを拒否する", () => {
+test("ダッシュボード設定は重複したPet IDを拒否する", () => {
   assert.equal(
     dashboardSettingsSchema.safeParse({
       dashboardBoardCount: 2,
       hamsterSelectorMode: "select",
       recordTimelineDefaultScope: "hamster",
       cleaningMobileDefaultDateFilter: "today",
-      hamsterIds: ["hamster-1", "hamster-1"]
+      petIds: ["pet-1", "pet-1"]
     }).success,
     false
   );
@@ -77,7 +77,7 @@ test("記録画面の初期表示設定はhamsterとhouseholdだけを受け付�
     dashboardBoardCount: 2,
     hamsterSelectorMode: "select",
     cleaningMobileDefaultDateFilter: "today",
-    hamsterIds: ["hamster-1", "hamster-2"]
+    petIds: ["pet-1", "pet-2"]
   };
 
   assert.equal(
@@ -99,7 +99,7 @@ test("衛生管理画面のスマホ初期表示設定はtodayとallだけを受
     dashboardBoardCount: 2,
     hamsterSelectorMode: "select",
     recordTimelineDefaultScope: "hamster",
-    hamsterIds: ["hamster-1", "hamster-2"]
+    petIds: ["pet-1", "pet-2"]
   };
 
   assert.equal(
@@ -145,7 +145,8 @@ test("記録画面の初期表示は設定フォーム・保存Action・AppSetti
   assert.match(schema, /recordTimelineDefaultScope: z\.enum\(RECORD_SCOPES\)/);
   assert.match(action, /recordTimelineDefaultScopeChanged/);
   assert.match(action, /dashboardChanged \|\| recordTimelineDefaultScopeChanged/);
-  assert.match(action, /if \(dashboardChanged\) \{[\s\S]*?dashboardHamster\.deleteMany/);
+  assert.match(action, /if \(dashboardChanged\) \{[\s\S]*?dashboardPet\.deleteMany/);
+  assert.doesNotMatch(action, /dashboardHamster\.deleteMany/);
   assert.match(action, /userId_householdId: \{ userId: context\.user\.id, householdId: context\.household\.id \}/);
   assert.match(action, /\{ path: "\/records" \}/);
   assert.match(prismaSchema, /recordTimelineDefaultScope\s+String\s+@default\("hamster"\)/);

@@ -280,13 +280,13 @@ test("ポインターが対象行の上半分ならbefore、下半分ならafter
 
 test("並び順一覧は選択済みだけをDOM順に描画し、末尾追加とhidden input順を共有する", () => {
   assert.match(dashboardSettingsFormSource, /const orderedHamsters = useMemo\([\s\S]*selectedIds[\s\S]*hamsterById\.get/);
-  assert.match(dashboardSettingsFormSource, /getDashboardHamsterRemovalPosition\(selectedIds, hamsterId\)/);
+  assert.match(dashboardSettingsFormSource, /getDashboardPetRemovalPosition\(selectedIds, hamsterId\)/);
   assert.match(
     dashboardSettingsFormSource,
-    /toggleDashboardHamsterId\(selectedIds, hamsterId, limit, restorePosition\)/
+    /toggleDashboardPetId\(selectedIds, hamsterId, limit, restorePosition\)/
   );
   assert.match(dashboardSettingsFormSource, /\{orderedHamsters\.map\(\(hamster, index\) =>/);
-  assert.match(dashboardSettingsFormSource, /\{selectedIds\.map\(\(id\) =>\s*\(\s*<input key=\{id\} type="hidden" name="hamsterIds"/);
+  assert.match(dashboardSettingsFormSource, /\{selectedIds\.map\(\(id\) =>\s*\(\s*<input key=\{id\} type="hidden" name="petIds"/);
 });
 
 test("選択変更後にhidden input更新を待ってDirtyを再評価し、基準更新時は復元位置を破棄する", () => {
@@ -300,7 +300,7 @@ test("選択変更後にhidden input更新を待ってDirtyを再評価し、基
   );
   assert.match(
     dashboardSettingsFormSource,
-    /if \(savedSettings\) \{[\s\S]*removedSelectionPositionsRef\.current\.clear\(\)[\s\S]*setSelectedIds\(savedSettings\.hamsterIds\)/
+    /if \(savedSettings\) \{[\s\S]*removedSelectionPositionsRef\.current\.clear\(\)[\s\S]*setSelectedIds\(savedSettings\.petIds\)/
   );
   assert.match(
     dashboardSettingsFormSource,
@@ -312,7 +312,7 @@ test("選択変更後にhidden input更新を待ってDirtyを再評価し、基
   );
   assert.match(
     dashboardSettingsFormSource,
-    /function handleLimitChange[\s\S]*removedSelectionPositionsRef\.current\.clear\(\)[\s\S]*resizeDashboardHamsterIds/
+    /function handleLimitChange[\s\S]*removedSelectionPositionsRef\.current\.clear\(\)[\s\S]*resizeDashboardPetIds/
   );
 });
 
@@ -597,11 +597,13 @@ test("ドラッグ元を半透明にし、行全体の非操作プレビュー�
   );
 });
 
-test("設定画面の管理状態バッジは通常・デモダッシュボードと同じ色と寸法を使う", () => {
-  for (const source of [dashboardSettingsFormSource, dashboardPageSource, demoDashboardSource]) {
+test("設定画面と通常・デモダッシュボードの管理状態バッジは同じ色と寸法を使う", () => {
+  for (const source of [dashboardSettingsFormSource, demoDashboardSource]) {
     assert.match(source, /rounded-md px-2 py-1 text-xs font-semibold/);
     assert.match(source, /hamster\.isActive\s*\?\s*"bg-straw\/40 text-slate-700"\s*:\s*"bg-slate-200 text-slate-600"/);
   }
+  assert.match(dashboardPageSource, /rounded-md px-2 py-1 text-xs font-semibold/);
+  assert.match(dashboardPageSource, /pet\.isActive \? "bg-straw\/40 text-slate-700" : "bg-slate-200 text-slate-600"/);
 });
 
 test("並び順変更はDOM更新後に共通イベントでdirtyを再評価し、初期順へ戻すと解除できる", () => {
@@ -662,12 +664,12 @@ test("サーバー検証は重複、他Household相当の未知ID、件数超過
   assert.equal(getDashboardHamsterSelectionError(validIds, 2, ["hamster-2", "hamster-1"]), null);
 });
 
-test("保存Actionは送信順のインデックスをsortOrderとして個人設定へ保存する", () => {
-  assert.match(settingsActionSource, /const selectedHamsterIds = dashboardResult\.data\.hamsterIds/);
-  assert.match(settingsActionSource, /getDashboardHamsterSelectionError\(/);
+test("保存ActionはPet IDの送信順インデックスをsortOrderとして個人設定へ保存する", () => {
+  assert.match(settingsActionSource, /const selectedPetIds = dashboardResult\.data\.petIds/);
+  assert.match(settingsActionSource, /getDashboardPetSelectionError\(/);
   assert.match(
     settingsActionSource,
-    /for \(const \[index, hamsterId\] of selectedHamsterIds\.entries\(\)\) \{[\s\S]*sortOrder: index/
+    /for \(const \[index, petId\] of selectedPetIds\.entries\(\)\) \{[\s\S]*sortOrder: index/
   );
   assert.match(
     settingsActionSource,
@@ -675,11 +677,11 @@ test("保存Actionは送信順のインデックスをsortOrderとして個人�
   );
 });
 
-test("ダッシュボードはsortOrderで読み込んだ順序をカードのDOM順へ反映する", () => {
+test("PetダッシュボードはsortOrderで読み込んだ順序をカードのDOM順へ反映する", () => {
   assert.match(
     dashboardQueriesSource,
-    /dashboardHamsters: \{\s*orderBy: \{ sortOrder: "asc" \}\s*\}/
+    /dashboardPets: \{\s*orderBy: \{ sortOrder: "asc" \}\s*\}/
   );
-  assert.match(dashboardQueriesSource, /pickDashboardHamsters\(hamsters, boardCount, selectedIds\)/);
-  assert.match(dashboardPageSource, /\{hamsters\.map\(\(hamster\) =>/);
+  assert.match(dashboardQueriesSource, /pickDashboardPets\(pets, boardCount, selectedIds\)/);
+  assert.match(dashboardPageSource, /\{pets\.map\(\(pet\) =>/);
 });

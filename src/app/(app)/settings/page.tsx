@@ -28,8 +28,8 @@ export default async function SettingsPage({
     careNotificationSettings,
     careDayStartMinutes,
     canManageCareDaySettings,
-    hamsters,
-    selectedHamsterIds
+    pets,
+    selectedPetIds
   } = await getDashboardSettingsPageData();
   const vapid = getPublicVapidConfiguration();
 
@@ -51,8 +51,8 @@ export default async function SettingsPage({
         hamsterSelectorMode={hamsterSelectorMode}
         recordTimelineDefaultScope={recordTimelineDefaultScope}
         cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
-        hamsters={hamsters}
-        selectedHamsterIds={selectedHamsterIds}
+        pets={pets}
+        selectedPetIds={selectedPetIds}
       />
 
       <CareDaySettingsForm

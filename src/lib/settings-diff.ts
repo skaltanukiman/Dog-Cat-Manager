@@ -8,7 +8,7 @@ export type SettingsSnapshot = {
   hamsterSelectorMode: HamsterSelectorMode;
   recordTimelineDefaultScope: RecordScope;
   cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
-  hamsterIds: readonly string[];
+  petIds: readonly string[];
 };
 
 function hasSameOrder(currentIds: readonly string[], nextIds: readonly string[]) {
@@ -25,6 +25,6 @@ export function getSettingsChanges(current: SettingsSnapshot, next: SettingsSnap
     dashboardChanged:
       current.dashboardBoardCount !== next.dashboardBoardCount ||
       current.hamsterSelectorMode !== next.hamsterSelectorMode ||
-      !hasSameOrder(current.hamsterIds, next.hamsterIds)
+      !hasSameOrder(current.petIds, next.petIds)
   };
 }

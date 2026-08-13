@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-import { canEditHouseholdSharedData, canManageCareDaySettings } from "@/lib/authorization";
+import { canManageCareDaySettings } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import { normalizeCareNotificationSettings } from "@/lib/care-notifications";
 import { getCareDayRecordDate, normalizeCareDayStartMinutes } from "@/lib/care-day";
@@ -9,41 +9,43 @@ import {
   normalizeDashboardBoardCount,
   normalizeHamsterSelectorMode,
   orderHamstersForSelector,
-  pickDashboardHamsters
+  pickDashboardPets
 } from "@/lib/dashboard-settings";
 import { monthDateRange, parseDateInput, toDateInputValue } from "@/lib/date";
-import { todayFeedingRecordsByHamster } from "@/lib/feeding";
 import { prisma } from "@/lib/prisma";
 import { normalizeRecordScope } from "@/lib/records";
-import { todayWaterReplacementRecordsByHamster } from "@/lib/water-replacement";
 import { getAppliedWeightChartRange } from "@/lib/weight-chart-filter";
 
 export const WEIGHT_HISTORY_PAGE_SIZE = 20;
 
-function latestRecordByHamster<T extends { hamsterId: string }>(records: T[]) {
-  const recordsByHamster = new Map<string, T>();
+function summarizePetCareRecords<T extends { petId: string }>(records: T[]) {
+  const summaries = new Map<string, { count: number; latest: T }>();
 
-  // 呼び出し側で新しい順に取得しているため、最初に見つかったレコードをそのハムスターの最新扱いにする。
+  // 各queryはイベント時刻の降順なので、Petごとの先頭行を最新記録として保持する。
   for (const record of records) {
-    if (!recordsByHamster.has(record.hamsterId)) {
-      recordsByHamster.set(record.hamsterId, record);
+    const current = summaries.get(record.petId);
+    if (current) {
+      current.count += 1;
+    } else {
+      summaries.set(record.petId, { count: 1, latest: record });
     }
   }
 
-  return recordsByHamster;
+  return summaries;
 }
 
 export async function getDashboardData() {
   const context = await getRequiredHouseholdContext();
-  const [hamsters, setting] = await Promise.all([
-    // 一覧カードで使う最新体重だけを取得し、不要な体重履歴全体は読み込まない。
-    prisma.hamster.findMany({
+  const [pets, setting] = await Promise.all([
+    prisma.pet.findMany({
       where: { householdId: context.household.id },
-      orderBy: { createdAt: "asc" },
+      // fallbackは管理中を優先し、その中では登録日時とIDで決定的にする。
+      orderBy: [{ isActive: "desc" }, { createdAt: "asc" }, { id: "asc" }],
       include: {
         weightRecords: {
           orderBy: [{ recordDate: "desc" }, { createdAt: "desc" }],
-          take: 1
+          take: 1,
+          select: { id: true, recordDate: true, weightKg: true }
         }
       }
     }),
@@ -55,98 +57,74 @@ export async function getDashboardData() {
         }
       },
       include: {
-        dashboardHamsters: {
+        dashboardPets: {
           orderBy: { sortOrder: "asc" }
         }
       }
     })
   ]);
   const boardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
-  const selectedIds = setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [];
-  const dashboardHamsters = pickDashboardHamsters(hamsters, boardCount, selectedIds);
-  const dashboardHamsterIds = dashboardHamsters.map((hamster) => hamster.id);
+  const selectedIds = setting?.dashboardPets.map((entry) => entry.petId) ?? [];
+  const dashboardPets = pickDashboardPets(pets, boardCount, selectedIds);
+  const dashboardPetIds = dashboardPets.map((pet) => pet.id);
   const now = new Date();
   const careDayStartMinutes = normalizeCareDayStartMinutes(context.household.careDayStartMinutes);
   const careDayRecordDate = getCareDayRecordDate(now, careDayStartMinutes);
 
-  // 本日の食事・水替えと、主要な掃除タスクごとの最終実施日だけをダッシュボード用に取得する。
-  const [
-    feedingRecords,
-    waterReplacementRecords,
-    toiletCleaningRecords,
-    bathCleaningRecords,
-    flooringAllCleaningRecords,
-    houseCleaningRecords
-  ] = await Promise.all([
-    // 表示対象IDをまとめて指定し、本日の食事記録を1クエリで取得する。
-    prisma.feedingRecord.findMany({
+  // イベント種別ごとに表示対象Petを一括取得し、カード単位のN+1を避ける。
+  const [feedingRecords, waterRecords, walkRecords, litterRecords] = await Promise.all([
+    prisma.petFeedingRecord.findMany({
       where: {
-        hamsterId: { in: dashboardHamsterIds },
-        recordDate: careDayRecordDate
+        petId: { in: dashboardPetIds },
+        recordDate: careDayRecordDate,
+        pet: { householdId: context.household.id }
       },
-      select: { id: true, hamsterId: true, recordDate: true, fedAt: true }
+      orderBy: [{ fedAt: "desc" }, { id: "desc" }],
+      select: { id: true, petId: true, fedAt: true }
     }),
-    // 表示対象IDをまとめて指定し、本日の水替え記録を1クエリで取得する。
-    prisma.waterReplacementRecord.findMany({
+    prisma.petWaterRecord.findMany({
       where: {
-        hamsterId: { in: dashboardHamsterIds },
-        recordDate: careDayRecordDate
+        petId: { in: dashboardPetIds },
+        recordDate: careDayRecordDate,
+        pet: { householdId: context.household.id }
       },
-      select: { id: true, hamsterId: true, recordDate: true, replacedAt: true }
+      orderBy: [{ caredAt: "desc" }, { id: "desc" }],
+      select: { id: true, petId: true, caredAt: true, action: true }
     }),
-    prisma.cleaningRecord.findMany({
+    prisma.petWalkRecord.findMany({
       where: {
-        hamsterId: { in: dashboardHamsterIds },
-        toiletCleaned: true
+        petId: { in: dashboardPetIds },
+        recordDate: careDayRecordDate,
+        pet: { householdId: context.household.id, species: "DOG" }
       },
-      orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
+      orderBy: [{ startedAt: "desc" }, { id: "desc" }],
+      select: { id: true, petId: true, startedAt: true, durationMinutes: true }
     }),
-    prisma.cleaningRecord.findMany({
+    prisma.petLitterRecord.findMany({
       where: {
-        hamsterId: { in: dashboardHamsterIds },
-        bathCleaned: true
+        petId: { in: dashboardPetIds },
+        recordDate: careDayRecordDate,
+        pet: { householdId: context.household.id, species: "CAT" }
       },
-      orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
-    }),
-    prisma.cleaningRecord.findMany({
-      where: {
-        hamsterId: { in: dashboardHamsterIds },
-        flooringAllCleaned: true
-      },
-      orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
-    }),
-    prisma.cleaningRecord.findMany({
-      where: {
-        hamsterId: { in: dashboardHamsterIds },
-        houseCleaned: true
-      },
-      orderBy: [{ recordDate: "desc" }, { updatedAt: "desc" }]
+      orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+      select: { id: true, petId: true, occurredAt: true, action: true }
     })
   ]);
-  const feedingByHamster = todayFeedingRecordsByHamster(feedingRecords, now, careDayStartMinutes);
-  const waterReplacementByHamster = todayWaterReplacementRecordsByHamster(
-    waterReplacementRecords,
-    now,
-    careDayStartMinutes
-  );
-  const toiletCleaningByHamster = latestRecordByHamster(toiletCleaningRecords);
-  const bathCleaningByHamster = latestRecordByHamster(bathCleaningRecords);
-  const flooringAllCleaningByHamster = latestRecordByHamster(flooringAllCleaningRecords);
-  const houseCleaningByHamster = latestRecordByHamster(houseCleaningRecords);
+  const feedingByPet = summarizePetCareRecords(feedingRecords);
+  const waterByPet = summarizePetCareRecords(waterRecords);
+  const walkByPet = summarizePetCareRecords(walkRecords);
+  const litterByPet = summarizePetCareRecords(litterRecords);
 
   return {
-    hamsters: dashboardHamsters.map((hamster) => ({
-      ...hamster,
-      todayFeeding: feedingByHamster.get(hamster.id) ?? null,
-      todayWaterReplacement: waterReplacementByHamster.get(hamster.id) ?? null,
-      latestToiletCleaning: toiletCleaningByHamster.get(hamster.id) ?? null,
-      latestBathCleaning: bathCleaningByHamster.get(hamster.id) ?? null,
-      latestFlooringAllCleaning: flooringAllCleaningByHamster.get(hamster.id) ?? null,
-      latestHouseCleaning: houseCleaningByHamster.get(hamster.id) ?? null
+    pets: dashboardPets.map((pet) => ({
+      ...pet,
+      todayFeeding: feedingByPet.get(pet.id) ?? null,
+      todayWater: waterByPet.get(pet.id) ?? null,
+      todayWalk: pet.species === "DOG" ? walkByPet.get(pet.id) ?? null : null,
+      todayLitter: pet.species === "CAT" ? litterByPet.get(pet.id) ?? null : null
     })),
-    canEdit: canEditHouseholdSharedData(context.membership.role),
     boardCount,
-    totalHamsters: hamsters.length
+    totalPets: pets.length
   };
 }
 
@@ -460,13 +438,14 @@ export async function getWeightPageData({
 
 export async function getDashboardSettingsPageData() {
   const context = await getRequiredHouseholdContext();
-  const [hamsters, setting] = await Promise.all([
-    prisma.hamster.findMany({
+  const [pets, setting] = await Promise.all([
+    prisma.pet.findMany({
       where: { householdId: context.household.id },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ isActive: "desc" }, { createdAt: "asc" }, { id: "asc" }],
       select: {
         id: true,
         name: true,
+        species: true,
         memo: true,
         isActive: true
       }
@@ -479,7 +458,7 @@ export async function getDashboardSettingsPageData() {
         }
       },
       include: {
-        dashboardHamsters: {
+        dashboardPets: {
           orderBy: { sortOrder: "asc" }
         }
       }
@@ -491,9 +470,9 @@ export async function getDashboardSettingsPageData() {
   const cleaningMobileDefaultDateFilter = normalizeCleaningMobileDefaultDateFilter(
     setting?.cleaningMobileDefaultDateFilter
   );
-  const selectedIds = setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? [];
+  const selectedIds = setting?.dashboardPets.map((entry) => entry.petId) ?? [];
   // 設定画面の初期表示でも、ダッシュボードと同じ補完ルールで選択状態を作る。
-  const selectedHamsterIds = pickDashboardHamsters(hamsters, boardCount, selectedIds).map((hamster) => hamster.id);
+  const selectedPetIds = pickDashboardPets(pets, boardCount, selectedIds).map((pet) => pet.id);
   const careNotificationSettings = normalizeCareNotificationSettings(setting);
 
   return {
@@ -505,7 +484,7 @@ export async function getDashboardSettingsPageData() {
     careNotificationSettings,
     careDayStartMinutes: normalizeCareDayStartMinutes(context.household.careDayStartMinutes),
     canManageCareDaySettings: canManageCareDaySettings(context.membership.role),
-    hamsters,
-    selectedHamsterIds
+    pets,
+    selectedPetIds
   };
 }

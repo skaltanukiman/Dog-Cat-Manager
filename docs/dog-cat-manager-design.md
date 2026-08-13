@@ -38,7 +38,16 @@ Hamster Manager とは別DB・別Sessionで運用する。開発用Docker環境�
 - `/weights` をPet向けの体重履歴・グラフとして追加する。
 - `/records` にPet向けの健康・通院・投薬・ワクチン・思い出を追加する。
 
-これらはPetを中心に関連付けるが、基本プロフィール機能の段階では先行実装しない。Hamster固有機能はPet側の代替機能を実装・確認してから段階的に置換し、動作確認前に一括削除または一括リネームしない。
+これらはPetを中心に関連付け、現在はPet Care・Pet体重・Pet記録とPet Dashboardまで段階的に実装済みである。Hamster固有機能はPet側の代替機能を実装・確認してから段階的に置換し、動作確認前に一括削除または一括リネームしない。
+
+## Petダッシュボード
+
+- 通常の`/`は現在HouseholdのPet専用Dashboardとし、名前、犬・猫、管理中・管理終了、プロフィール画像、最新体重、現在のお世話日のCare集計を表示する。
+- 表示対象はユーザー・Householdごとの`AppSetting`と`DashboardPet`で管理する。`dashboardBoardCount`の1〜30件制約を再利用し、超過時は保存順を優先する。設定なし・削除済みIDの補完は管理中、登録日時、IDの安定順とする。保存済みの管理終了Petは表示できる。
+- Pet Careはイベント履歴なので、Dashboardでは食事・水・DOG散歩・CATトイレの件数と最新イベントだけを集計表示する。完了booleanや直接toggleへ変換せず、登録は既存`/care?petId=...`へ委ねる。管理終了PetにはCare登録導線を表示しない。
+- Care記録は`Household.careDayStartMinutes`から現在のお世話日を確定し、種類別の一括queryをPet IDとHousehold条件で絞ってサーバー側集計する。DOGはWalkだけ、CATはLitterだけを表示する。
+- 最新体重は`PetWeightRecord`をPetごとに最新1件だけ取得し、kgのDecimalを表示境界まで維持する。
+- 旧`DashboardHamster`、`AppSetting.dashboardHamsters`、Hamster Dashboard用Action・component・migrationはlegacyとして残す。通常Dashboard設定保存は`DashboardPet`だけを更新し、Hamster設定を削除しない。
 
 ## Petお世話履歴
 

@@ -13,6 +13,7 @@ export type DashboardHamsterRemovalPosition = {
   previousId: string | null;
   nextId: string | null;
 };
+export type DashboardPetRemovalPosition = DashboardHamsterRemovalPosition;
 
 export function normalizeDashboardBoardCount(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -191,6 +192,71 @@ export function pickDashboardHamsters<T extends { id: string }>(
     boardCount,
     selectedIds
   ).map((id) => hamsterById.get(id) as T);
+}
+
+// Pet側は既存Hamster APIを変更せず、同じ選択・復元規則を明示的な公開APIで利用する。
+export function normalizeDashboardPetIds(
+  petIds: readonly string[],
+  boardCount: number,
+  selectedIds: readonly string[]
+) {
+  return normalizeDashboardHamsterIds(petIds, boardCount, selectedIds);
+}
+
+export function resizeDashboardPetIds(
+  petIds: readonly string[],
+  selectedIds: readonly string[],
+  boardCount: number
+) {
+  return resizeDashboardHamsterIds(petIds, selectedIds, boardCount);
+}
+
+export function toggleDashboardPetId(
+  selectedIds: readonly string[],
+  petId: string,
+  limit: number,
+  restorePosition?: DashboardPetRemovalPosition | null
+) {
+  return toggleDashboardHamsterId(selectedIds, petId, limit, restorePosition);
+}
+
+export function getDashboardPetRemovalPosition(
+  selectedIds: readonly string[],
+  petId: string
+): DashboardPetRemovalPosition | null {
+  return getDashboardHamsterRemovalPosition(selectedIds, petId);
+}
+
+export function moveDashboardPetId(
+  selectedIds: readonly string[],
+  petId: string,
+  targetPetId: string,
+  position: DashboardDropPosition
+) {
+  return moveDashboardHamsterId(selectedIds, petId, targetPetId, position);
+}
+
+export type DashboardPetSelectionError = DashboardHamsterSelectionError;
+
+export function getDashboardPetSelectionError(
+  validPetIds: readonly string[],
+  boardCount: number,
+  selectedIds: readonly string[]
+): DashboardPetSelectionError | null {
+  return getDashboardHamsterSelectionError(validPetIds, boardCount, selectedIds);
+}
+
+export function pickDashboardPets<T extends { id: string }>(
+  pets: readonly T[],
+  boardCount: number,
+  selectedIds: readonly string[]
+) {
+  const petById = new Map(pets.map((pet) => [pet.id, pet]));
+  return normalizeDashboardPetIds(
+    pets.map((pet) => pet.id),
+    boardCount,
+    selectedIds
+  ).map((id) => petById.get(id) as T);
 }
 
 function compareRemainingHamsters(

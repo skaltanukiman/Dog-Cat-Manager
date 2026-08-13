@@ -239,36 +239,33 @@ test("Server Actionは共通認可、所属・管理状態確認、履歴、revi
   assert.match(waterReplacement, /deleteMany\(/);
 });
 
-test("ダッシュボードは表示対象IDの本日分を1クエリで一括取得して紐付ける", () => {
+test("Petダッシュボードは表示対象IDの本日分を1クエリで一括取得して集計する", () => {
   const queries = source("src/lib/queries.ts");
 
   assert.match(
     queries,
-    /prisma\.waterReplacementRecord\.findMany\([\s\S]*hamsterId: \{ in: dashboardHamsterIds \}[\s\S]*recordDate: careDayRecordDate/
+    /prisma\.petWaterRecord\.findMany\([\s\S]*petId: \{ in: dashboardPetIds \}[\s\S]*recordDate: careDayRecordDate/
   );
   assert.match(queries, /const careDayRecordDate = getCareDayRecordDate\(now, careDayStartMinutes\)/);
   assert.equal(
-    queries.match(/prisma\.waterReplacementRecord\.findMany\(/g)?.length,
+    queries.match(/prisma\.petWaterRecord\.findMany\(/g)?.length,
     1
   );
   assert.match(
     queries,
-    /todayWaterReplacement: waterReplacementByHamster\.get\(hamster\.id\) \?\? null/
+    /todayWater: waterByPet\.get\(pet\.id\) \?\? null/
   );
 });
 
-test("通常ダッシュボードは食事直下・最新体重の上に操作可能な水替えを表示する", () => {
+test("通常ダッシュボードは食事と水を集計表示し直接更新Actionを持たない", () => {
   const dashboard = source("src/app/(app)/page.tsx");
-  const feedingPosition = dashboard.indexOf("<FeedingToggle");
-  const waterPosition = dashboard.indexOf("<WaterReplacementToggle");
-  const weightPosition = dashboard.indexOf("<Scale");
+  const feedingPosition = dashboard.indexOf("今日の食事");
+  const waterPosition = dashboard.indexOf("今日の水");
 
   assert.ok(feedingPosition >= 0);
   assert.ok(waterPosition > feedingPosition);
-  assert.ok(weightPosition > waterPosition);
-  assert.match(dashboard, /action=\{setTodayWaterReplacement\}/);
-  assert.match(dashboard, /canEdit=\{canEdit\}/);
-  assert.match(dashboard, /isActive=\{hamster\.isActive\}/);
+  assert.match(dashboard, /PET_WATER_ACTION_LABELS\[pet\.todayWater\.latest\.action\]/);
+  assert.doesNotMatch(dashboard, /setTodayWaterReplacement|WaterReplacementToggle|FeedingToggle/);
 });
 
 test("水替え項目は交換状態、支援技術向け時刻、無効状態を正しく表示する", () => {
@@ -369,8 +366,9 @@ test("公開デモは専用Householdの当日水替えだけを一括取得し�
   );
 });
 
-test("既存の食事項目は変更せず、両項目がダッシュボードに共存する", () => {
+test("旧Hamsterの食事・水替えcomponentを保持し、Petダッシュボードは集計表示を使う", () => {
   const feedingComponent = source("src/components/feeding-toggle.tsx");
+  const waterComponent = source("src/components/water-replacement-toggle.tsx");
   const dashboard = source("src/app/(app)/page.tsx");
 
   assert.match(feedingComponent, /食事/);
@@ -378,6 +376,8 @@ test("既存の食事項目は変更せず、両項目がダッシュボード�
     feedingComponent,
     /const stateLabel = isMarked \? "実施済み" : "未実施"/
   );
-  assert.match(dashboard, /<FeedingToggle/);
-  assert.match(dashboard, /<WaterReplacementToggle/);
+  assert.match(waterComponent, /水替え/);
+  assert.match(dashboard, /今日の食事/);
+  assert.match(dashboard, /今日の水/);
+  assert.doesNotMatch(dashboard, /<FeedingToggle|<WaterReplacementToggle/);
 });

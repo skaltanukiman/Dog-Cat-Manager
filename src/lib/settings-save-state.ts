@@ -22,7 +22,7 @@ export type SettingsSaveState = {
     hamsterSelectorMode: "combobox" | "select";
     recordTimelineDefaultScope: "hamster" | "household";
     cleaningMobileDefaultDateFilter: "today" | "all";
-    hamsterIds: string[];
+    petIds: string[];
   };
 };
 

@@ -189,16 +189,17 @@ test("食事変更の成功メッセージ定義を残さず、エラー用ス�
   assert.match(statusMessage, /systemError: "処理中に予期しないエラーが発生しました/);
 });
 
-test("ダッシュボードは表示対象IDの本日分を一括取得して紐付ける", () => {
+test("Petダッシュボードは表示対象IDの本日分を一括取得して集計する", () => {
   const queries = source("src/lib/queries.ts");
 
   assert.match(
     queries,
-    /prisma\.feedingRecord\.findMany\([\s\S]*hamsterId: \{ in: dashboardHamsterIds \}[\s\S]*recordDate: careDayRecordDate/
+    /prisma\.petFeedingRecord\.findMany\([\s\S]*petId: \{ in: dashboardPetIds \}[\s\S]*recordDate: careDayRecordDate/
   );
   assert.match(queries, /const now = new Date\(\)/);
   assert.match(queries, /const careDayRecordDate = getCareDayRecordDate\(now, careDayStartMinutes\)/);
-  assert.match(queries, /todayFeeding: feedingByHamster\.get\(hamster\.id\) \?\? null/);
+  assert.match(queries, /todayFeeding: feedingByPet\.get\(pet\.id\) \?\? null/);
+  assert.match(source("src/components/feeding-toggle.tsx"), /export function FeedingToggle/);
 });
 
 test("食事項目は簡潔な状態表示を使い、実施時刻は支援技術向け情報へ残す", () => {

@@ -1,6 +1,6 @@
 # 機能マップ
 
-最終確認: 2026-08-11。Next.js App Router / Prisma / PostgreSQL 構成において、画面から Server Action・Route Handler・データアクセスまでを辿るための索引です。原則として、Household に属するデータは `getRequiredHouseholdContext()` で現在の所属を確定し、共有データ更新Actionは `getRequiredHouseholdMutationContext()` でVIEWERをDB処理前に拒否します。Action / API 側でも対象の所属・管理状態を確認します。
+最終確認: 2026-08-13。Next.js App Router / Prisma / PostgreSQL 構成において、画面から Server Action・Route Handler・データアクセスまでを辿るための索引です。原則として、Household に属するデータは `getRequiredHouseholdContext()` で現在の所属を確定し、共有データ更新Actionは `getRequiredHouseholdMutationContext()` でVIEWERをDB処理前に拒否します。Action / API 側でも対象の所属・管理状態を確認します。
 
 ## 共通の起点
 
@@ -65,13 +65,13 @@
 ## ダッシュボード
 
 - **画面または URL:** `/`。
-- **主なコンポーネント:** `DashboardMemo`、`FeedingToggle`、`WaterReplacementToggle`、`CleaningDateToggle`、`HamsterThumbnail`、`EmptyState`。`FeedingToggle`と`WaterReplacementToggle`は本日の状態とJST実施時刻を表示し、通常画面では押下で状態を切り替え、デモ・VIEWER・管理外では操作不可にする。画像登録済みの `HamsterThumbnail` はクリック・タップで拡大モーダルを表示し、未登録・読込失敗時は操作不可のプレースホルダーになる。
-- **Server Action または API:** `setTodayFeeding`（`src/app/actions/feeding.ts`）と`setTodayWaterReplacement`（`src/app/actions/water-replacement.ts`）が意図する最終状態を受け取り、共通Household更新transactionで現在のお世話日の記録・操作履歴・revisionを確定する。`POST /api/device/care`は固定Householdの管理中ハムスターに対する食事・水替えの実施済み化だけを許可し、`src/lib/device-care.ts`から同じ共通処理を使う。操作時はtransaction内で最新の `Household.careDayStartMinutes` を再取得する。設定更新は `saveSettings` と `saveCareDaySettings`。
-- **データアクセス・Prismaモデル:** `getDashboardData`（`src/lib/queries.ts`）が `Hamster`、`AppSetting` / `DashboardHamster`、現在のお世話日の `FeedingRecord` / `WaterReplacementRecord`、最新 `WeightRecord`、各種 `CleaningRecord` を Household とユーザー設定で取得する。食事・水替え記録は同一の`now`と`Household.careDayStartMinutes`から算出した対象日、表示対象ハムスターIDを指定した一括queryで取得する。掃除・体重などの通常日付にはお世話日境界を適用しない。
-- **バリデーション:** 表示件数・対象選択は設定の `dashboardSettingsSchema` と `dashboard-settings.ts`。デバイスAPIは`DEVICE_CARE_API_TOKEN`と`DEVICE_CARE_HOUSEHOLD_ID`を必須とし、設定Household不在・デモは503、対象Household外は404、管理外ハムスターは409で拒否する。入力に取消状態は持たない。
-- **関連テスト:** `tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序の差分判定）、`tests/care-day.test.ts`、`tests/feeding.test.tsx` / `tests/water-replacement.test.tsx`（Household別のお世話日境界、日単位一意性、同時・冪等更新、認可・履歴・revision、UI状態、デモ読み取り専用）、`tests/device-care-api.test.ts`（Bearer認証、固定Household、demo・所属・管理状態、実施済み専用、履歴・revision・レスポンス）。
-- **関連設定:** `src/lib/dashboard-settings.ts`（1〜30件、選択 UI の既定値）。
-- **依存関係:** 表示対象はユーザー・Household ごとの設定。食事・水替え更新後の他メンバー反映は既存Household revision / SSE / revision pollを使う。掃除種別を増減する場合は `getDashboardData` とカード表示を同時に変更する。
+- **主なコンポーネント:** `PetThumbnail`、`EmptyState`。現在HouseholdのPetカードへ名前、犬・猫、管理中・管理終了、最新体重、現在のお世話日の食事・水、DOGの散歩またはCATのトイレを表示する。管理中Petだけ既存`/care?petId=...`へ案内し、管理終了PetはCare登録を促さず`/records`の履歴導線だけを残す。Dashboardから共有データを直接更新するボタンやActionは持たないためVIEWERも同じ集計を閲覧できる。
+- **Server Action または API:** Dashboard自体にPet CareのCREATE / UPDATE / DELETE Actionはない。個人用表示設定だけを `saveSettings` が更新する。旧Hamsterの`setTodayFeeding`、`setTodayWaterReplacement`、デバイスAPI、toggle componentは移行期間中そのまま保持するが、通常Dashboardからは参照しない。
+- **データアクセス・Prismaモデル:** `getDashboardData`（`src/lib/queries.ts`）が現在Householdの `Pet`、`AppSetting` / `DashboardPet`、Petごとの最新1件の `PetWeightRecord` を取得する。現在のお世話日は同一の`now`と`Household.careDayStartMinutes`から算出し、表示Pet IDを指定して `PetFeedingRecord`、`PetWaterRecord`、`PetWalkRecord`、`PetLitterRecord` を種類ごとに一括取得して件数と最新イベントをサーバー側で集計する。WalkはDOG、LitterはCATのHousehold条件もDB queryに含める。
+- **表示対象:** `dashboardBoardCount`は1〜30件の既存制約を維持する。Pet数が表示数以下なら全Petを表示し、超える場合は保存済み`DashboardPet.sortOrder`を優先する。削除済みIDを除外してfallbackで補い、fallback候補は管理中、登録日時、IDの順で決定的にする。保存済みの管理終了Petは表示できる。
+- **関連テスト:** `tests/dashboard-pet.test.ts`（Household境界、boardCount、fallback、順序、選択検証、species別集計、最新体重、未記録、Thumbnail、導線、migration、Hamster設定保護）、`tests/dashboard-settings.test.ts`、`tests/settings.test.ts`。旧Hamster Dashboard helperとデモDashboardの回帰は既存テストを維持する。
+- **関連設定:** `src/lib/dashboard-settings.ts`（Pet用helperと既存Hamster public API）、`DashboardPet`。`DashboardHamster`と`AppSetting.dashboardHamsters`はlegacy設定としてDB上に残す。
+- **依存関係:** 表示対象はユーザー・Householdごとの個人設定でVIEWERも変更可能。保存後の反映は既存のHousehold revision / SSE / revision pollと`revalidatePath`設計を使い、共有グループの操作履歴には追加しない。Pet Careは複数イベント履歴の集計表示だけで、Hamster Dashboardの完了boolean / toggleへ変換しない。
 
 ## Pet一覧・登録・編集
 
@@ -140,7 +140,7 @@
 - **日時・お世話日:** `src/lib/pet-care.ts` でJSTの厳密な `datetime-local` をUTCへ変換する。`recordDate` は記録作成・日時更新時点の `careDayStartMinutes` から算出し、設定変更時に過去行を再計算しない。未来日時と表示中のお世話日外への登録・編集をServer Actionで拒否する。
 - **認可・管理終了:** VIEWERと管理終了Petは履歴閲覧のみ。別HouseholdのPet・記録IDを直接送信しても閲覧・登録・編集・削除できない。
 - **Realtime・操作履歴:** 食事は `petFeeding`、水は `petWater`、散歩は `petWalk`、猫トイレは `petLitter` sourceを使用する。各作成・更新・削除イベントへJST表示用日時と必要最小限の種類・時間だけを記録し、memo本文は複製しない。
-- **対象外:** GPS・散歩ルート・猫トイレの健康判定・Pet Care通知・Dashboard・`/records` のPet化。既存Hamster通知は変更しない。
+- **対象外:** GPS・散歩ルート・猫トイレの健康判定・Pet Care通知。Dashboardは集計表示だけを行い、直接登録や通知は追加しない。既存Hamster通知は変更しない。
 
 ## 体重 CSV エクスポート
 
@@ -180,14 +180,14 @@
 ## 設定（プロフィール・画面表示・ダッシュボード）
 
 - **画面または URL:** `/settings`。最下部の「アカウントの削除」から、赤枠の「削除内容を確認する」でアカウント削除確認 `/settings/account/delete` へ移動する。
-- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DisplaySettingsSection`、`DirtySubmitButton`、`UnsavedChangesGuard`、`HamsterCombobox`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。1つの設定フォーム内に「プロフィール」「画面の表示設定」「ダッシュボード設定」をこの順の兄弟カードとして置き、その後ろの1つの保存ボタンでまとめて保存する。「画面の表示設定」はハムスター選択方式・記録画面の初期表示・衛生管理画面のスマホ日付初期表示を扱い、スマホでは設定アイコン・説明・現在値3件の短縮ラベルチップ・開閉操作文言を持つ折り畳みカードになる。開閉は可変高のCSS Grid・透明度・可視性を約200msで同期し、閉状態では入力をDOMに保持したままフォーカス・ポインター操作・読み上げ対象から外す。`md`以上ではアニメーションせず、見出しと説明を持つ常時展開カードになる。「ダッシュボード設定」は表示ボード数・表示対象カードの並び順・検索と状態フィルター・表示対象ハムスター一覧をこの順に扱う。並び順は640px以上では専用ドラッグハンドルと上下ボタン、639px以下では上下ボタンで変更する。スマートフォンの並び順一覧だけは `55dvh`（`55vh`フォールバック）と28remの小さい方を上限として内部スクロールし、現在順位と総件数を表示する。各行は左44pxの順位列と区切り線を持ち、右側で名前・管理状態と上下ボタンを分離してボタンを行の上下中央へ配置する。上下ボタンで移動した行が内部表示領域を外れる場合は、描画更新後に最小限スクロールして追従する。D&Dは対象行の中央からbefore・afterを判定し、上端または下端のmossラインで挿入位置を示す。ドラッグ元は半透明にし、行全体を複製した読み上げ対象外のドラッグ画像を終了時に破棄する。上下移動時はWeb Animations APIのFLIP方式で行を移動し、行と押した方向のボタンを一時強調する。`prefers-reduced-motion`では位置アニメーションとスムーズスクロールを行わない。並び順一覧の管理状態バッジは通常ダッシュボードと同じ配色・寸法を使う。新規選択は末尾へ追加し、解除後の再選択はOFF直前の前後IDとindexから編集上の位置へ復元する。表示数減少は現在順の先頭を残す。
+- **主なコンポーネント:** `ProfileSettingsFields`、`DashboardSettingsForm`、`DisplaySettingsSection`、`DirtySubmitButton`、`UnsavedChangesGuard`、`MobileDirtySaveArea`、`AccountDeleteEntryForm`、`AccountDeleteForm`。プロフィール・既存の画面表示設定・Petダッシュボード設定を1フォームで保存する。Pet候補は名前、犬・猫、管理中・管理終了を表示し、検索・状態/選択済みfilter・表示数変更・解除後の位置復元・D&D/上下ボタン・モバイル内部スクロール・dirty guardという既存UXを維持する。画面表示設定内の`hamsterSelectorMode`等はlegacy画面が使うため削除しない。
 - **並び順スクロール:** スマートフォンでは、FLIPアニメーションの`transform`に影響されない行のレイアウト位置を使い、上下のはみ出し分だけリストのスクロール位置を直ちに補正する。連続操作時は最新の移動要求だけを反映する。
 - **Server Action または API:** `saveSettings`（`src/app/actions/settings.ts`）。表示名、ダッシュボード設定、記録画面の初期表示範囲、衛生管理画面のスマホ日付初期表示をまとめて差分比較し、変更がなければ `unchanged` を返す。各初期表示だけの変更も現在のユーザー・Householdの `AppSetting` へupsertし、関連画面と `/settings` を再検証する。
-- **データアクセス・Prismaモデル:** `getDashboardSettingsPageData`、`User`、`Household`、`HouseholdMember`、`AppSetting`、`DashboardHamster`、`Hamster`。
-- **バリデーション:** `updateUserProfileSchema`（表示名）、`dashboardSettingsSchema`、`getDashboardHamsterSelectionError`、`normalizeDashboardBoardCount` / `normalizeHamsterSelectorMode` / `normalizeRecordScope` / `normalizeCleaningMobileDefaultDateFilter`。ダッシュボード対象IDは重複、現在のHousehold外のID、表示数超過・不足をAction側でも拒否する。記録画面の初期表示は `hamster` / `household`、衛生管理画面のスマホ日付初期表示は `today` / `all` だけを保存し、DBの未設定・不正値はそれぞれ `hamster` / `today` として扱う。
+- **データアクセス・Prismaモデル:** `getDashboardSettingsPageData`、`User`、`Household`、`HouseholdMember`、`AppSetting`、`DashboardPet`、`Pet`。`DashboardHamster`はlegacy relationとして保持する。
+- **バリデーション:** `updateUserProfileSchema`（表示名）、`dashboardSettingsSchema`の`petIds`、`getDashboardPetSelectionError`、`normalizeDashboardBoardCount` / `normalizeHamsterSelectorMode` / `normalizeRecordScope` / `normalizeCleaningMobileDefaultDateFilter`。Pet IDは重複、現在のHousehold外・未知ID、表示数超過・不足をAction側でも拒否する。記録画面の初期表示は `hamster` / `household`、衛生管理画面のスマホ日付初期表示は `today` / `all` のlegacy値を維持する。
 - **関連テスト:** `tests/dashboard-settings.test.ts`（保存順序の正規化、削除・追加・切り詰め、全件表示、管理状態、並び替え操作、サーバー検証、保存・描画経路）、`tests/settings.test.ts`（表示名・表示件数・選択方式・表示対象順序・各初期表示の差分判定、重複ID検証、フォーム、保存、migration）、`tests/display-settings-section.test.tsx`（スマホ用ディスクロージャー、現在値要約、入力DOM保持、説明切替、`md`以上の常時表示、ダッシュボード設定内の表示順、dirty監視フォーム接続）、`tests/cleaning-mobile-settings.test.tsx`（衛生管理スマホ初期表示）、`tests/account-delete.test.ts`（アカウント削除の確認導線と確認UI）。
 - **関連設定:** `src/lib/dashboard-settings.ts`、`src/components/form-dirty-state.ts`、`src/components/unsaved-changes-guard.tsx`、`src/lib/records.ts`、`src/lib/cleaning-settings.ts`、`src/lib/search.ts`、`AppSetting.recordTimelineDefaultScope`、`AppSetting.cleaningMobileDefaultDateFilter`。
-- **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・各画面の初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。スマホ用ディスクロージャーは閉じてもラジオ入力をアンマウント・無効化せずCSS表示だけを切り替えるため、フォーム送信値と未保存変更検知を維持する。表示名変更は `User.name` だけを更新し、初回作成後の共有グループ名や所有権移譲後の名前とは連動させない。初回Household名だけは `defaultHouseholdName()` で生成する。ダッシュボード対象または順序に変更がある場合だけ全 `DashboardHamster` を削除し、送信順の配列インデックスを `sortOrder` として作り直すため、初期表示だけの変更では対象を作り直さない。保存順に含まれる有効IDを優先し、削除済みIDを除き、新規ハムスターを末尾へ補って表示数で切り詰める。全件表示でも登録順へ置換しない。並び順のDOM更新後は共通dirty再評価イベントでhidden inputの初期スナップショットと現在順を比較し、変更時は画面移動・beforeunload警告を有効化し、初期順へ戻した場合は解除する。順序と上限を Action と UI で一致させる。
+- **依存関係:** 表示名とユーザー・Household別のダッシュボード設定・各画面の初期表示は個人設定のためVIEWERにも更新を許可し、共有グループの操作履歴には記録しない。Petダッシュボード対象または順序に変更がある場合だけ対象`AppSetting`の`DashboardPet`を作り直し、送信順を`sortOrder`へ保存する。`DashboardHamster`は読み替え・削除しない。並び順のDOM更新後は共通dirty再評価イベントで`petIds` hidden inputの初期スナップショットと現在順を比較する。プロフィールとlegacy表示設定の保存・revision・revalidate契約は維持する。
 - **お世話日の共有設定:** `CareDaySettingsForm` は表示設定と通知設定の間に独立配置し、`Household.careDayStartMinutes`を`HH:mm`で表示する。OWNER / ADMINだけが編集可能で、保存Actionはtransaction内で最新の所属・権限を再確認し、変更・未完了通知dispatchの無効化・Household revision更新を同時に確定する。保存後は即時反映し、既存の食事・水替え記録日は変更しない。
 
 ## 食事・水替えのWebプッシュ通知
@@ -204,7 +204,7 @@
 - **画面または URL:** `/settings/account/delete`。削除されるグループ数、退出するグループ数、オーナー移譲が必要なグループ数を先に要約し、各グループは状態バッジ・説明・権限・メンバー数を表示する。対応必要（`transferOwnership`、`blocked`）と対応不要のグループが混在する場合は、ローカルstateのチェックボックスで対応必要なカードだけに絞り込める。唯一OWNERの共有グループだけ移譲先を選び、確認文字列 `アカウントを削除` の完全一致を必須にする。
 - **主なコンポーネント:** `AccountDeleteEntryForm`、`AccountDeleteForm`、`StatusMessage`。通常設定フォームとは分離し、確認ページには `/settings` へ戻る「削除をやめる」導線を置く。送信中、確認未完了、最後の`SUPER_ADMIN`、処理不能グループがある場合は削除ボタンを無効化する。最後の`SUPER_ADMIN`の理由はページ内の案内だけに表示する。
 - **Server Action または API:** `deleteCurrentUserAccount`（`src/app/actions/account.ts`）。フォームのUser IDは受け取らず `getRequiredSessionUser()` から現在ユーザーを確定し、初期Householdを作成しない。
-- **データアクセス・Prismaモデル:** `src/lib/account-delete.ts` がユーザー単位lock、`SUPER_ADMIN`全体lock、ID昇順の全Household lockを同一Prisma transactionで取得し、最新状態と画面state tokenを再確認する。単独OWNERグループは `deleteSoleOwnerHousehold`、共有グループは `leaveHouseholdMembership` を同一transactionのRepositoryで再利用し、全処理成功後に `User` を削除する。`Account`、`Session`、`HouseholdMember`、`AppSetting` はUser Cascade、`DashboardHamster` はAppSetting Cascade。共有記録・招待・保存タグの作成者は既存の `SetNull` を維持する。
+- **データアクセス・Prismaモデル:** `src/lib/account-delete.ts` がユーザー単位lock、`SUPER_ADMIN`全体lock、ID昇順の全Household lockを同一Prisma transactionで取得し、最新状態と画面state tokenを再確認する。単独OWNERグループは `deleteSoleOwnerHousehold`、共有グループは `leaveHouseholdMembership` を同一transactionのRepositoryで再利用し、全処理成功後に `User` を削除する。`Account`、`Session`、`HouseholdMember`、`AppSetting` はUser Cascade、`DashboardHamster`と`DashboardPet`はAppSetting Cascade。共有記録・招待・保存タグの作成者は既存の `SetNull` を維持する。
 - **バリデーション:** 単独削除はメンバー1・対象OWNER・OWNER1の完全一致だけ。共有で別OWNERがいれば退出し、唯一OWNERなら同じグループの自分以外を明示選択してOWNER昇格後に退出する。画面後の状態変更、移譲先退出、二重削除、最後の`SUPER_ADMIN`を拒否してtransaction全体をロールバックする。招待受諾もユーザーlock→Household lock順に統一する。
 - **ファイル・ログアウト・監査:** DB commit後に、削除結果へ含まれる単独Household IDだけ `deleteHouseholdImageDirectoriesSafely` へ渡す。パス安全性は既存画像処理を再利用し、失敗はwarning。Dog-Cat専用の `dog_cat_manager_current_household` とAuth.js Session cookieを消し、DB SessionのCascade削除後に `/login?status=accountDeleted` へ遷移する。Hamster ManagerのHousehold Cookieは削除しない。成功監査イベントは `account_deleted` で、削除User IDとグループ件数だけをファイルログへ残す。
 - **関連テスト:** `tests/account-delete.test.ts`（単独Cascade、共有保持、所有権移譲、複数グループ、確認文字列、状態変更、移譲先消失、SUPER_ADMIN、二重送信、画像、SetNull、排他順序、UI）、`tests/audit-log.test.ts`（`account_deleted`）。

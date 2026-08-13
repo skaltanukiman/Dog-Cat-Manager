@@ -59,6 +59,7 @@ model Pet {
   litterRecords        PetLitterRecord[]
   records              PetRecord[]
   memoryRecords        PetMemoryRecordPet[]
+  dashboardEntries     DashboardPet[]
 
   @@unique([householdId, name])
   @@index([householdId, createdAt])
@@ -402,6 +403,7 @@ model AppSetting {
   createdAt                       DateTime           @default(now())
   updatedAt                       DateTime           @updatedAt
   dashboardHamsters               DashboardHamster[]
+  dashboardPets                   DashboardPet[]
 
   @@unique([userId, householdId])
   @@map("app_settings")
@@ -421,6 +423,22 @@ model DashboardHamster {
   @@unique([settingId, hamsterId])
   @@index([hamsterId])
   @@map("dashboard_hamsters")
+}
+
+model DashboardPet {
+  id        String     @id @default(cuid())
+  settingId String
+  setting   AppSetting @relation(fields: [settingId], references: [id], onDelete: Cascade)
+  petId     String
+  pet       Pet        @relation(fields: [petId], references: [id], onDelete: Cascade)
+  // 設定画面で選ばれた順序を保持し、Petダッシュボード表示の優先順に使う。
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([settingId, petId])
+  @@index([petId])
+  @@map("dashboard_pets")
 }
 
 model User {

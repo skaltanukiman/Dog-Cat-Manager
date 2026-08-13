@@ -5,10 +5,10 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
-  getDashboardHamsterSelectionError,
+  getDashboardPetSelectionError,
   normalizeDashboardBoardCount,
   normalizeHamsterSelectorMode,
-  pickDashboardHamsters
+  pickDashboardPets
 } from "@/lib/dashboard-settings";
 import { prisma } from "@/lib/prisma";
 import { normalizeRecordScope } from "@/lib/records";
@@ -47,7 +47,7 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
       hamsterSelectorMode: formData.get("hamsterSelectorMode"),
       recordTimelineDefaultScope: formData.get("recordTimelineDefaultScope"),
       cleaningMobileDefaultDateFilter: formData.get("cleaningMobileDefaultDateFilter"),
-      hamsterIds: formData.getAll("hamsterIds")
+      petIds: formData.getAll("petIds")
     });
     if (!dashboardResult.success) return createSettingsSaveState(previousState, "invalid");
 
@@ -57,35 +57,35 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
       recordTimelineDefaultScope,
       cleaningMobileDefaultDateFilter
     } = dashboardResult.data;
-    const selectedHamsterIds = dashboardResult.data.hamsterIds;
+    const selectedPetIds = dashboardResult.data.petIds;
     const savedDashboardSettings = {
       dashboardBoardCount,
       hamsterSelectorMode,
       recordTimelineDefaultScope,
       cleaningMobileDefaultDateFilter,
-      hamsterIds: selectedHamsterIds
+      petIds: selectedPetIds
     };
-    const [user, hamsters, setting] = await Promise.all([
+    const [user, pets, setting] = await Promise.all([
       prisma.user.findUnique({
         where: { id: context.user.id },
         select: { id: true, name: true }
       }),
-      prisma.hamster.findMany({
+      prisma.pet.findMany({
         where: { householdId: context.household.id },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ isActive: "desc" }, { createdAt: "asc" }, { id: "asc" }],
         select: { id: true }
       }),
       prisma.appSetting.findUnique({
         where: { userId_householdId: { userId: context.user.id, householdId: context.household.id } },
-        include: { dashboardHamsters: { orderBy: { sortOrder: "asc" } } }
+        include: { dashboardPets: { orderBy: { sortOrder: "asc" } } }
       })
     ]);
     if (!user) redirect("/login");
 
-    const selectionError = getDashboardHamsterSelectionError(
-      hamsters.map((hamster) => hamster.id),
+    const selectionError = getDashboardPetSelectionError(
+      pets.map((pet) => pet.id),
       dashboardBoardCount,
-      selectedHamsterIds
+      selectedPetIds
     );
     if (selectionError === "duplicate" || selectionError === "unknown") {
       return createSettingsSaveState(previousState, "invalid");
@@ -103,11 +103,11 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
     const currentCleaningMobileDefaultDateFilter = normalizeCleaningMobileDefaultDateFilter(
       setting?.cleaningMobileDefaultDateFilter
     );
-    const currentSelectedHamsterIds = pickDashboardHamsters(
-      hamsters,
+    const currentSelectedPetIds = pickDashboardPets(
+      pets,
       currentBoardCount,
-      setting?.dashboardHamsters.map((entry) => entry.hamsterId) ?? []
-    ).map((hamster) => hamster.id);
+      setting?.dashboardPets.map((entry) => entry.petId) ?? []
+    ).map((pet) => pet.id);
     const {
       profileChanged,
       dashboardChanged,
@@ -120,7 +120,7 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
         hamsterSelectorMode: currentSelectorMode,
         recordTimelineDefaultScope: currentRecordTimelineDefaultScope,
         cleaningMobileDefaultDateFilter: currentCleaningMobileDefaultDateFilter,
-        hamsterIds: currentSelectedHamsterIds
+        petIds: currentSelectedPetIds
       },
       {
         name: profileResult.data.name,
@@ -128,7 +128,7 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
         hamsterSelectorMode,
         recordTimelineDefaultScope,
         cleaningMobileDefaultDateFilter,
-        hamsterIds: selectedHamsterIds
+        petIds: selectedPetIds
       }
     );
 
@@ -169,9 +169,9 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
           }
         });
         if (dashboardChanged) {
-          await tx.dashboardHamster.deleteMany({ where: { settingId: setting.id } });
-          for (const [index, hamsterId] of selectedHamsterIds.entries()) {
-            await tx.dashboardHamster.create({ data: { settingId: setting.id, hamsterId, sortOrder: index } });
+          await tx.dashboardPet.deleteMany({ where: { settingId: setting.id } });
+          for (const [index, petId] of selectedPetIds.entries()) {
+            await tx.dashboardPet.create({ data: { settingId: setting.id, petId, sortOrder: index } });
           }
         }
       }
