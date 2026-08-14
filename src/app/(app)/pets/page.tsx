@@ -52,11 +52,11 @@ export default async function PetsPage({
           <form action={createPet} data-dirty-watch className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               名前
-              <input name="name" required maxLength={50} placeholder="例: こむぎ" />
+              <input className="h-10" name="name" required maxLength={50} placeholder="例: こむぎ" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               種類
-              <select name="species" required defaultValue="">
+              <select className="h-10" name="species" required defaultValue="">
                 <option value="" disabled>選択してください</option>
                 <option value="DOG">犬</option>
                 <option value="CAT">猫</option>
@@ -64,11 +64,11 @@ export default async function PetsPage({
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               品種
-              <input name="breed" maxLength={100} placeholder="例: 柴犬" />
+              <input className="h-10" name="breed" maxLength={100} placeholder="例: 柴犬" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               性別
-              <select name="sex" defaultValue="UNKNOWN">
+              <select className="h-10" name="sex" defaultValue="UNKNOWN">
                 <option value="MALE">オス</option>
                 <option value="FEMALE">メス</option>
                 <option value="UNKNOWN">不明</option>
@@ -76,15 +76,15 @@ export default async function PetsPage({
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               誕生日
-              <input type="date" name="birthDate" max={today} />
+              <input className="h-10" type="date" name="birthDate" max={today} />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               お迎え日
-              <input type="date" name="adoptionDate" max={today} />
+              <input className="h-10" type="date" name="adoptionDate" max={today} />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700 md:col-span-2 lg:col-span-2">
               メモ
-              <input name="memo" maxLength={2000} placeholder="性格、注意点など" />
+              <input className="h-10" name="memo" maxLength={2000} placeholder="性格、注意点など" />
             </label>
             <div className="md:col-span-2 lg:col-span-4">
               <PetImageField petName="新しいPet" />
@@ -144,22 +144,22 @@ export default async function PetsPage({
                   <input type="hidden" name="id" value={pet.id} />
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     名前
-                    <input name="name" required maxLength={50} defaultValue={pet.name} readOnly={!canEdit} />
+                    <input className="h-10" name="name" required maxLength={50} defaultValue={pet.name} readOnly={!canEdit} />
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     種類
-                    <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                    <span className="flex h-10 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-3">
                       <PetSpeciesBadge species={pet.species} />
                     </span>
                     <span className="text-xs font-normal text-slate-500">種類は登録後変更できません</span>
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     品種
-                    <input name="breed" maxLength={100} defaultValue={pet.breed ?? ""} readOnly={!canEdit} />
+                    <input className="h-10" name="breed" maxLength={100} defaultValue={pet.breed ?? ""} readOnly={!canEdit} />
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     性別
-                    <select name="sex" defaultValue={pet.sex} disabled={!canEdit}>
+                    <select className="h-10" name="sex" defaultValue={pet.sex} disabled={!canEdit}>
                       {Object.entries(SEX_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
                       ))}
@@ -167,15 +167,15 @@ export default async function PetsPage({
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     誕生日
-                    <input type="date" name="birthDate" max={today} defaultValue={pet.birthDate ? toDateInputValue(pet.birthDate) : ""} readOnly={!canEdit} />
+                    <input className="h-10" type="date" name="birthDate" max={today} defaultValue={pet.birthDate ? toDateInputValue(pet.birthDate) : ""} readOnly={!canEdit} />
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     お迎え日
-                    <input type="date" name="adoptionDate" max={today} defaultValue={pet.adoptionDate ? toDateInputValue(pet.adoptionDate) : ""} readOnly={!canEdit} />
+                    <input className="h-10" type="date" name="adoptionDate" max={today} defaultValue={pet.adoptionDate ? toDateInputValue(pet.adoptionDate) : ""} readOnly={!canEdit} />
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700 md:col-span-2 lg:col-span-2">
                     メモ
-                    <input name="memo" maxLength={2000} defaultValue={pet.memo ?? ""} readOnly={!canEdit} />
+                    <input className="h-10" name="memo" maxLength={2000} defaultValue={pet.memo ?? ""} readOnly={!canEdit} />
                   </label>
                   <div className="md:col-span-2 lg:col-span-4">
                     <PetImageField
