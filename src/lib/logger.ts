@@ -35,7 +35,7 @@ const FILE_ERROR_WARNING_INTERVAL_MS = 60_000;
 const closedLoggers = new WeakSet<Logger>();
 
 type LoggerGlobal = typeof globalThis & {
-  __hamsterServerLogger?: Logger;
+  __dogCatServerLogger?: Logger;
 };
 
 function parseLogLevel(value: string | undefined) {
@@ -163,10 +163,10 @@ export function createServerLogger(options: ServerLoggerOptions = {}) {
 export function getServerLogger() {
   const globalForLogger = globalThis as LoggerGlobal;
   // 開発時の再評価や同一プロセス内の呼び出しでtransportを重複登録しない。
-  if (!globalForLogger.__hamsterServerLogger) {
-    globalForLogger.__hamsterServerLogger = createServerLogger();
+  if (!globalForLogger.__dogCatServerLogger) {
+    globalForLogger.__dogCatServerLogger = createServerLogger();
   }
-  return globalForLogger.__hamsterServerLogger;
+  return globalForLogger.__dogCatServerLogger;
 }
 
 export function writeServerLog(level: LogLevel, fields: ServerLogFields, logger: Logger = getServerLogger()) {

@@ -14,17 +14,12 @@ function readSource(path: string) {
 const current: SettingsSnapshot = {
   name: "山田 太郎",
   dashboardBoardCount: 2,
-  hamsterSelectorMode: "select",
-  recordTimelineDefaultScope: "hamster",
-  cleaningMobileDefaultDateFilter: "today",
   petIds: ["pet-1", "pet-2"]
 };
 
 test("設定が同一ならプロフィール・ダッシュボードとも変更なしになる", () => {
   assert.deepEqual(getSettingsChanges(current, { ...current }), {
     profileChanged: false,
-    recordTimelineDefaultScopeChanged: false,
-    cleaningMobileDefaultDateFilterChanged: false,
     dashboardChanged: false
   });
 });
@@ -32,15 +27,12 @@ test("設定が同一ならプロフィール・ダッシュボードとも変�
 test("表示名だけの変更を検知する", () => {
   assert.deepEqual(getSettingsChanges(current, { ...current, name: "山田 花子" }), {
     profileChanged: true,
-    recordTimelineDefaultScopeChanged: false,
-    cleaningMobileDefaultDateFilterChanged: false,
     dashboardChanged: false
   });
 });
 
-test("表示件数・選択方式・対象順序の変更をそれぞれ検知する", () => {
+test("表示件数と対象順序の変更を検知する", () => {
   assert.equal(getSettingsChanges(current, { ...current, dashboardBoardCount: 3 }).dashboardChanged, true);
-  assert.equal(getSettingsChanges(current, { ...current, hamsterSelectorMode: "combobox" }).dashboardChanged, true);
   assert.equal(
     getSettingsChanges(current, { ...current, petIds: ["pet-2", "pet-1"] }).dashboardChanged,
     true
@@ -51,141 +43,22 @@ test("ダッシュボード設定は重複したPet IDを拒否する", () => {
   assert.equal(
     dashboardSettingsSchema.safeParse({
       dashboardBoardCount: 2,
-      hamsterSelectorMode: "select",
-      recordTimelineDefaultScope: "hamster",
-      cleaningMobileDefaultDateFilter: "today",
       petIds: ["pet-1", "pet-1"]
     }).success,
     false
   );
-});
-
-test("記録画面の初期表示だけの変更をダッシュボード変更と分けて検知する", () => {
-  assert.deepEqual(
-    getSettingsChanges(current, { ...current, recordTimelineDefaultScope: "household" }),
-    {
-      profileChanged: false,
-      recordTimelineDefaultScopeChanged: true,
-      cleaningMobileDefaultDateFilterChanged: false,
-      dashboardChanged: false
-    }
-  );
-});
-
-test("記録画面の初期表示設定はhamsterとhouseholdだけを受け付ける", () => {
-  const input = {
-    dashboardBoardCount: 2,
-    hamsterSelectorMode: "select",
-    cleaningMobileDefaultDateFilter: "today",
-    petIds: ["pet-1", "pet-2"]
-  };
-
   assert.equal(
-    dashboardSettingsSchema.safeParse({ ...input, recordTimelineDefaultScope: "hamster" }).success,
+    dashboardSettingsSchema.safeParse({
+      dashboardBoardCount: 2,
+      petIds: ["pet-1", "pet-2"]
+    }).success,
     true
   );
-  assert.equal(
-    dashboardSettingsSchema.safeParse({ ...input, recordTimelineDefaultScope: "household" }).success,
-    true
-  );
-  assert.equal(
-    dashboardSettingsSchema.safeParse({ ...input, recordTimelineDefaultScope: "invalid" }).success,
-    false
-  );
-});
-
-test("衛生管理画面のスマホ初期表示設定はtodayとallだけを受け付ける", () => {
-  const input = {
-    dashboardBoardCount: 2,
-    hamsterSelectorMode: "select",
-    recordTimelineDefaultScope: "hamster",
-    petIds: ["pet-1", "pet-2"]
-  };
-
-  assert.equal(
-    dashboardSettingsSchema.safeParse({ ...input, cleaningMobileDefaultDateFilter: "today" }).success,
-    true
-  );
-  assert.equal(
-    dashboardSettingsSchema.safeParse({ ...input, cleaningMobileDefaultDateFilter: "all" }).success,
-    true
-  );
-  assert.equal(
-    dashboardSettingsSchema.safeParse({ ...input, cleaningMobileDefaultDateFilter: "invalid" }).success,
-    false
-  );
-});
-
-test("衛生管理画面のスマホ初期表示だけの変更を差分として検知する", () => {
-  assert.deepEqual(
-    getSettingsChanges(current, { ...current, cleaningMobileDefaultDateFilter: "all" }),
-    {
-      profileChanged: false,
-      recordTimelineDefaultScopeChanged: false,
-      cleaningMobileDefaultDateFilterChanged: true,
-      dashboardChanged: false
-    }
-  );
-});
-
-test("記録画面の初期表示は設定フォーム・保存Action・AppSettingへ統合される", () => {
-  const form = readSource("src/components/display-settings-section.tsx");
-  const action = readSource("src/app/actions/settings.ts");
-  const schema = readSource("src/lib/schemas.ts");
-  const prismaSchema = readSource("prisma/schema.prisma");
-  const migration = readSource(
-    "prisma/migrations/20260724090000_add_record_timeline_default_scope/migration.sql"
-  );
-
-  assert.match(form, /記録画面の初期表示/);
-  assert.match(form, /const RECORD_SCOPE_OPTIONS[\s\S]*?value: "hamster"[\s\S]*?value: "household"/);
-  assert.match(form, /name="recordTimelineDefaultScope"/);
-  assert.match(form, /選択した1匹の記録を表示します。/);
-  assert.match(form, /現在の共有グループに所属する全ハムスターの記録を表示します。/);
-  assert.match(schema, /recordTimelineDefaultScope: z\.enum\(RECORD_SCOPES\)/);
-  assert.match(action, /recordTimelineDefaultScopeChanged/);
-  assert.match(action, /dashboardChanged \|\| recordTimelineDefaultScopeChanged/);
-  assert.match(action, /if \(dashboardChanged\) \{[\s\S]*?dashboardPet\.deleteMany/);
-  assert.doesNotMatch(action, /dashboardHamster\.deleteMany/);
-  assert.match(action, /userId_householdId: \{ userId: context\.user\.id, householdId: context\.household\.id \}/);
-  assert.match(action, /\{ path: "\/records" \}/);
-  assert.match(prismaSchema, /recordTimelineDefaultScope\s+String\s+@default\("hamster"\)/);
-  assert.match(migration, /ADD COLUMN "recordTimelineDefaultScope" TEXT NOT NULL DEFAULT 'hamster'/);
-  assert.doesNotMatch(action, /createHouseholdActivity/);
-});
-
-test("衛生管理画面のスマホ初期表示は設定フォーム・保存Action・AppSettingへ統合される", () => {
-  const form = readSource("src/components/display-settings-section.tsx");
-  const action = readSource("src/app/actions/settings.ts");
-  const schema = readSource("src/lib/schemas.ts");
-  const prismaSchema = readSource("prisma/schema.prisma");
-  const migration = readSource(
-    "prisma/migrations/20260727090000_add_cleaning_mobile_default_date_filter/migration.sql"
-  );
-
-  assert.match(
-    form,
-    /const CLEANING_DATE_FILTER_OPTIONS[\s\S]*?value: "today"[\s\S]*?value: "all"/
-  );
-  assert.match(form, /name="cleaningMobileDefaultDateFilter"/);
-  assert.match(form, /label: "当日のみ"/);
-  assert.match(form, /label: "すべての日付"/);
-  assert.match(schema, /cleaningMobileDefaultDateFilter: z\.enum\(CLEANING_MOBILE_DEFAULT_DATE_FILTERS\)/);
-  assert.match(action, /cleaningMobileDefaultDateFilterChanged/);
-  assert.match(
-    action,
-    /dashboardChanged \|\| recordTimelineDefaultScopeChanged \|\| cleaningMobileDefaultDateFilterChanged/
-  );
-  assert.match(action, /update: \{[\s\S]*?cleaningMobileDefaultDateFilter[\s\S]*?\}/);
-  assert.match(prismaSchema, /cleaningMobileDefaultDateFilter String\s+@default\("today"\)/);
-  assert.match(migration, /ADD COLUMN "cleaningMobileDefaultDateFilter" TEXT NOT NULL DEFAULT 'today'/);
 });
 
 test("設定カードは固定ボタン回避用の余白とxlでの解除タイミングを共有する", () => {
   const layout = readSource("src/components/settings-layout.ts");
   const sources = [
-    readSource("src/components/profile-settings-form.tsx"),
-    readSource("src/components/display-settings-section.tsx"),
     readSource("src/components/dashboard-settings-form.tsx"),
     readSource("src/components/account-delete-entry-form.tsx")
   ];
@@ -212,7 +85,6 @@ test("保存位置への固定ボタンは保存ボタンが画面より下に�
   assert.match(source, /behavior: "smooth"/);
   assert.match(source, /aria-label="保存ボタンまでスクロール"/);
   assert.match(source, /tabIndex=\{isVisible \? 0 : -1\}/);
-  assert.match(source, /focus-visible:outline/);
 
   assert.equal(
     shouldShowSettingsScrollButton({ isIntersecting: false, targetTop: 901, viewportBottom: 900 }),

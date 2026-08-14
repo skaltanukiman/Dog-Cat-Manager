@@ -10,22 +10,16 @@ import { prisma } from "@/lib/prisma";
 import { logUnexpectedError, type UnexpectedErrorLogOptions } from "@/lib/server-errors";
 
 export type HouseholdChangeSource =
-  | "hamster"
   | "pet"
   | "petWeight"
   | "petFeeding"
   | "petWater"
   | "petWalk"
   | "petLitter"
-  | "cleaning"
-  | "feeding"
-  | "waterReplacement"
-  | "weight"
   | "settings"
   | "household"
   | "member"
   | "profile"
-  | "record"
   | "petRecord";
 
 export type HouseholdChangeEvent = {
@@ -55,7 +49,7 @@ type RealtimeBus = {
 };
 
 type RealtimeGlobal = typeof globalThis & {
-  __hamsterRealtimeBus?: RealtimeBus;
+  __dogCatRealtimeBus?: RealtimeBus;
 };
 
 const REALTIME_ACTOR_ID_PATTERN = /^[A-Za-z0-9-]{1,128}$/;
@@ -64,14 +58,14 @@ function getRealtimeBus() {
   const globalForRealtime = globalThis as RealtimeGlobal;
 
   // SSE配信はプロセス内バスなので、再生成を避けて同一プロセスの購読者を共有する。
-  if (!globalForRealtime.__hamsterRealtimeBus) {
-    globalForRealtime.__hamsterRealtimeBus = {
+  if (!globalForRealtime.__dogCatRealtimeBus) {
+    globalForRealtime.__dogCatRealtimeBus = {
       nextId: 1,
       listeners: new Set()
     };
   }
 
-  return globalForRealtime.__hamsterRealtimeBus;
+  return globalForRealtime.__dogCatRealtimeBus;
 }
 
 /**

@@ -158,7 +158,7 @@ test("ページ移動URLは招待条件だけを維持し、安全にエンコ�
     query({ status: "expired", search: "林 家", sort: "expires-asc", page: 2 }),
     3
   );
-  const url = new URL(href, "https://hamster.example");
+  const url = new URL(href, "https://dog-cat.example");
 
   assert.equal(url.pathname, "/admin");
   assert.equal(url.searchParams.get("inviteStatus"), "expired");

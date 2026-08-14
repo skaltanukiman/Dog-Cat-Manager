@@ -56,7 +56,7 @@ test("Phase 3B migrationは新規enum・テーブル・Cascade/SetNull FK・inde
   assert.equal((migration.match(/REFERENCES "pets"\("id"\) ON DELETE CASCADE/g) ?? []).length, 2);
   assert.equal((migration.match(/REFERENCES "users"\("id"\) ON DELETE SET NULL/g) ?? []).length, 2);
   assert.doesNotMatch(migration, /UNIQUE INDEX "pet_(?:walk|litter)_records_pet_id_record_date/);
-  assert.doesNotMatch(migration, /ALTER TABLE "(?:pets|users|feeding_records|water_replacement_records|pet_feeding_records|pet_water_records|pet_weight_records|weight_records|hamsters)"/);
+  assert.doesNotMatch(migration, /ALTER TABLE "(?:pets|users|pet_feeding_records|pet_water_records|pet_weight_records)"/);
   for (const event of ["PET_WALK_CREATED", "PET_WALK_UPDATED", "PET_WALK_DELETED", "PET_LITTER_CREATED", "PET_LITTER_UPDATED", "PET_LITTER_DELETED"]) {
     assert.match(migration, new RegExp(event));
   }
@@ -177,15 +177,11 @@ test("Walk/Litter ActivityはJST日時・時間・日本語actionを表示しmem
   assert.doesNotMatch(JSON.stringify(activity("PET_LITTER_CREATED", { occurredAt, action: "DEFECATION", memo: "非表示" })), /非表示/);
 });
 
-test("既存Pet Care・Pet体重・画像・Hamster Careコードを保持する", async () => {
+test("既存Pet Care・Pet体重・画像コードを保持する", async () => {
   for (const path of [
     "src/app/actions/pet-feeding.ts",
     "src/app/actions/pet-water.ts",
     "src/app/actions/pet-weights.ts",
-    "src/lib/pet-image.ts",
-    "src/app/actions/feeding.ts",
-    "src/app/actions/water-replacement.ts",
-    "src/app/(app)/cleaning/page.tsx",
-    "src/lib/care-notification-dispatch.ts"
+    "src/lib/pet-image.ts"
   ]) assert.ok((await source(path)).length > 0, `${path} は維持する必要があります。`);
 });

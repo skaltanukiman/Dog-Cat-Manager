@@ -68,12 +68,13 @@ async function main() {
       create: { householdId, userId, role: householdRole, createdAt }
     });
 
-    await prisma.hamster.upsert({
-      where: { householdId_name: { householdId, name: `サンプルハムスター ${suffix}` } },
+    await prisma.pet.upsert({
+      where: { householdId_name: { householdId, name: `サンプルPet ${suffix}` } },
       update: {},
       create: {
         householdId,
-        name: `サンプルハムスター ${suffix}`,
+        name: `サンプルPet ${suffix}`,
+        species: index % 2 === 0 ? "DOG" : "CAT",
         memo: "管理画面のページング確認用サンプルデータです。",
         createdAt
       }

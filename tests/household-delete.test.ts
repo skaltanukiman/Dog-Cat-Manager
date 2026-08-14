@@ -11,10 +11,8 @@ import {
   type HouseholdDeleteRepository
 } from "../src/lib/household-delete";
 import { deleteHouseholdImageDirectoriesSafely } from "../src/lib/household-delete-images";
-import { deleteHamsterImageHouseholdDirectory } from "../src/lib/hamster-image";
 import { deletePetImageHouseholdDirectory } from "../src/lib/pet-image";
 import { deletePetRecordImageHouseholdDirectory } from "../src/lib/pet-record-image";
-import { deleteRecordImageHouseholdDirectory } from "../src/lib/record-image";
 
 type StoredMembership = {
   id: string;
@@ -49,11 +47,11 @@ function createDatabase(members: StoredMembership[]): FakeDatabase {
       [
         "household-1",
         new Set([
-          "invitation", "appSetting", "dashboardHamster", "hamster", "cleaningRecord",
-          "weightRecord", "healthDetail", "medicalDetail", "memoryDetail", "memoryImage", "savedTag"
+          "invitation", "appSetting", "dashboardPet", "pet", "petCareRecord",
+          "petWeightRecord", "petHealthDetail", "petMedicalDetail", "petMemoryDetail", "petMemoryImage", "savedTag"
         ])
       ],
-      ["household-2", new Set(["hamster", "weightRecord"])]
+      ["household-2", new Set(["pet", "petWeightRecord"])]
     ]),
     lockTails: new Map(),
     deleteCount: 0,
@@ -110,7 +108,7 @@ test("OWNERかつ唯一のメンバーだけが削除でき、User・認証情�
   assert.equal(database.households.has("household-1"), false);
   assert.equal(database.householdData.has("household-1"), false);
   assert.equal(database.households.has("household-2"), true);
-  assert.deepEqual(database.householdData.get("household-2"), new Set(["hamster", "weightRecord"]));
+  assert.deepEqual(database.householdData.get("household-2"), new Set(["pet", "petWeightRecord"]));
   assert.deepEqual(database.userData, new Set(["user", "account", "session"]));
 });
 
@@ -159,8 +157,8 @@ test("二重削除をHousehold lockで直列化する", async () => {
   assert.equal(database.deleteCount, 1);
 });
 
-test("画像ディレクトリは対象Householdだけを削除し、不正IDでルート外を操作できない", async () => {
-  const root = await mkdtemp(join(tmpdir(), "hamster-household-delete-"));
+test("Pet画像ディレクトリは対象Householdだけを削除し、不正IDでルート外を操作できない", async () => {
+  const root = await mkdtemp(join(tmpdir(), "pet-household-delete-"));
   const target = join(root, "household-1");
   const other = join(root, "household-2");
   await mkdir(target);
@@ -168,15 +166,11 @@ test("画像ディレクトリは対象Householdだけを削除し、不正IDで
   await writeFile(join(target, "image.webp"), "target");
   await writeFile(join(other, "image.webp"), "other");
 
-  await deleteHamsterImageHouseholdDirectory("household-1", root);
+  await deletePetImageHouseholdDirectory("household-1", root);
   await assert.rejects(readFile(join(target, "image.webp")));
   assert.equal(await readFile(join(other, "image.webp"), "utf8"), "other");
-  await assert.rejects(deleteHamsterImageHouseholdDirectory("../household-2", root));
+  await assert.rejects(deletePetImageHouseholdDirectory("../household-2", root));
   assert.equal(await readFile(join(other, "image.webp"), "utf8"), "other");
-  await deleteRecordImageHouseholdDirectory("household-2", root);
-  await assert.rejects(readFile(join(other, "image.webp")));
-  await mkdir(other);
-  await writeFile(join(other, "image.webp"), "pet");
   await deletePetImageHouseholdDirectory("household-2", root);
   await assert.rejects(readFile(join(other, "image.webp")));
   await mkdir(other);
@@ -193,25 +187,21 @@ test("画像削除失敗はwarning対象にして後処理全体を失敗扱い�
   const warnings: string[] = [];
   const deleted: string[] = [];
   const result = await deleteHouseholdImageDirectoriesSafely("household-1", {
-    deleteHamsterDirectory: async () => { throw new Error("internal path"); },
-    deletePetDirectory: async () => { deleted.push("pet"); },
-    deleteRecordDirectory: async () => { deleted.push("record"); },
+    deletePetDirectory: async () => { throw new Error("internal path"); },
     deletePetRecordDirectory: async () => { deleted.push("petRecord"); },
     warn: (kind) => warnings.push(kind)
   });
-  assert.deepEqual(result.failedKinds, ["hamster"]);
-  assert.deepEqual(warnings, ["hamster"]);
-  assert.deepEqual(deleted.sort(), ["pet", "petRecord", "record"]);
+  assert.deepEqual(result.failedKinds, ["pet"]);
+  assert.deepEqual(warnings, ["pet"]);
+  assert.deepEqual(deleted, ["petRecord"]);
 });
 
-test("Household画像cleanupは旧Hamster・Petプロフィール・旧Record・Pet Recordを別rootのまま追加削除する", async () => {
+test("Household画像cleanupはPetプロフィール・Pet Recordを別rootで独立削除する", async () => {
   const cleanup = await readFile(join(process.cwd(), "src/lib/household-delete-images.ts"), "utf8");
-  assert.match(cleanup, /deleteHamsterImageHouseholdDirectory/);
   assert.match(cleanup, /deletePetImageHouseholdDirectory/);
-  assert.match(cleanup, /deleteRecordImageHouseholdDirectory/);
   assert.match(cleanup, /deletePetRecordImageHouseholdDirectory/);
-  assert.match(cleanup, /"hamster" \| "pet" \| "record" \| "petRecord"/);
-  assert.equal((cleanup.match(/Directory\(householdId\)/g) ?? []).length, 4);
+  assert.match(cleanup, /"pet" \| "petRecord"/);
+  assert.equal((cleanup.match(/Directory\(householdId\)/g) ?? []).length, 2);
 });
 
 test("本番削除は同一transactionのHousehold lockとCascade起点のhousehold.deleteを使う", async () => {
@@ -220,11 +210,9 @@ test("本番削除は同一transactionのHousehold lockとCascade起点のhouseh
   assert.match(source, /prisma\.\$transaction/);
   assert.match(source, /pg_advisory_xact_lock\(hashtextextended\(\$\{householdId\}, 0\)\)/);
   assert.match(source, /tx\.household\.delete\(\{ where: \{ id: householdId \} \}\)/);
-  assert.doesNotMatch(source, /tx\.(hamster|householdMember|appSetting)\.deleteMany/);
+  assert.doesNotMatch(source, /tx\.(pet|householdMember|appSetting)\.deleteMany/);
   assert.match(schema, /household\s+Household\?\s+@relation\([^\n]+onDelete: Cascade\)/);
   assert.match(schema, /household\s+Household\s+@relation\([^\n]+onDelete: Cascade\)/);
-  assert.match(schema, /hamster\s+Hamster\s+@relation\([^\n]+onDelete: Cascade\)/);
-  assert.match(schema, /memoryRecord\s+MemoryRecordDetail\s+@relation\([^\n]+onDelete: Cascade\)/);
   assert.match(schema, /pet\s+Pet\s+@relation\([^\n]+onDelete: Cascade\)/);
   for (const model of [
     "PetHealthRecordDetail", "PetMedicalVisitDetail", "PetMedicationRecordDetail",
@@ -251,10 +239,11 @@ test("Action・画面は再認可、確認入力、削除後分岐、Cookie、�
   assert.match(authContext, /existingMembership[\s\S]+created: false/);
   assert.match(authContext, /household\.members\[0\], created: true/);
   assert.match(preview, /\.count\(/);
-  assert.match(preview, /\.groupBy\(/);
+  assert.match(preview, /prisma\.petRecord\.count/);
+  assert.match(preview, /careRecordCount/);
   assert.match(preview, /profileImageFileName: \{ not: null \}/);
 
-  for (const label of ["ハムスター", "体重記録", "掃除記録", "健康記録", "通院記録", "思い出記録", "画像", "保存済みタグ"]) {
+  for (const label of ["Pet", "体重記録", "お世話記録", "健康・通院・薬・ワクチン・思い出記録", "画像", "保存済みタグ"]) {
     assert.match(page, new RegExp(label));
   }
   assert.match(page, /joinedHouseholdCount > 1/);

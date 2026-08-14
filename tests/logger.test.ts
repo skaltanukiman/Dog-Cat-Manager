@@ -30,7 +30,7 @@ function parseJsonLines(value: string) {
 }
 
 test("同じerrorIdを標準出力相当と日付付きJSON Linesファイルへ記録する", async () => {
-  const root = mkdtempSync(join(tmpdir(), "hamster-logger-"));
+  const root = mkdtempSync(join(tmpdir(), "dog-cat-logger-"));
   const logDir = join(root, "logs");
   const capture = captureStream();
   const logger = createServerLogger({
@@ -104,7 +104,7 @@ test("同じerrorIdを標準出力相当と日付付きJSON Linesファイルへ
 });
 
 test("ログディレクトリ初期化失敗時も標準出力へフォールバックして処理を継続する", async () => {
-  const root = mkdtempSync(join(tmpdir(), "hamster-logger-failure-"));
+  const root = mkdtempSync(join(tmpdir(), "dog-cat-logger-failure-"));
   const blockedPath = join(root, "not-a-directory");
   writeFileSync(blockedPath, "blocked", "utf8");
   const capture = captureStream();

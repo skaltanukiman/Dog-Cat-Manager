@@ -20,7 +20,7 @@ test("Household内の有効な招待リンク上限は10件", () => {
 
 test("招待トークンはクエリではなくURLフラグメントへ格納する", () => {
   const token = createInvitationToken();
-  const inviteUrl = new URL(buildInvitationUrl("https://hamster.example", token));
+  const inviteUrl = new URL(buildInvitationUrl("https://dog-cat.example", token));
 
   assert.equal(inviteUrl.pathname, "/invitations/accept");
   assert.equal(inviteUrl.search, "");

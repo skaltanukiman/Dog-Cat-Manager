@@ -27,12 +27,10 @@ function activity(eventType: HouseholdActivityListItem["eventType"], details: Ho
   });
 }
 
-test("Pet Careモデルは旧Hamsterモデルから独立し同日複数イベントを許可する", async () => {
+test("Pet Careモデルは同日複数イベントを許可する", async () => {
   const schema = await source("prisma/schema.prisma");
   const feeding = schema.slice(schema.indexOf("model PetFeedingRecord {"), schema.indexOf("model PetWaterRecord {"));
   const water = schema.slice(schema.indexOf("model PetWaterRecord {"), schema.indexOf("enum PetWaterAction"));
-  const oldFeeding = schema.slice(schema.indexOf("model FeedingRecord {"), schema.indexOf("model WaterReplacementRecord {"));
-  const oldWater = schema.slice(schema.indexOf("model WaterReplacementRecord {"), schema.indexOf("model WeightRecord {"));
 
   assert.match(feeding, /petId\s+String\s+@map\("pet_id"\)/);
   assert.match(feeding, /fedAt\s+DateTime\s+@map\("fed_at"\)/);
@@ -47,13 +45,6 @@ test("Pet Careモデルは旧Hamsterモデルから独立し同日複数イベ�
   assert.match(schema, /waterRecords\s+PetWaterRecord\[\]/);
   assert.match(schema, /createdPetFeedingRecords\s+PetFeedingRecord\[\]/);
   assert.match(schema, /createdPetWaterRecords\s+PetWaterRecord\[\]/);
-
-  assert.match(oldFeeding, /hamsterId/);
-  assert.match(oldFeeding, /@@unique\(\[hamsterId, recordDate\]\)/);
-  assert.doesNotMatch(oldFeeding, /petId|PetFeedingRecord/);
-  assert.match(oldWater, /hamsterId/);
-  assert.match(oldWater, /@@unique\(\[hamsterId, recordDate\]\)/);
-  assert.doesNotMatch(oldWater, /petId|PetWaterRecord/);
 });
 
 test("新規migrationはPet Careテーブル・enum・FK・indexだけを追加する", async () => {
@@ -66,7 +57,7 @@ test("新規migrationはPet Careテーブル・enum・FK・indexだけを追加�
   assert.match(migration, /REFERENCES "pets"\("id"\) ON DELETE CASCADE/);
   assert.equal((migration.match(/REFERENCES "users"\("id"\) ON DELETE SET NULL/g) ?? []).length, 2);
   assert.doesNotMatch(migration, /UNIQUE INDEX "pet_(?:feeding|water)_records_pet_id_record_date/);
-  assert.doesNotMatch(migration, /ALTER TABLE "(?:feeding_records|water_replacement_records|weight_records|pet_weight_records|hamsters|pets)"/);
+  assert.doesNotMatch(migration, /ALTER TABLE "(?:pet_weight_records|pets)"/);
   for (const event of ["PET_FEEDING_CREATED", "PET_FEEDING_UPDATED", "PET_FEEDING_DELETED", "PET_WATER_CREATED", "PET_WATER_UPDATED", "PET_WATER_DELETED"]) {
     assert.match(migration, new RegExp(event));
   }
@@ -152,12 +143,10 @@ test("/careはPet選択・画像・お世話日・食事・水・閲覧専用状
   assert.match(page, /max=\{maxDateTime\}/);
 });
 
-test("主要ナビは5項目を維持して/cleaningを/careへ置換し旧routeは残す", async () => {
+test("主要ナビは5項目を維持してPet Care導線を表示する", async () => {
   const nav = await source("src/components/app-nav.tsx");
   assert.match(nav, /href: "\/care", label: "お世話管理", mobileLabel: "お世話"/);
-  assert.doesNotMatch(nav, /href: "\/cleaning"/);
   assert.equal((nav.match(/mobileLabel:/g) ?? []).length, 5);
-  assert.ok((await source("src/app/(app)/cleaning/page.tsx")).length > 0);
 });
 
 test("6種類のActivity表示はJST日時と水actionを示しmemoを表示しない", () => {
@@ -173,16 +162,4 @@ test("6種類のActivity表示はJST日時と水actionを示しmemoを表示し�
   assert.match(activity("PET_WATER_UPDATED", { caredAt, action: "REFILLED" }).detail ?? "", /補充/);
   assert.match(activity("PET_WATER_DELETED", { caredAt, action: "REFILLED" }).summary, /補充記録を削除/);
   assert.doesNotMatch(JSON.stringify(activity("PET_WATER_CREATED", { caredAt, action: "REPLACED", memo: "表示禁止" })), /表示禁止/);
-});
-
-test("旧Hamster食事・水替え・通知とPet体重・Pet画像コードは残る", async () => {
-  for (const path of [
-    "src/app/actions/feeding.ts",
-    "src/app/actions/water-replacement.ts",
-    "src/lib/feeding.ts",
-    "src/lib/water-replacement.ts",
-    "src/lib/care-notification-dispatch.ts",
-    "src/app/actions/pet-weights.ts",
-    "src/lib/pet-image.ts"
-  ]) assert.ok((await source(path)).length > 0, `${path} は残す必要があります。`);
 });

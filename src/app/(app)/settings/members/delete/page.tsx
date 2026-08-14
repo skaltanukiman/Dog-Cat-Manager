@@ -38,12 +38,10 @@ export default async function HouseholdDeletePage({
   }
 
   const deletionCounts = [
-    ["ハムスター", `${preview.hamsterCount}匹`],
+    ["Pet", `${preview.petCount}匹`],
     ["体重記録", `${preview.weightRecordCount}件`],
-    ["掃除記録", `${preview.cleaningRecordCount}件`],
-    ["健康記録", `${preview.healthRecordCount}件`],
-    ["通院記録", `${preview.medicalVisitCount}件`],
-    ["思い出記録", `${preview.memoryRecordCount}件`],
+    ["お世話記録", `${preview.careRecordCount}件`],
+    ["健康・通院・薬・ワクチン・思い出記録", `${preview.recordCount}件`],
     ["画像", `${preview.imageCount}枚`],
     ["保存済みタグ", `${preview.savedMemoryTagCount}件`]
   ] as const;

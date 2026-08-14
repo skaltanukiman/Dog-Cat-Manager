@@ -1,19 +1,14 @@
-// 認証導入前の固定設定ID。既存データ移行スクリプトで旧設定を読み取るために残す。
-export const LEGACY_APP_SETTING_ID = "default";
 export const DEFAULT_DASHBOARD_BOARD_COUNT = 6;
 export const MIN_DASHBOARD_BOARD_COUNT = 1;
 export const MAX_DASHBOARD_BOARD_COUNT = 30;
-export const HAMSTER_SELECTOR_MODES = ["combobox", "select"] as const;
-export const DEFAULT_HAMSTER_SELECTOR_MODE: HamsterSelectorMode = "select";
 
-export type HamsterSelectorMode = (typeof HAMSTER_SELECTOR_MODES)[number];
 export type DashboardDropPosition = "before" | "after";
-export type DashboardHamsterRemovalPosition = {
+export type DashboardPetRemovalPosition = {
   index: number;
   previousId: string | null;
   nextId: string | null;
 };
-export type DashboardPetRemovalPosition = DashboardHamsterRemovalPosition;
+export type DashboardPetSelectionError = "duplicate" | "unknown" | "tooMany" | "tooFew";
 
 export function normalizeDashboardBoardCount(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -24,12 +19,8 @@ export function normalizeDashboardBoardCount(value: number | null | undefined) {
   return Math.min(MAX_DASHBOARD_BOARD_COUNT, Math.max(MIN_DASHBOARD_BOARD_COUNT, Math.trunc(value)));
 }
 
-export function normalizeHamsterSelectorMode(value: string | null | undefined): HamsterSelectorMode {
-  return value === "combobox" || value === "select" ? value : DEFAULT_HAMSTER_SELECTOR_MODE;
-}
-
-function uniqueValidDashboardHamsterIds(hamsterIds: readonly string[], selectedIds: readonly string[]) {
-  const validIdSet = new Set(hamsterIds);
+function uniqueValidDashboardPetIds(petIds: readonly string[], selectedIds: readonly string[]) {
+  const validIdSet = new Set(petIds);
   const selectedIdSet = new Set<string>();
 
   for (const id of selectedIds) {
@@ -41,43 +32,43 @@ function uniqueValidDashboardHamsterIds(hamsterIds: readonly string[], selectedI
   return [...selectedIdSet];
 }
 
-// 保存済み順序を優先し、削除済みIDを除外して未設定のハムスターを登録順で末尾へ補う。
-export function normalizeDashboardHamsterIds(
-  hamsterIds: readonly string[],
+// 保存済み順序を優先し、削除済みIDを除外して未設定のPetを登録順で末尾へ補う。
+export function normalizeDashboardPetIds(
+  petIds: readonly string[],
   boardCount: number,
   selectedIds: readonly string[]
 ) {
-  const selectedHamsterIds = uniqueValidDashboardHamsterIds(hamsterIds, selectedIds);
-  const selectedIdSet = new Set(selectedHamsterIds);
-  const fallbackHamsterIds = hamsterIds.filter((id) => !selectedIdSet.has(id));
-  const targetCount = Math.min(Math.max(Math.trunc(boardCount), 0), hamsterIds.length);
+  const selectedPetIds = uniqueValidDashboardPetIds(petIds, selectedIds);
+  const selectedIdSet = new Set(selectedPetIds);
+  const fallbackPetIds = petIds.filter((id) => !selectedIdSet.has(id));
+  const targetCount = Math.min(Math.max(Math.trunc(boardCount), 0), petIds.length);
 
-  return [...selectedHamsterIds, ...fallbackHamsterIds].slice(0, targetCount);
+  return [...selectedPetIds, ...fallbackPetIds].slice(0, targetCount);
 }
 
-export function resizeDashboardHamsterIds(
-  hamsterIds: readonly string[],
+export function resizeDashboardPetIds(
+  petIds: readonly string[],
   selectedIds: readonly string[],
   boardCount: number
 ) {
-  const selectedHamsterIds = uniqueValidDashboardHamsterIds(hamsterIds, selectedIds);
-  const targetCount = Math.min(Math.max(Math.trunc(boardCount), 0), hamsterIds.length);
+  const selectedPetIds = uniqueValidDashboardPetIds(petIds, selectedIds);
+  const targetCount = Math.min(Math.max(Math.trunc(boardCount), 0), petIds.length);
 
-  if (hamsterIds.length <= boardCount || selectedHamsterIds.length === 0) {
-    return normalizeDashboardHamsterIds(hamsterIds, boardCount, selectedHamsterIds);
+  if (petIds.length <= boardCount || selectedPetIds.length === 0) {
+    return normalizeDashboardPetIds(petIds, boardCount, selectedPetIds);
   }
 
-  return selectedHamsterIds.slice(0, targetCount);
+  return selectedPetIds.slice(0, targetCount);
 }
 
-export function toggleDashboardHamsterId(
+export function toggleDashboardPetId(
   selectedIds: readonly string[],
-  hamsterId: string,
+  petId: string,
   limit: number,
-  restorePosition?: DashboardHamsterRemovalPosition | null
+  restorePosition?: DashboardPetRemovalPosition | null
 ) {
-  if (selectedIds.includes(hamsterId)) {
-    return selectedIds.filter((id) => id !== hamsterId);
+  if (selectedIds.includes(petId)) {
+    return selectedIds.filter((id) => id !== petId);
   }
 
   if (selectedIds.length >= limit) {
@@ -85,7 +76,7 @@ export function toggleDashboardHamsterId(
   }
 
   if (!restorePosition) {
-    return [...selectedIds, hamsterId];
+    return [...selectedIds, petId];
   }
 
   const previousIndex = restorePosition.previousId
@@ -93,28 +84,28 @@ export function toggleDashboardHamsterId(
     : -1;
   if (previousIndex >= 0) {
     const nextIds = [...selectedIds];
-    nextIds.splice(previousIndex + 1, 0, hamsterId);
+    nextIds.splice(previousIndex + 1, 0, petId);
     return nextIds;
   }
 
   const nextIndex = restorePosition.nextId ? selectedIds.indexOf(restorePosition.nextId) : -1;
   if (nextIndex >= 0) {
     const nextIds = [...selectedIds];
-    nextIds.splice(nextIndex, 0, hamsterId);
+    nextIds.splice(nextIndex, 0, petId);
     return nextIds;
   }
 
   const insertIndex = Math.min(Math.max(Math.trunc(restorePosition.index), 0), selectedIds.length);
   const nextIds = [...selectedIds];
-  nextIds.splice(insertIndex, 0, hamsterId);
+  nextIds.splice(insertIndex, 0, petId);
   return nextIds;
 }
 
-export function getDashboardHamsterRemovalPosition(
+export function getDashboardPetRemovalPosition(
   selectedIds: readonly string[],
-  hamsterId: string
-): DashboardHamsterRemovalPosition | null {
-  const index = selectedIds.indexOf(hamsterId);
+  petId: string
+): DashboardPetRemovalPosition | null {
+  const index = selectedIds.indexOf(petId);
   if (index < 0) {
     return null;
   }
@@ -126,14 +117,14 @@ export function getDashboardHamsterRemovalPosition(
   };
 }
 
-export function moveDashboardHamsterId(
+export function moveDashboardPetId(
   selectedIds: readonly string[],
-  hamsterId: string,
-  targetHamsterId: string,
+  petId: string,
+  targetPetId: string,
   position: DashboardDropPosition
 ) {
-  const currentIndex = selectedIds.indexOf(hamsterId);
-  const originalTargetIndex = selectedIds.indexOf(targetHamsterId);
+  const currentIndex = selectedIds.indexOf(petId);
+  const originalTargetIndex = selectedIds.indexOf(targetPetId);
 
   if (currentIndex < 0 || originalTargetIndex < 0 || currentIndex === originalTargetIndex) {
     return [...selectedIds];
@@ -141,9 +132,9 @@ export function moveDashboardHamsterId(
 
   const nextIds = [...selectedIds];
   nextIds.splice(currentIndex, 1);
-  const targetIndex = nextIds.indexOf(targetHamsterId);
+  const targetIndex = nextIds.indexOf(targetPetId);
   const insertIndex = position === "before" ? targetIndex : targetIndex + 1;
-  nextIds.splice(insertIndex, 0, hamsterId);
+  nextIds.splice(insertIndex, 0, petId);
   return nextIds;
 }
 
@@ -154,23 +145,21 @@ export function getDashboardDropPosition(
   return clientY < targetRect.top + targetRect.height / 2 ? "before" : "after";
 }
 
-export type DashboardHamsterSelectionError = "duplicate" | "unknown" | "tooMany" | "tooFew";
-
-export function getDashboardHamsterSelectionError(
-  validHamsterIds: readonly string[],
+export function getDashboardPetSelectionError(
+  validPetIds: readonly string[],
   boardCount: number,
   selectedIds: readonly string[]
-): DashboardHamsterSelectionError | null {
+): DashboardPetSelectionError | null {
   if (new Set(selectedIds).size !== selectedIds.length) {
     return "duplicate";
   }
 
-  const validIdSet = new Set(validHamsterIds);
+  const validIdSet = new Set(validPetIds);
   if (selectedIds.some((id) => !validIdSet.has(id))) {
     return "unknown";
   }
 
-  const requiredSelectionCount = Math.min(boardCount, validHamsterIds.length);
+  const requiredSelectionCount = Math.min(boardCount, validPetIds.length);
   if (selectedIds.length > requiredSelectionCount) {
     return "tooMany";
   }
@@ -179,71 +168,6 @@ export function getDashboardHamsterSelectionError(
   }
 
   return null;
-}
-
-export function pickDashboardHamsters<T extends { id: string }>(
-  hamsters: readonly T[],
-  boardCount: number,
-  selectedIds: readonly string[]
-) {
-  const hamsterById = new Map(hamsters.map((hamster) => [hamster.id, hamster]));
-  return normalizeDashboardHamsterIds(
-    hamsters.map((hamster) => hamster.id),
-    boardCount,
-    selectedIds
-  ).map((id) => hamsterById.get(id) as T);
-}
-
-// Pet側は既存Hamster APIを変更せず、同じ選択・復元規則を明示的な公開APIで利用する。
-export function normalizeDashboardPetIds(
-  petIds: readonly string[],
-  boardCount: number,
-  selectedIds: readonly string[]
-) {
-  return normalizeDashboardHamsterIds(petIds, boardCount, selectedIds);
-}
-
-export function resizeDashboardPetIds(
-  petIds: readonly string[],
-  selectedIds: readonly string[],
-  boardCount: number
-) {
-  return resizeDashboardHamsterIds(petIds, selectedIds, boardCount);
-}
-
-export function toggleDashboardPetId(
-  selectedIds: readonly string[],
-  petId: string,
-  limit: number,
-  restorePosition?: DashboardPetRemovalPosition | null
-) {
-  return toggleDashboardHamsterId(selectedIds, petId, limit, restorePosition);
-}
-
-export function getDashboardPetRemovalPosition(
-  selectedIds: readonly string[],
-  petId: string
-): DashboardPetRemovalPosition | null {
-  return getDashboardHamsterRemovalPosition(selectedIds, petId);
-}
-
-export function moveDashboardPetId(
-  selectedIds: readonly string[],
-  petId: string,
-  targetPetId: string,
-  position: DashboardDropPosition
-) {
-  return moveDashboardHamsterId(selectedIds, petId, targetPetId, position);
-}
-
-export type DashboardPetSelectionError = DashboardHamsterSelectionError;
-
-export function getDashboardPetSelectionError(
-  validPetIds: readonly string[],
-  boardCount: number,
-  selectedIds: readonly string[]
-): DashboardPetSelectionError | null {
-  return getDashboardHamsterSelectionError(validPetIds, boardCount, selectedIds);
 }
 
 export function pickDashboardPets<T extends { id: string }>(
@@ -257,45 +181,4 @@ export function pickDashboardPets<T extends { id: string }>(
     boardCount,
     selectedIds
   ).map((id) => petById.get(id) as T);
-}
-
-function compareRemainingHamsters(
-  left: { id: string; isActive: boolean; createdAt: Date },
-  right: { id: string; isActive: boolean; createdAt: Date }
-) {
-  if (left.isActive !== right.isActive) {
-    return left.isActive ? -1 : 1;
-  }
-
-  const createdAtDifference = left.createdAt.getTime() - right.createdAt.getTime();
-  if (createdAtDifference !== 0) {
-    return createdAtDifference;
-  }
-
-  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
-}
-
-export function orderHamstersForSelector<
-  T extends { id: string; isActive: boolean; createdAt: Date }
->(
-  hamsters: readonly T[],
-  boardCount: number | null | undefined,
-  selectedIds: readonly string[],
-  includeInactive: boolean
-) {
-  const dashboardHamsters = pickDashboardHamsters(
-    hamsters,
-    normalizeDashboardBoardCount(boardCount),
-    selectedIds
-  );
-  const dashboardHamsterIds = new Set(dashboardHamsters.map((hamster) => hamster.id));
-  const isSelectable = (hamster: T) => includeInactive || hamster.isActive;
-  const remainingHamsters = hamsters
-    .filter((hamster) => isSelectable(hamster) && !dashboardHamsterIds.has(hamster.id))
-    .sort(compareRemainingHamsters);
-
-  return [
-    ...dashboardHamsters.filter(isSelectable),
-    ...remainingHamsters
-  ];
 }

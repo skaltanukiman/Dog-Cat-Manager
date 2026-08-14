@@ -29,20 +29,20 @@ type ContactRealtimeBus = {
 };
 
 type ContactRealtimeGlobal = typeof globalThis & {
-  __hamsterContactRealtimeBus?: ContactRealtimeBus;
+  __dogCatContactRealtimeBus?: ContactRealtimeBus;
 };
 
 function getContactRealtimeBus() {
   const globalForRealtime = globalThis as ContactRealtimeGlobal;
 
-  if (!globalForRealtime.__hamsterContactRealtimeBus) {
-    globalForRealtime.__hamsterContactRealtimeBus = {
+  if (!globalForRealtime.__dogCatContactRealtimeBus) {
+    globalForRealtime.__dogCatContactRealtimeBus = {
       nextId: 1,
       listeners: new Set()
     };
   }
 
-  return globalForRealtime.__hamsterContactRealtimeBus;
+  return globalForRealtime.__dogCatContactRealtimeBus;
 }
 
 /**

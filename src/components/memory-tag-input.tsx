@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 
-import { deleteSavedMemoryTags } from "@/app/actions/records";
 import { deletePetSavedMemoryTags } from "@/app/actions/pet-memory-records";
 import { AutoDismissSuccessMessage } from "@/components/status-message";
 import { PET_MEMORY_TAG_SUGGESTIONS } from "@/lib/pet-records";
-import { MEMORY_TAG_SUGGESTIONS } from "@/lib/records";
 import { normalizeTagStorageValue } from "@/lib/tags";
 
 const separatorPattern = /[、,]/;
@@ -28,11 +26,9 @@ function dedupeTags(tags: readonly string[]) {
 }
 
 export function MemoryTagInput({
-  savedTags,
-  recordDomain = "hamster"
+  savedTags
 }: {
   savedTags: string[];
-  recordDomain?: "hamster" | "pet";
 }) {
   const router = useRouter();
   const [value, setValue] = useState("");
@@ -47,7 +43,7 @@ export function MemoryTagInput({
   const enteredTagNames = new Set(splitTags(value).map(normalizeTagStorageValue));
   const reusableTags = dedupeTags(savedTags);
   const reusableTagNames = new Set(reusableTags.map(normalizeTagStorageValue));
-  const tagSuggestions = recordDomain === "pet" ? PET_MEMORY_TAG_SUGGESTIONS : MEMORY_TAG_SUGGESTIONS;
+  const tagSuggestions = PET_MEMORY_TAG_SUGGESTIONS;
   const initialSuggestions = dedupeTags(tagSuggestions).filter(
     (tag) => !reusableTagNames.has(normalizeTagStorageValue(tag))
   );
@@ -110,9 +106,7 @@ export function MemoryTagInput({
     const formData = new FormData();
     selectedTags.forEach((tag) => formData.append("tags", tag));
     startDeleteTransition(async () => {
-      const result = recordDomain === "pet"
-        ? await deletePetSavedMemoryTags(formData)
-        : await deleteSavedMemoryTags(formData);
+      const result = await deletePetSavedMemoryTags(formData);
       if (!result.success) {
         setDeleteError({ message: result.errorMessage, errorId: result.errorId });
         return;

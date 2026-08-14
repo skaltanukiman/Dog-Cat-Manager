@@ -70,10 +70,6 @@ function numberDetail(details: Record<string, Prisma.JsonValue>, key: string) {
   return typeof details[key] === "number" && Number.isFinite(details[key]) ? details[key] as number : null;
 }
 
-function booleanDetail(details: Record<string, Prisma.JsonValue>, key: string) {
-  return typeof details[key] === "boolean" ? details[key] as boolean : null;
-}
-
 const ROLE_LABELS: Record<HouseholdRole, string> = {
   OWNER: "オーナー",
   ADMIN: "管理者",
@@ -88,11 +84,6 @@ function roleLabel(value: string | null) {
 function formatDateInput(value: string | null) {
   const match = value && /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   return match ? `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日` : null;
-}
-
-function formatMonthInput(value: string | null) {
-  const match = value && /^(\d{4})-(\d{2})$/.exec(value);
-  return match ? `${Number(match[1])}年${Number(match[2])}月` : null;
 }
 
 function formatTimestamp(value: string | null) {
@@ -133,34 +124,6 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
       case "MEMBER_REMOVED": return { summary: `${actor}さんが${target}さんの参加を解除しました`, detail: null };
       case "MEMBER_LEFT": return { summary: `${actor}さんが共有グループから退出しました`, detail: null };
       case "OWNERSHIP_TRANSFERRED_AND_LEFT": return { summary: `${actor}さんが${target}さんへ所有権を移譲して退出しました`, detail: null };
-      case "HAMSTER_CREATED": return { summary: `${actor}さんが「${target}」を登録しました`, detail: null };
-      case "HAMSTER_DELETED": return { summary: `${actor}さんが「${target}」を削除しました`, detail: null };
-      case "WEIGHT_CREATED": {
-        const weight = numberDetail(details, "weightG");
-        const date = formatDateInput(stringDetail(details, "recordDate"));
-        return { summary: `${actor}さんが「${target}」の体重を記録しました`, detail: weight !== null && date ? `${weight}g・${date}` : null };
-      }
-      case "WEIGHT_UPDATED": {
-        const before = numberDetail(details, "previousWeightG");
-        const after = numberDetail(details, "newWeightG");
-        return { summary: `${actor}さんが「${target}」の体重を更新しました`, detail: before !== null && after !== null ? `${before}g → ${after}g` : null };
-      }
-      case "WEIGHT_DELETED": {
-        const weight = numberDetail(details, "weightG");
-        const date = formatDateInput(stringDetail(details, "recordDate"));
-        return { summary: `${actor}さんが「${target}」の体重記録を削除しました`, detail: weight !== null && date ? `${weight}g・${date}` : null };
-      }
-      case "WEIGHTS_BULK_DELETED": {
-        const count = numberDetail(details, "count");
-        return { summary: `${actor}さんが体重記録を${count ?? 0}件削除しました`, detail: null };
-      }
-      case "WEIGHT_CSV_APP_IMPORTED":
-      case "WEIGHT_CSV_GAS_IMPORTED": {
-        const created = numberDetail(details, "createdCount") ?? 0;
-        const updated = numberDetail(details, "updatedCount") ?? 0;
-        const skipped = numberDetail(details, "skippedCount") ?? 0;
-        return { summary: `${actor}さんがCSVから体重記録を取り込みました`, detail: `新規${created}件・更新${updated}件・スキップ${skipped}件` };
-      }
       case "PET_WEIGHT_CREATED": {
         const weight = numberDetail(details, "weightKg");
         const date = formatDateInput(stringDetail(details, "recordDate"));
@@ -235,58 +198,6 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
           ].filter(Boolean).join("・") || null
         };
       }
-      case "CLEANING_MONTH_SAVED": {
-        const month = formatMonthInput(stringDetail(details, "yearMonth"));
-        const count = numberDetail(details, "changedDayCount");
-        return { summary: `${actor}さんが「${target}」の掃除記録を更新しました`, detail: month && count !== null ? `${month}・${count}日分` : null };
-      }
-      case "FEEDING_MARKED":
-        return {
-          summary: `${actor}さんが「${target}」の食事を実施済みにしました`,
-          detail: formatDateInput(stringDetail(details, "recordDate"))
-        };
-      case "FEEDING_UNMARKED":
-        return {
-          summary: `${actor}さんが「${target}」の食事記録を取り消しました`,
-          detail: formatDateInput(stringDetail(details, "recordDate"))
-        };
-      case "WATER_REPLACEMENT_MARKED":
-        return {
-          summary: `${actor}さんが「${target}」の水を交換済みにしました`,
-          detail: formatDateInput(stringDetail(details, "recordDate"))
-        };
-      case "WATER_REPLACEMENT_UNMARKED":
-        return {
-          summary: `${actor}さんが「${target}」の水替え記録を取り消しました`,
-          detail: formatDateInput(stringDetail(details, "recordDate"))
-        };
-      case "HEALTH_RECORD_CREATED":
-      case "HEALTH_RECORD_UPDATED":
-      case "HEALTH_RECORD_DELETED": {
-        const action = activity.eventType === "HEALTH_RECORD_CREATED" ? "追加" : activity.eventType === "HEALTH_RECORD_UPDATED" ? "更新" : "削除";
-        return {
-          summary: `${actor}さんが「${target}」の健康記録を${action}しました`,
-          detail: formatDateInput(stringDetail(details, "recordDate"))
-        };
-      }
-      case "MEDICAL_RECORD_CREATED":
-      case "MEDICAL_RECORD_UPDATED":
-      case "MEDICAL_RECORD_DELETED": {
-        const action = activity.eventType === "MEDICAL_RECORD_CREATED" ? "追加" : activity.eventType === "MEDICAL_RECORD_UPDATED" ? "更新" : "削除";
-        return {
-          summary: `${actor}さんが「${target}」の通院記録を${action}しました`,
-          detail: formatDateInput(stringDetail(details, "recordDate"))
-        };
-      }
-      case "MEMORY_RECORD_CREATED":
-      case "MEMORY_RECORD_UPDATED":
-      case "MEMORY_RECORD_DELETED": {
-        const action = activity.eventType === "MEMORY_RECORD_CREATED" ? "追加" : activity.eventType === "MEMORY_RECORD_UPDATED" ? "更新" : "削除";
-        return {
-          summary: `${actor}さんが「${target}」の思い出を${action}しました`,
-          detail: formatDateInput(stringDetail(details, "recordDate"))
-        };
-      }
       case "PET_HEALTH_RECORD_CREATED":
       case "PET_HEALTH_RECORD_UPDATED":
       case "PET_HEALTH_RECORD_DELETED": {
@@ -331,22 +242,6 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
           summary: `${actor}さんが「${target}」の思い出を${action}しました`,
           detail: formatDateInput(stringDetail(details, "recordDate"))
         };
-      }
-      case "HAMSTER_PROFILE_IMAGE_UPDATED": {
-        const action = stringDetail(details, "imageAction");
-        const label = action === "ADDED" ? "登録" : action === "REPLACED" ? "変更" : action === "REMOVED" ? "削除" : "更新";
-        return { summary: `${actor}さんが「${target}」のプロフィール画像を${label}しました`, detail: null };
-      }
-      case "HAMSTER_ACTIVE_STATUS_UPDATED": {
-        const before = booleanDetail(details, "previousIsActive");
-        const after = booleanDetail(details, "newIsActive");
-        if (before === true && after === false) {
-          return { summary: `${actor}さんが「${target}」を管理外に切り替えました`, detail: "管理中 → 管理外" };
-        }
-        if (before === false && after === true) {
-          return { summary: `${actor}さんが「${target}」を管理中に戻しました`, detail: "管理外 → 管理中" };
-        }
-        return { summary: `${actor}さんが「${target}」の管理状態を変更しました`, detail: null };
       }
       default: return fallback;
     }

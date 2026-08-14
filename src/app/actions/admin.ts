@@ -38,7 +38,7 @@ export async function updateUserAppRole(formData: FormData) {
 
     await prisma.$transaction(async (tx) => {
       // 最後のSUPER_ADMIN判定を同時更新同士で競合させないため、アプリ全体で直列化する。
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('hamster-manager-super-admin', 0))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('dog-cat-manager-super-admin', 0))`;
       const actor = await tx.user.findUnique({
         where: { id: currentUser.id },
         select: { id: true, appRole: true, accessStatus: true }

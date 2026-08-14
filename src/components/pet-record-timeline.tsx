@@ -260,7 +260,7 @@ function PetRecordEditForm({
         <label className={fieldClass}>本文<textarea name="content" defaultValue={record.memo ?? ""} maxLength={5000} required /></label>
         <label className={fieldClass}>タグ（「、」またはカンマ区切り）<input name="tags" defaultValue={record.memoryDetail.tags.join("、")} maxLength={619} /><span className="text-xs font-normal text-slate-500">候補: {PET_MEMORY_TAG_SUGGESTIONS.join("、")}</span></label>
         <label className="flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" name="isFavorite" value="true" defaultChecked={record.memoryDetail.isFavorite} />お気に入りにする</label>
-        <RecordImageField recordId={record.id} hasCurrentImage={Boolean(record.memoryDetail.imageFileName)} imageApiBase="/api/pet-records" />
+        <RecordImageField recordId={record.id} hasCurrentImage={Boolean(record.memoryDetail.imageFileName)} />
         {submit}
       </form>
     );

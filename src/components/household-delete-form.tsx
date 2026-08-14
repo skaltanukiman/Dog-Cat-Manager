@@ -59,7 +59,7 @@ export function HouseholdDeleteForm({
               required
               className="mt-1 shrink-0"
             />
-            共有グループ内のハムスターとすべての記録が削除されることを確認しました
+            共有グループ内のPetとすべての記録が削除されることを確認しました
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 p-3 text-sm leading-6 text-slate-700">
             <input

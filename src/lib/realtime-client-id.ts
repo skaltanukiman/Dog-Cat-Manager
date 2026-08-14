@@ -1,4 +1,4 @@
-const REALTIME_CLIENT_STORAGE_KEY = "hamster-manager-realtime-client-id";
+const REALTIME_CLIENT_STORAGE_KEY = "dog-cat-manager-realtime-client-id";
 
 export function createRealtimeClientId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {

@@ -13,18 +13,13 @@
     "invitations:cleanup": "tsx scripts/cleanup-invitations.ts",
     "household-activities:cleanup": "tsx scripts/cleanup-household-activities.ts",
     "contact-inquiries:auto-close": "tsx scripts/close-resolved-contact-inquiries.ts",
-    "notifications:dispatch": "tsx scripts/dispatch-care-notifications.ts",
     "admin:grant": "tsx prisma/admin-role.ts",
     "admin:revoke": "tsx prisma/admin-role.ts --role USER",
-    "migrate:assign-owner": "tsx prisma/assign-owner.ts",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "prisma db seed",
     "seed:contact-inquiries": "tsx prisma/seed-contact-inquiries.ts",
-    "seed:admin-pagination": "tsx prisma/seed-admin-pagination.ts",
-    "seed:hamster-pagination": "tsx prisma/seed-hamster-pagination.ts",
-    "seed:demo": "tsx prisma/seed-demo.ts"
+    "seed:admin-pagination": "tsx prisma/seed-admin-pagination.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -36,7 +31,6 @@
     "react-dom": "^19.2.7",
     "recharts": "^3.9.0",
     "sharp": "^0.34.0",
-    "web-push": "^3.6.7",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^3.24.1"
@@ -45,7 +39,6 @@
     "@types/node": "^22.20.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.5.2",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.9",
@@ -54,9 +47,6 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "overrides": {
     "postcss": "8.5.15"

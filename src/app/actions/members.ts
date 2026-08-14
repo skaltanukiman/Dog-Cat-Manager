@@ -34,7 +34,7 @@ import {
   createRateLimitedHouseholdInvitation,
   revokeHouseholdInvitationMutation
 } from "@/lib/invitation-mutations";
-import { DEFAULT_DASHBOARD_BOARD_COUNT, DEFAULT_HAMSTER_SELECTOR_MODE } from "@/lib/dashboard-settings";
+import { DEFAULT_DASHBOARD_BOARD_COUNT } from "@/lib/dashboard-settings";
 import { prisma } from "@/lib/prisma";
 import { leaveHouseholdMembership } from "@/lib/household-leave";
 import { deleteSoleOwnerHousehold } from "@/lib/household-delete";
@@ -358,8 +358,7 @@ export async function acceptHouseholdInvitation(formData: FormData) {
         create: {
           userId: user.id,
           householdId: invitation.householdId,
-          dashboardBoardCount: DEFAULT_DASHBOARD_BOARD_COUNT,
-          hamsterSelectorMode: DEFAULT_HAMSTER_SELECTOR_MODE
+          dashboardBoardCount: DEFAULT_DASHBOARD_BOARD_COUNT
         }
       });
       if (!existingMembership) {

@@ -33,12 +33,12 @@ type Fixture = {
 };
 
 const fixtures: Fixture[] = [
-  { publicId: "HMB-20260725-A000000001", category: "BUG", status: "OPEN", subject: `${seedPrefix} Record list display issue`, sourcePath: "/records", errorId: "CLIENT-TEST-LAYOUT-001", assigned: false, minutesAgo: 240 },
-  { publicId: "HMB-20260725-A000000002", category: "HOW_TO", status: "IN_PROGRESS", subject: `${seedPrefix} Switching shared groups`, sourcePath: "/settings/members", errorId: null, assigned: true, minutesAgo: 210 },
-  { publicId: "HMB-20260725-A000000003", category: "FEATURE_REQUEST", status: "WAITING_FOR_USER", subject: `${seedPrefix} Weight chart range request`, sourcePath: "/weights", errorId: null, assigned: true, minutesAgo: 150 },
-  { publicId: "HMB-20260725-A000000004", category: "ACCOUNT", status: "RESOLVED", subject: `${seedPrefix} Account information check`, sourcePath: "/settings", errorId: null, assigned: true, minutesAgo: 100 },
-  { publicId: "HMB-20260725-A000000005", category: "OTHER", status: "CLOSED", subject: `${seedPrefix} Previous inquiry confirmation`, sourcePath: null, errorId: null, assigned: true, minutesAgo: 80 },
-  { publicId: "HMB-20260725-A000000006", category: "BUG", status: "OPEN", subject: `${seedPrefix} Long subject for responsive layout verification in inquiry lists`, sourcePath: "/admin/inquiries?status=unhandled", errorId: "SERVER-TEST-SEARCH-006", assigned: false, minutesAgo: 20 }
+  { publicId: "DCM-20260725-A000000001", category: "BUG", status: "OPEN", subject: `${seedPrefix} Record list display issue`, sourcePath: "/records", errorId: "CLIENT-TEST-LAYOUT-001", assigned: false, minutesAgo: 240 },
+  { publicId: "DCM-20260725-A000000002", category: "HOW_TO", status: "IN_PROGRESS", subject: `${seedPrefix} Switching shared groups`, sourcePath: "/settings/members", errorId: null, assigned: true, minutesAgo: 210 },
+  { publicId: "DCM-20260725-A000000003", category: "FEATURE_REQUEST", status: "WAITING_FOR_USER", subject: `${seedPrefix} Weight chart range request`, sourcePath: "/weights", errorId: null, assigned: true, minutesAgo: 150 },
+  { publicId: "DCM-20260725-A000000004", category: "ACCOUNT", status: "RESOLVED", subject: `${seedPrefix} Account information check`, sourcePath: "/settings", errorId: null, assigned: true, minutesAgo: 100 },
+  { publicId: "DCM-20260725-A000000005", category: "OTHER", status: "CLOSED", subject: `${seedPrefix} Previous inquiry confirmation`, sourcePath: null, errorId: null, assigned: true, minutesAgo: 80 },
+  { publicId: "DCM-20260725-A000000006", category: "BUG", status: "OPEN", subject: `${seedPrefix} Long subject for responsive layout verification in inquiry lists`, sourcePath: "/admin/inquiries?status=unhandled", errorId: "SERVER-TEST-SEARCH-006", assigned: false, minutesAgo: 20 }
 ];
 
 function at(minutesAgo: number) {

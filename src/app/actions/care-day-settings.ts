@@ -24,8 +24,7 @@ import {
 /**
  * Householdのお世話日境界を、最新の管理権限を再確認して保存するServer Action。
  *
- * 境界変更時は旧境界で待機中の通知dispatchを無効化し、設定・通知状態・revisionを
- * 同一transactionで確定する。送信済みの通知履歴は保持する。
+ * 境界変更とrevision更新を同一transactionで確定し、Pet Careの各画面へ反映する。
  */
 export async function saveCareDaySettings(
   previousState: SettingsSaveState,
@@ -39,7 +38,6 @@ export async function saveCareDaySettings(
     }
 
     const actorClientId = getRealtimeActorId(formData);
-    const now = new Date();
     const outcome = await prisma.$transaction(async (tx) => {
       // Household設定の変更と所属変更を直列化し、保存直前の権限と現在値を確定する。
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${context.household.id}, 0))`;
@@ -75,18 +73,6 @@ export async function saveCareDaySettings(
       await tx.household.update({
         where: { id: context.household.id },
         data: { careDayStartMinutes }
-      });
-      // 旧境界で予約・再試行中の配信は無効化する。送信済み履歴は保持する。
-      await tx.careNotificationDispatch.updateMany({
-        where: {
-          householdId: context.household.id,
-          status: { in: ["CLAIMED", "RETRYABLE"] }
-        },
-        data: {
-          status: "SKIPPED",
-          nextAttemptAt: null,
-          leaseExpiresAt: now
-        }
       });
       const change = await updateHouseholdRevision(
         tx,

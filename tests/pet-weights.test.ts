@@ -13,10 +13,9 @@ function actionSource(actions: string, name: string) {
   return actions.slice(start, next === -1 ? undefined : next);
 }
 
-test("PetWeightRecordはPet専用Decimalモデルで旧WeightRecordと共存する", async () => {
+test("PetWeightRecordはPet専用Decimalモデルを持つ", async () => {
   const schema = await source("prisma/schema.prisma");
   const petWeight = schema.slice(schema.indexOf("model PetWeightRecord {"), schema.indexOf("enum PetSpecies"));
-  const oldWeight = schema.slice(schema.indexOf("model WeightRecord {"), schema.indexOf("model AppSetting"));
 
   assert.match(petWeight, /petId\s+String\s+@map\("pet_id"\)/);
   assert.match(petWeight, /Pet\s+@relation\(fields: \[petId\], references: \[id\], onDelete: Cascade\)/);
@@ -27,11 +26,6 @@ test("PetWeightRecordはPet専用Decimalモデルで旧WeightRecordと共存す�
   assert.match(petWeight, /@@index\(\[recordDate\]\)/);
   assert.doesNotMatch(petWeight, /@@index\(\[petId, recordDate\]\)/);
   assert.match(schema, /weightRecords\s+PetWeightRecord\[\]/);
-
-  assert.match(oldWeight, /hamsterId\s+String/);
-  assert.match(oldWeight, /weightG\s+Float/);
-  assert.match(oldWeight, /@@map\("weight_records"\)/);
-  assert.doesNotMatch(oldWeight, /petId|weightKg/);
 });
 
 test("新規migrationはPet体重テーブル・一意制約・Cascade FKだけを追加する", async () => {
@@ -44,7 +38,7 @@ test("新規migrationはPet体重テーブル・一意制約・Cascade FKだけ�
   assert.match(migration, /PET_WEIGHT_CREATED/);
   assert.match(migration, /PET_WEIGHT_UPDATED/);
   assert.match(migration, /PET_WEIGHT_DELETED/);
-  assert.doesNotMatch(migration, /DROP TABLE|ALTER TABLE "weight_records"|ALTER TABLE "hamsters"/);
+  assert.doesNotMatch(migration, /DROP TABLE|ALTER TABLE "pets"/);
 });
 
 test("Pet体重Actionは全更新でVIEWERと最新membershipを拒否する", async () => {
@@ -90,7 +84,7 @@ test("Pet体重queryはHousehold境界・管理終了閲覧・20件ページン�
   assert.match(query, /PET_WEIGHT_CHART_MAX_POINTS = 365/);
 });
 
-test("Pet版weights画面はkg・species・管理終了閲覧を提供しHamster CSV導線を持たない", async () => {
+test("Pet版weights画面はkg・species・管理終了閲覧を提供する", async () => {
   const page = await source("src/app/(app)/weights/page.tsx");
   const chart = await source("src/components/pet-weight-chart.tsx");
   const history = await source("src/components/pet-weight-history-list.tsx");
@@ -103,23 +97,7 @@ test("Pet版weights画面はkg・species・管理終了閲覧を提供しHamster
   assert.match(page, /name="weightKg"/);
   assert.match(page, /体重\(kg\)/);
   assert.match(page, /readOnly=\{!canMutateSelectedPet\}/);
-  assert.doesNotMatch(page, /hamsterId|weightG|HamsterSelectorInput|CSVインポート|CSVエクスポート|\/weights\/import|\/weights\/export/);
   assert.match(chart, /dataKey="weightKg"/);
   assert.match(chart, /unit="kg"/);
   assert.match(history, /name="memo"/);
-});
-
-test("旧Hamster体重コードとCSV routeは削除されずPet画面からだけ切り離される", async () => {
-  for (const path of [
-    "src/app/actions/weights.ts",
-    "src/lib/weight-rules.ts",
-    "src/components/weight-chart.tsx",
-    "src/components/weight-history-list.tsx",
-    "src/app/(app)/weights/export/page.tsx",
-    "src/app/(app)/weights/import/page.tsx",
-    "src/app/(app)/weights/import/app/page.tsx",
-    "src/app/(app)/weights/import/gas/page.tsx"
-  ]) {
-    assert.ok((await source(path)).length > 0, `${path} は残す必要があります。`);
-  }
 });

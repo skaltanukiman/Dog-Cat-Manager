@@ -72,7 +72,7 @@ test("Dashboard queryは現在HouseholdのPetだけを取得し、管理中優�
 });
 
 test("Care集計は現在のお世話日と表示Pet IDを種類別一括queryへ渡す", () => {
-  assert.match(queries, /getCareDayRecordDate\(now, careDayStartMinutes\)/);
+  assert.match(queries, /getCareDayRecordDate\(new Date\(\), careDayStartMinutes\)/);
   for (const model of ["petFeedingRecord", "petWaterRecord", "petWalkRecord", "petLitterRecord"]) {
     assert.match(queries, new RegExp(`prisma\\.${model}\\.findMany\\([\\s\\S]*?petId: \\{ in: dashboardPetIds \\}`));
   }
@@ -106,7 +106,6 @@ test("管理中PetだけCare導線を持ち、Recordsと空HouseholdのPet登録
   assert.match(page, /`\/records\?petId=\$\{encodeURIComponent\(pet\.id\)\}&scope=pet&includeInactive=1`/);
   assert.match(page, /<EmptyState title="Petがまだ登録されていません。" href="\/pets"/);
   assert.match(page, /href="\/pets"[\s\S]*Pet登録/);
-  assert.doesNotMatch(page, /setTodayFeeding|setTodayWaterReplacement|FeedingToggle|WaterReplacementToggle|HamsterThumbnail/);
 });
 
 test("DashboardPet migrationはadditiveでunique・index・両Cascadeだけを追加する", () => {
@@ -119,15 +118,14 @@ test("DashboardPet migrationはadditiveでunique・index・両Cascadeだけを�
   assert.doesNotMatch(migration, /DROP|TRUNCATE|RENAME/i);
 });
 
-test("設定UIと保存ActionはpetIds・species・状態・sortOrderを使いDashboardHamsterを変更しない", () => {
+test("設定UIと保存ActionはpetIds・species・状態・sortOrderを使う", () => {
   assert.match(settingsForm, /name="petIds"/);
-  assert.match(settingsForm, /SPECIES_LABELS\[hamster\.species\]/);
+  assert.match(settingsForm, /SPECIES_LABELS\[pet\.species\]/);
   assert.match(settingsForm, /管理終了/);
   assert.match(settingsAction, /petIds: formData\.getAll\("petIds"\)/);
   assert.match(settingsAction, /prisma\.pet\.findMany\([\s\S]*householdId: context\.household\.id/);
   assert.match(settingsAction, /tx\.dashboardPet\.deleteMany/);
   assert.match(settingsAction, /tx\.dashboardPet\.create\([\s\S]*sortOrder: index/);
-  assert.doesNotMatch(settingsAction, /tx\.dashboardHamster\.(?:deleteMany|create|update)/);
   assert.match(settingsAction, /updateHouseholdRevisions/);
   assert.match(settingsAction, /publishHouseholdChangesSafely/);
   assert.match(settingsAction, /\{ path: "\/", type: "layout" \}/);

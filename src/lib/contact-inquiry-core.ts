@@ -164,16 +164,23 @@ function jstDateParts(date: Date) {
   ].join("");
 }
 
+const CURRENT_CONTACT_PUBLIC_ID_PREFIX = "DCM";
+const LEGACY_CONTACT_PUBLIC_ID_PREFIX = "HMB";
+
 export function createContactPublicId(
   now = new Date(),
   random: (size: number) => Buffer = randomBytes
 ) {
   const suffix = random(8).toString("hex").slice(0, 10).toUpperCase();
-  return `HMB-${jstDateParts(now)}-${suffix}`;
+  return `${CURRENT_CONTACT_PUBLIC_ID_PREFIX}-${jstDateParts(now)}-${suffix}`;
 }
 
 export function isPublicContactId(value: unknown): value is string {
-  return typeof value === "string" && /^HMB-\d{8}-[A-F0-9]{10}$/.test(value);
+  if (typeof value !== "string") return false;
+
+  // 既存問い合わせの公開URLを無効化せず、新規発行分だけDog & Cat Managerの接頭辞へ移行する。
+  const prefixes = [CURRENT_CONTACT_PUBLIC_ID_PREFIX, LEGACY_CONTACT_PUBLIC_ID_PREFIX].join("|");
+  return new RegExp(`^(?:${prefixes})-\\d{8}-[A-F0-9]{10}$`).test(value);
 }
 
 export function createContactSearchText(input: {

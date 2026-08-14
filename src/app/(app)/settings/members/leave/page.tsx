@@ -27,7 +27,7 @@ export default async function HouseholdLeavePage({
     select: {
       id: true,
       name: true,
-      _count: { select: { hamsters: true, members: true } },
+      _count: { select: { pets: true, members: true } },
       members: {
         orderBy: { createdAt: "asc" },
         select: {
@@ -110,8 +110,8 @@ export default async function HouseholdLeavePage({
           <div className="flex items-start gap-3">
             <Database className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
             <div>
-              <p className="text-xs font-semibold text-slate-500">登録ハムスター数</p>
-              <p className="mt-1 font-bold text-ink">{household._count.hamsters}匹</p>
+              <p className="text-xs font-semibold text-slate-500">登録Pet数</p>
+              <p className="mt-1 font-bold text-ink">{household._count.pets}匹</p>
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@ export default async function HouseholdLeavePage({
             <section className="rounded-md border border-red-200 bg-red-50 p-5 text-sm leading-7 text-red-950">
               <h3 className="text-base font-bold">「{household.name}」から退出しますか？</h3>
               <p className="mt-3">
-                退出後、このグループのハムスターや記録を閲覧・編集できなくなります。
+                退出後、このグループのPetや記録を閲覧・編集できなくなります。
               </p>
               <p>グループ内のデータは削除されません。</p>
             </section>

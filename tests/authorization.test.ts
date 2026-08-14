@@ -36,18 +36,6 @@ test("Server Actionは認証済みユーザーIDを必須とする", () => {
   assert.equal(hasAuthenticatedUserId({ id: "user-1" }), true);
 });
 
-test("デバイスお世話APIだけをAuth.jsの公開例外とし、Route内のBearer認証を必須にする", () => {
-  const proxy = readFileSync(join(projectRoot, "src/proxy.ts"), "utf8");
-  const route = readFileSync(join(projectRoot, "src/app/api/device/care/route.ts"), "utf8");
-
-  assert.match(proxy, /PUBLIC_PATHS[\s\S]*"\/api\/device\/care"/);
-  assert.doesNotMatch(proxy, /PUBLIC_PREFIXES[\s\S]*"\/api\/device"/);
-  assert.match(route, /getDeviceCareConfiguration\(\)/);
-  assert.match(route, /request\.headers\.get\("authorization"\)/);
-  assert.match(route, /isValidDeviceCareAuthorization\(/);
-  assert.match(route, /"WWW-Authenticate": "Bearer"/);
-});
-
 test("Household外のリソースを操作対象として認めない", () => {
   assert.equal(belongsToCurrentHousehold("household-1", "household-1"), true);
   assert.equal(belongsToCurrentHousehold("household-2", "household-1"), false);
@@ -160,24 +148,7 @@ test("Household権限変更はOWNERだけに許可し、自己変更とOWNER変�
 
 test("共有データ更新Server Actionは直接呼び出されても共通更新ガードを必須とする", () => {
   const guardedActions = {
-    "src/app/actions/hamsters.ts": [
-      "createHamster",
-      "updateHamster",
-      "updateHamsterActiveStatus",
-      "deleteHamster",
-      "deleteHamsters"
-    ],
-    "src/app/actions/cleaning.ts": ["saveCleaningMonth"],
-    "src/app/actions/feeding.ts": ["setTodayFeeding"],
-    "src/app/actions/water-replacement.ts": ["setTodayWaterReplacement"],
-    "src/app/actions/weights.ts": [
-      "createWeightRecord",
-      "updateWeightRecord",
-      "deleteWeightRecord",
-      "deleteWeightRecords",
-      "importGasWeightRecordsCsv",
-      "importAppWeightRecordsCsv"
-    ],
+    "src/app/actions/pets.ts": ["createPet", "updatePet", "updatePetActiveStatus"],
     "src/app/actions/pet-weights.ts": [
       "createPetWeightRecord",
       "updatePetWeightRecord",
@@ -203,15 +174,12 @@ test("共有データ更新Server Actionは直接呼び出されても共通更�
       "updatePetLitterRecord",
       "deletePetLitterRecord"
     ],
-    "src/app/actions/records.ts": [
-      "createHealthRecord",
-      "createMedicalRecord",
-      "createMemoryRecord",
-      "updateHealthRecord",
-      "updateMedicalRecord",
-      "updateMemoryRecord",
-      "deleteHamsterRecord"
-    ]
+    "src/app/actions/pet-health-records.ts": ["createPetHealthRecord", "updatePetHealthRecord"],
+    "src/app/actions/pet-medical-records.ts": ["createPetMedicalRecord", "updatePetMedicalRecord"],
+    "src/app/actions/pet-medication-records.ts": ["createPetMedicationRecord", "updatePetMedicationRecord"],
+    "src/app/actions/pet-vaccination-records.ts": ["createPetVaccinationRecord", "updatePetVaccinationRecord"],
+    "src/app/actions/pet-memory-records.ts": ["createPetMemoryRecord", "updatePetMemoryRecord", "deletePetSavedMemoryTags"],
+    "src/app/actions/pet-records.ts": ["deletePetRecord"]
   } as const;
 
   for (const [filePath, actionNames] of Object.entries(guardedActions)) {

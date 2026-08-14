@@ -5,7 +5,7 @@ import type { AppRole, HouseholdRole, UserAccessStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import { DOG_CAT_AUTH_SESSION_COOKIE_NAMES } from "@/lib/auth-cookies";
 import { canEditHouseholdSharedData, hasAuthenticatedUserId } from "@/lib/authorization";
-import { DEFAULT_DASHBOARD_BOARD_COUNT, DEFAULT_HAMSTER_SELECTOR_MODE } from "@/lib/dashboard-settings";
+import { DEFAULT_DASHBOARD_BOARD_COUNT } from "@/lib/dashboard-settings";
 import { prisma } from "@/lib/prisma";
 
 export const CURRENT_HOUSEHOLD_COOKIE = "dog_cat_manager_current_household";
@@ -39,7 +39,7 @@ export type HouseholdOption = {
   name: string;
   role: HouseholdRole;
   memberCount: number;
-  hamsterCount: number;
+  petCount: number;
 };
 
 export function defaultHouseholdName(user: Pick<SessionUser, "name" | "email">) {
@@ -137,8 +137,7 @@ async function createInitialHousehold(user: SessionUser) {
         appSettings: {
           create: {
             userId: user.id,
-            dashboardBoardCount: DEFAULT_DASHBOARD_BOARD_COUNT,
-            hamsterSelectorMode: DEFAULT_HAMSTER_SELECTOR_MODE
+            dashboardBoardCount: DEFAULT_DASHBOARD_BOARD_COUNT
           }
         }
       },
@@ -255,7 +254,7 @@ export async function getCurrentHouseholdSwitcherData() {
         include: {
           _count: {
             select: {
-              hamsters: true,
+              pets: true,
               members: true
             }
           }
@@ -273,7 +272,7 @@ export async function getCurrentHouseholdSwitcherData() {
         name: membership.household.name,
         role: membership.role,
         memberCount: membership.household._count.members,
-        hamsterCount: membership.household._count.hamsters
+        petCount: membership.household._count.pets
       })
     )
   };

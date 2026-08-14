@@ -57,7 +57,7 @@ function createDatabase() {
       ["session-super", "super-1"]
     ]),
     memberships: new Set(["household-1:user-1"]),
-    hamsters: new Set(["hamster-1"]),
+    pets: new Set(["pet-1"]),
     records: new Set(["record-1"]),
     actions: [] as FakeAction[]
   };
@@ -114,7 +114,7 @@ test("スーパー管理者はデータを削除せず一般ユーザーを停�
   const database = createDatabase();
   const before = {
     memberships: [...database.memberships],
-    hamsters: [...database.hamsters],
+    pets: [...database.pets],
     records: [...database.records]
   };
 
@@ -131,7 +131,7 @@ test("スーパー管理者はデータを削除せず一般ユーザーを停�
   assert.deepEqual([...database.sessions.values()], ["super-1"]);
   assert.deepEqual({
     memberships: [...database.memberships],
-    hamsters: [...database.hamsters],
+    pets: [...database.pets],
     records: [...database.records]
   }, before);
   assert.deepEqual(database.actions.map(({ actionType, actorUserId, targetUserId, reason }) => ({

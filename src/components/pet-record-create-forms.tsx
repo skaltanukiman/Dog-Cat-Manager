@@ -243,9 +243,9 @@ export function PetRecordCreateForms({
             <DateAndTime label="日付" today={today} />
             <label className={fieldClass}>タイトル<input name="title" maxLength={100} required /></label>
             <label className={fieldClass}>本文<textarea name="content" maxLength={5000} required /></label>
-            <MemoryTagInput savedTags={savedMemoryTags} recordDomain="pet" />
+            <MemoryTagInput savedTags={savedMemoryTags} />
             <label className="flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" name="isFavorite" value="true" />お気に入りにする</label>
-            <RecordImageField imageApiBase="/api/pet-records" />
+            <RecordImageField />
             <button type="submit" disabled={pendingKind !== null} className={submitClass}>{pendingKind === "memory" ? "保存中..." : "思い出を保存"}</button>
           </form>
         </div>

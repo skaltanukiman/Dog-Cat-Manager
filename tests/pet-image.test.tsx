@@ -38,7 +38,6 @@ async function imageFile(format: "jpeg" | "png" | "webp") {
 test("Pet画像rootはPET_IMAGE_DIRとPet専用デフォルトだけを使用する", async () => {
   const utility = await source("src/lib/pet-image.ts");
   assert.match(utility, /process\.env\.PET_IMAGE_DIR \|\| "\.\/uploads\/pets"/);
-  assert.doesNotMatch(utility, /HAMSTER_IMAGE_DIR|uploads\/hamsters/);
   const previous = process.env.PET_IMAGE_DIR;
   delete process.env.PET_IMAGE_DIR;
   try {
@@ -181,25 +180,22 @@ test("Pet画面・Actionは画像追加差し替え削除を既存権限・speci
   assert.ok(commitPosition !== -1 && oldDeletePosition > commitPosition);
 });
 
-test("Household cleanupとDocker/envはPetを追加しHamsterを維持する", async () => {
-  const [cleanup, dockerfile, compose, envExample, devEnvExample, hamsterUtility] = await Promise.all([
+test("Household cleanupとDocker/envはPet画像rootだけを使用する", async () => {
+  const [cleanup, dockerfile, compose, envExample, devEnvExample] = await Promise.all([
     source("src/lib/household-delete-images.ts"),
     source("Dockerfile"),
     source("docker-compose.yml"),
     source(".env.example"),
-    source(".env.development.example"),
-    source("src/lib/hamster-image.ts")
+    source(".env.development.example")
   ]);
-  assert.match(cleanup, /deleteHamsterImageHouseholdDirectory/);
   assert.match(cleanup, /deletePetImageHouseholdDirectory/);
-  assert.match(cleanup, /deleteRecordImageHouseholdDirectory/);
-  assert.match(dockerfile, /\/app\/uploads\/hamsters/);
+  assert.match(cleanup, /deletePetRecordImageHouseholdDirectory/);
   assert.match(dockerfile, /\/app\/uploads\/pets/);
+  assert.match(dockerfile, /\/app\/uploads\/pet-records/);
   assert.match(compose, /\.\/uploads:\/app\/uploads/);
-  assert.match(envExample, /^HAMSTER_IMAGE_DIR=\/app\/uploads\/hamsters$/m);
   assert.match(envExample, /^PET_IMAGE_DIR=\/app\/uploads\/pets$/m);
+  assert.match(envExample, /^PET_RECORD_IMAGE_DIR=\/app\/uploads\/pet-records$/m);
   assert.match(devEnvExample, /^PET_IMAGE_DIR=\/app\/uploads\/pets$/m);
-  assert.doesNotMatch(hamsterUtility, /PET_IMAGE_DIR|uploads\/pets/);
 });
 
 test("管理終了Actionは画像を削除しない", async () => {

@@ -5,7 +5,6 @@ import type { ChangeEvent, DragEvent } from "react";
 import { useActionState, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { saveSettings } from "@/app/actions/settings";
-import { DisplaySettingsSection } from "@/components/display-settings-section";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import {
   commitFormDirtyState,
@@ -16,7 +15,6 @@ import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
 import { SettingsScrollToSaveButton } from "@/components/settings-scroll-to-save-button";
 import { StatusMessage } from "@/components/status-message";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
-import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   MAX_DASHBOARD_BOARD_COUNT,
   MIN_DASHBOARD_BOARD_COUNT,
@@ -26,10 +24,8 @@ import {
   resizeDashboardPetIds,
   toggleDashboardPetId,
   type DashboardDropPosition,
-  type DashboardPetRemovalPosition,
-  type HamsterSelectorMode
+  type DashboardPetRemovalPosition
 } from "@/lib/dashboard-settings";
-import type { RecordScope } from "@/lib/records";
 import { normalizeSearchText } from "@/lib/search";
 import { getDashboardOrderScrollTop } from "@/lib/dashboard-order-scroll";
 import {
@@ -49,29 +45,26 @@ type DashboardSettingsFormProps = {
   name?: string | null;
   email?: string | null;
   boardCount: number;
-  hamsterSelectorMode: HamsterSelectorMode;
-  recordTimelineDefaultScope: RecordScope;
-  cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
   pets: PetOption[];
   selectedPetIds: string[];
 };
 
-type HamsterStatusFilter = "all" | "active" | "inactive" | "selected";
+type PetStatusFilter = "all" | "active" | "inactive" | "selected";
 type MoveDirection = "up" | "down";
 type RecentMove = {
-  hamsterId: string;
+  petId: string;
   direction: MoveDirection;
 };
 type DropTarget = {
-  hamsterId: string;
+  petId: string;
   position: DashboardDropPosition;
 };
 type PendingScrollRequest = {
-  hamsterId: string;
+  petId: string;
   sequence: number;
 };
 
-const HAMSTER_STATUS_FILTERS: { value: HamsterStatusFilter; label: string }[] = [
+const PET_STATUS_FILTERS: { value: PetStatusFilter; label: string }[] = [
   { value: "all", label: "すべて" },
   { value: "active", label: "管理中" },
   { value: "inactive", label: "管理終了" },
@@ -89,19 +82,13 @@ export function DashboardSettingsForm({
   name,
   email,
   boardCount,
-  hamsterSelectorMode,
-  recordTimelineDefaultScope,
-  cleaningMobileDefaultDateFilter,
   pets,
   selectedPetIds
 }: DashboardSettingsFormProps) {
-  // 並び替えUXの内部状態は旧名を保ち、送受信する設定契約はPet IDへ切り替える。
-  const hamsters = pets;
-  const selectedHamsterIds = selectedPetIds;
   const [limit, setLimit] = useState(boardCount);
-  const [selectedIds, setSelectedIds] = useState(selectedHamsterIds);
+  const [selectedIds, setSelectedIds] = useState(selectedPetIds);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<HamsterStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<PetStatusFilter>("all");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [recentMove, setRecentMove] = useState<RecentMove | null>(null);
@@ -119,34 +106,34 @@ export function DashboardSettingsForm({
   const feedbackSequenceRef = useRef(0);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
   const dropTargetRef = useRef<DropTarget | null>(null);
-  const hamsterIds = useMemo(() => hamsters.map((hamster) => hamster.id), [hamsters]);
-  const hamsterById = useMemo(() => new Map(hamsters.map((hamster) => [hamster.id, hamster])), [hamsters]);
-  const needsSelection = hamsters.length > limit;
+  const petIds = useMemo(() => pets.map((pet) => pet.id), [pets]);
+  const petById = useMemo(() => new Map(pets.map((pet) => [pet.id, pet])), [pets]);
+  const needsSelection = pets.length > limit;
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const orderedHamsters = useMemo(
+  const orderedPets = useMemo(
     () =>
       selectedIds
-        .map((id) => hamsterById.get(id))
-        .filter((hamster): hamster is PetOption => Boolean(hamster)),
-    [hamsterById, selectedIds]
+        .map((id) => petById.get(id))
+        .filter((pet): pet is PetOption => Boolean(pet)),
+    [petById, selectedIds]
   );
-  const filteredHamsters = useMemo(() => {
+  const filteredPets = useMemo(() => {
     const normalizedSearchTerm = normalizeSearchText(searchTerm);
 
-    return hamsters.filter((hamster) => {
-      const matchesSearch = normalizeSearchText(hamster.name).includes(normalizedSearchTerm);
+    return pets.filter((pet) => {
+      const matchesSearch = normalizeSearchText(pet.name).includes(normalizedSearchTerm);
       const matchesStatus =
         statusFilter === "all" ||
-        (statusFilter === "active" && hamster.isActive) ||
-        (statusFilter === "inactive" && !hamster.isActive) ||
-        (statusFilter === "selected" && selectedIdSet.has(hamster.id));
+        (statusFilter === "active" && pet.isActive) ||
+        (statusFilter === "inactive" && !pet.isActive) ||
+        (statusFilter === "selected" && selectedIdSet.has(pet.id));
 
       return matchesSearch && matchesStatus;
     });
-  }, [hamsters, searchTerm, selectedIdSet, statusFilter]);
-  const targetCount = Math.min(limit, hamsters.length);
+  }, [pets, searchTerm, selectedIdSet, statusFilter]);
+  const targetCount = Math.min(limit, pets.length);
   const canSave = selectedIds.length === targetCount;
-  const selectionBasisKey = JSON.stringify([boardCount, hamsterIds, selectedHamsterIds]);
+  const selectionBasisKey = JSON.stringify([boardCount, petIds, selectedPetIds]);
 
   useEffect(() => {
     removedSelectionPositionsRef.current.clear();
@@ -184,21 +171,6 @@ export function DashboardSettingsForm({
           boardCountControl.value = String(savedSettings.dashboardBoardCount);
           boardCountControl.defaultValue = boardCountControl.value;
         }
-        for (const name of [
-          "hamsterSelectorMode",
-          "recordTimelineDefaultScope",
-          "cleaningMobileDefaultDateFilter"
-        ]) {
-          const controls = form.elements.namedItem(name);
-          const radios = controls instanceof RadioNodeList ? Array.from(controls) : [controls];
-          for (const control of radios) {
-            if (control instanceof HTMLInputElement) {
-              const savedValue = savedSettings[name as keyof typeof savedSettings];
-              control.checked = control.value === savedValue;
-              control.defaultChecked = control.checked;
-            }
-          }
-        }
       }
 
       window.requestAnimationFrame(() => commitFormDirtyState(form));
@@ -219,9 +191,9 @@ export function DashboardSettingsForm({
 
     // 並べ替え前後の座標差から移動を描画する。DOM順は先に確定しているため、保存値や読み上げ順には影響しない。
     if (previousPositions && !reducedMotion) {
-      orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]").forEach((row) => {
-        const hamsterId = row.dataset.dashboardHamsterOrderId;
-        const previousTop = hamsterId ? previousPositions.get(hamsterId) : undefined;
+      orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-pet-order-id]").forEach((row) => {
+        const petId = row.dataset.dashboardPetOrderId;
+        const previousTop = petId ? previousPositions.get(petId) : undefined;
 
         if (previousTop === undefined) {
           return;
@@ -253,8 +225,8 @@ export function DashboardSettingsForm({
     }
 
     const movedRow = Array.from(
-      orderList.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]")
-    ).find((row) => row.dataset.dashboardHamsterOrderId === pendingScrollRequest.hamsterId);
+      orderList.querySelectorAll<HTMLElement>("[data-dashboard-pet-order-id]")
+    ).find((row) => row.dataset.dashboardPetOrderId === pendingScrollRequest.petId);
     if (!movedRow) {
       return;
     }
@@ -313,25 +285,25 @@ export function DashboardSettingsForm({
     removedSelectionPositionsRef.current.clear();
     pendingSelectionDirtyReevaluationRef.current = true;
     setLimit(nextLimit);
-    setSelectedIds(resizeDashboardPetIds(hamsterIds, selectedIds, nextLimit));
+    setSelectedIds(resizeDashboardPetIds(petIds, selectedIds, nextLimit));
   }
 
-  function handleToggle(hamsterId: string) {
+  function handleToggle(petId: string) {
     if (!needsSelection) {
       return;
     }
 
-    const isSelected = selectedIds.includes(hamsterId);
-    const restorePosition = removedSelectionPositionsRef.current.get(hamsterId);
-    const nextIds = toggleDashboardPetId(selectedIds, hamsterId, limit, restorePosition);
+    const isSelected = selectedIds.includes(petId);
+    const restorePosition = removedSelectionPositionsRef.current.get(petId);
+    const nextIds = toggleDashboardPetId(selectedIds, petId, limit, restorePosition);
 
     if (isSelected) {
-      const removalPosition = getDashboardPetRemovalPosition(selectedIds, hamsterId);
+      const removalPosition = getDashboardPetRemovalPosition(selectedIds, petId);
       if (removalPosition) {
-        removedSelectionPositionsRef.current.set(hamsterId, removalPosition);
+        removedSelectionPositionsRef.current.set(petId, removalPosition);
       }
-    } else if (nextIds.includes(hamsterId)) {
-      removedSelectionPositionsRef.current.delete(hamsterId);
+    } else if (nextIds.includes(petId)) {
+      removedSelectionPositionsRef.current.delete(petId);
     }
 
     pendingSelectionDirtyReevaluationRef.current = true;
@@ -339,20 +311,20 @@ export function DashboardSettingsForm({
   }
 
   function updateOrder(
-    hamsterId: string,
-    targetHamsterId: string,
+    petId: string,
+    targetPetId: string,
     position: DashboardDropPosition
   ) {
-    const nextIds = moveDashboardPetId(selectedIds, hamsterId, targetHamsterId, position);
-    const nextIndex = nextIds.indexOf(hamsterId);
-    const hamster = hamsterById.get(hamsterId);
+    const nextIds = moveDashboardPetId(selectedIds, petId, targetPetId, position);
+    const nextIndex = nextIds.indexOf(petId);
+    const pet = petById.get(petId);
 
     if (nextIndex < 0 || !nextIds.some((id, index) => id !== selectedIds[index])) {
       return false;
     }
 
     setSelectedIds(nextIds);
-    setOrderAnnouncement(`${hamster?.name ?? "Pet"}を${nextIndex + 1}番目へ移動しました。`);
+    setOrderAnnouncement(`${pet?.name ?? "Pet"}を${nextIndex + 1}番目へ移動しました。`);
     requestFormDirtyReevaluation(formRef.current);
     return true;
   }
@@ -360,10 +332,10 @@ export function DashboardSettingsForm({
   function captureOrderPositions() {
     const positions = new Map<string, number>();
 
-    orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]").forEach((row) => {
-      const hamsterId = row.dataset.dashboardHamsterOrderId;
-      if (hamsterId) {
-        positions.set(hamsterId, row.getBoundingClientRect().top);
+    orderListRef.current?.querySelectorAll<HTMLElement>("[data-dashboard-pet-order-id]").forEach((row) => {
+      const petId = row.dataset.dashboardPetOrderId;
+      if (petId) {
+        positions.set(petId, row.getBoundingClientRect().top);
       }
       row.getAnimations().forEach((animation) => animation.cancel());
     });
@@ -371,7 +343,7 @@ export function DashboardSettingsForm({
     return positions;
   }
 
-  function startMoveFeedback(hamsterId: string, direction: MoveDirection) {
+  function startMoveFeedback(petId: string, direction: MoveDirection) {
     const feedbackSequence = feedbackSequenceRef.current + 1;
     feedbackSequenceRef.current = feedbackSequence;
 
@@ -379,7 +351,7 @@ export function DashboardSettingsForm({
       window.clearTimeout(feedbackTimerRef.current);
     }
 
-    setRecentMove({ hamsterId, direction });
+    setRecentMove({ petId, direction });
     feedbackTimerRef.current = window.setTimeout(() => {
       if (feedbackSequenceRef.current === feedbackSequence) {
         setRecentMove(null);
@@ -401,7 +373,7 @@ export function DashboardSettingsForm({
     const currentTarget = dropTargetRef.current;
 
     if (
-      currentTarget?.hamsterId === nextTarget?.hamsterId &&
+      currentTarget?.petId === nextTarget?.petId &&
       currentTarget?.position === nextTarget?.position
     ) {
       return;
@@ -411,8 +383,8 @@ export function DashboardSettingsForm({
     setDropTarget(nextTarget);
   }
 
-  function moveByOffset(hamsterId: string, direction: MoveDirection) {
-    const currentIndex = selectedIds.indexOf(hamsterId);
+  function moveByOffset(petId: string, direction: MoveDirection) {
+    const currentIndex = selectedIds.indexOf(petId);
     const offset = direction === "up" ? -1 : 1;
     const targetId = selectedIds[currentIndex + offset];
     if (!targetId) {
@@ -421,9 +393,9 @@ export function DashboardSettingsForm({
 
     pendingOrderPositionsRef.current = captureOrderPositions();
     const scrollRequestSequence = scrollRequestSequenceRef.current + 1;
-    pendingScrollRequestRef.current = { hamsterId, sequence: scrollRequestSequence };
+    pendingScrollRequestRef.current = { petId, sequence: scrollRequestSequence };
     const position = direction === "up" ? "before" : "after";
-    if (updateOrder(hamsterId, targetId, position)) {
+    if (updateOrder(petId, targetId, position)) {
       scrollRequestSequenceRef.current = scrollRequestSequence;
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
@@ -433,7 +405,7 @@ export function DashboardSettingsForm({
       if (orderList && window.matchMedia("(max-width: 639px)").matches) {
         orderList.scrollTo({ top: orderList.scrollTop, behavior: "auto" });
       }
-      startMoveFeedback(hamsterId, direction);
+      startMoveFeedback(petId, direction);
     } else {
       pendingOrderPositionsRef.current = null;
       pendingScrollRequestRef.current = null;
@@ -447,7 +419,7 @@ export function DashboardSettingsForm({
 
   function createDragPreview(event: DragEvent<HTMLButtonElement>) {
     removeDragPreview();
-    const row = event.currentTarget.closest<HTMLElement>("[data-dashboard-hamster-order-id]");
+    const row = event.currentTarget.closest<HTMLElement>("[data-dashboard-pet-order-id]");
     if (!row) {
       return;
     }
@@ -469,21 +441,21 @@ export function DashboardSettingsForm({
     event.dataTransfer.setDragImage(preview, 24, 24);
   }
 
-  function handleDragStart(event: DragEvent<HTMLButtonElement>, hamsterId: string) {
+  function handleDragStart(event: DragEvent<HTMLButtonElement>, petId: string) {
     pendingOrderPositionsRef.current = null;
     orderListRef.current
-      ?.querySelectorAll<HTMLElement>("[data-dashboard-hamster-order-id]")
+      ?.querySelectorAll<HTMLElement>("[data-dashboard-pet-order-id]")
       .forEach((row) => row.getAnimations().forEach((animation) => animation.cancel()));
     clearMoveFeedback();
     updateDropTarget(null);
     createDragPreview(event);
-    setDraggedId(hamsterId);
+    setDraggedId(petId);
     event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", hamsterId);
+    event.dataTransfer.setData("text/plain", petId);
   }
 
-  function handleDragOver(event: DragEvent<HTMLLIElement>, hamsterId: string) {
-    if (!draggedId || draggedId === hamsterId) {
+  function handleDragOver(event: DragEvent<HTMLLIElement>, petId: string) {
+    if (!draggedId || draggedId === petId) {
       updateDropTarget(null);
       return;
     }
@@ -491,7 +463,7 @@ export function DashboardSettingsForm({
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     const position = getDashboardDropPosition(event.clientY, event.currentTarget.getBoundingClientRect());
-    updateDropTarget({ hamsterId, position });
+    updateDropTarget({ petId, position });
   }
 
   function handleOrderListDragOver(event: DragEvent<HTMLOListElement>) {
@@ -528,11 +500,11 @@ export function DashboardSettingsForm({
 
   function handleOrderListDrop(event: DragEvent<HTMLOListElement>) {
     event.preventDefault();
-    const hamsterId = draggedId ?? event.dataTransfer.getData("text/plain");
+    const petId = draggedId ?? event.dataTransfer.getData("text/plain");
     const currentDropTarget = dropTargetRef.current;
 
-    if (hamsterId && currentDropTarget && hamsterId !== currentDropTarget.hamsterId) {
-      updateOrder(hamsterId, currentDropTarget.hamsterId, currentDropTarget.position);
+    if (petId && currentDropTarget && petId !== currentDropTarget.petId) {
+      updateOrder(petId, currentDropTarget.petId, currentDropTarget.position);
     }
 
     clearDragState();
@@ -554,14 +526,6 @@ export function DashboardSettingsForm({
         className="space-y-6"
       >
         <ProfileSettingsFields name={name} email={email} />
-
-        <DisplaySettingsSection
-          hamsterSelectorMode={hamsterSelectorMode}
-          recordTimelineDefaultScope={recordTimelineDefaultScope}
-          cleaningMobileDefaultDateFilter={cleaningMobileDefaultDateFilter}
-          savedSettings={saveState.savedDashboardSettings}
-          savedSubmissionId={saveState.submissionId}
-        />
 
         <section
           aria-labelledby="dashboard-settings-heading"
@@ -618,24 +582,24 @@ export function DashboardSettingsForm({
 
           <section
             className="space-y-3 border-t border-slate-200 pt-5"
-            aria-labelledby="dashboard-hamster-order-heading"
-            data-dashboard-hamster-order
+            aria-labelledby="dashboard-pet-order-heading"
+            data-dashboard-pet-order
           >
             <div className="space-y-1">
               <div className="flex items-start justify-between gap-3">
-                <h4 id="dashboard-hamster-order-heading" className="text-base font-bold text-ink">
+                <h4 id="dashboard-pet-order-heading" className="text-base font-bold text-ink">
                   ダッシュボードカードの並び順
                 </h4>
                 <span className="shrink-0 whitespace-nowrap text-xs font-medium tabular-nums text-slate-500 sm:hidden">
-                  全{orderedHamsters.length}件
+                  全{orderedPets.length}件
                 </span>
               </div>
-              <p id="dashboard-hamster-order-help" className="text-xs leading-5 text-slate-500">
+              <p id="dashboard-pet-order-help" className="text-xs leading-5 text-slate-500">
                 PCではドラッグハンドルまたは上下ボタンで並び替えられます。スマートフォンでは上下ボタンを使用してください。
               </p>
             </div>
 
-            {orderedHamsters.length === 0 ? (
+            {orderedPets.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-300 p-5 text-center text-sm text-slate-500">
                 表示対象のPetはいません。
               </div>
@@ -643,21 +607,21 @@ export function DashboardSettingsForm({
               <ol
                 ref={orderListRef}
                 className="-mr-11 flex max-h-[var(--dashboard-order-max-height)] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain [--dashboard-order-max-height:min(55vh,28rem)] supports-[height:1dvh]:[--dashboard-order-max-height:min(55dvh,28rem)] sm:mr-0 sm:max-h-none sm:overflow-visible sm:overscroll-auto"
-                aria-describedby="dashboard-hamster-order-help"
+                aria-describedby="dashboard-pet-order-help"
                 onDragOver={handleOrderListDragOver}
                 onDragLeave={handleOrderListDragLeave}
                 onDrop={handleOrderListDrop}
               >
-                {orderedHamsters.map((hamster, index) => {
-                  const isDropTarget = dropTarget?.hamsterId === hamster.id;
+                {orderedPets.map((pet, index) => {
+                  const isDropTarget = dropTarget?.petId === pet.id;
                   const isDropBefore = isDropTarget && dropTarget.position === "before";
                   const isDropAfter = isDropTarget && dropTarget.position === "after";
                   const dropSpacingClass = isDropBefore ? "sm:mt-2" : isDropAfter ? "sm:mb-2" : "";
                   const beforeLinePositionClass = index === 0 ? "sm:-top-1.5" : "sm:-top-2.5";
                   const afterLinePositionClass =
-                    index === orderedHamsters.length - 1 ? "sm:-bottom-1.5" : "sm:-bottom-2.5";
-                  const isDragging = draggedId === hamster.id;
-                  const isRecentlyMoved = recentMove?.hamsterId === hamster.id;
+                    index === orderedPets.length - 1 ? "sm:-bottom-1.5" : "sm:-bottom-2.5";
+                  const isDragging = draggedId === pet.id;
+                  const isRecentlyMoved = recentMove?.petId === pet.id;
                   const rowStateClass = isDropTarget
                     ? "border-moss bg-moss/10 ring-2 ring-moss/20"
                     : isRecentlyMoved
@@ -666,9 +630,9 @@ export function DashboardSettingsForm({
 
                   return (
                     <li
-                      key={hamster.id}
-                      data-dashboard-hamster-order-id={hamster.id}
-                      onDragOver={(event) => handleDragOver(event, hamster.id)}
+                      key={pet.id}
+                      data-dashboard-pet-order-id={pet.id}
+                      onDragOver={(event) => handleDragOver(event, pet.id)}
                       data-drop-target={isDropTarget ? "true" : undefined}
                       data-drop-position={isDropTarget ? dropTarget.position : undefined}
                       data-dragging={isDragging ? "true" : undefined}
@@ -692,23 +656,23 @@ export function DashboardSettingsForm({
                         />
                       ) : null}
                       <span
-                        data-dashboard-hamster-rank
+                        data-dashboard-pet-rank
                         aria-label={`${index + 1}番目`}
                         className="flex min-w-0 items-center justify-center border-r border-slate-200 px-1 text-sm font-bold tabular-nums text-slate-600 sm:hidden"
                       >
                         {index + 1}
                       </span>
                       <div
-                        data-dashboard-hamster-row-content
+                        data-dashboard-pet-row-content
                         className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2 sm:contents"
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <button
                             type="button"
                             draggable
-                            onDragStart={(event) => handleDragStart(event, hamster.id)}
+                            onDragStart={(event) => handleDragStart(event, pet.id)}
                             onDragEnd={handleDragEnd}
-                            aria-label={`${hamster.name}をドラッグして並び替え`}
+                            aria-label={`${pet.name}をドラッグして並び替え`}
                             aria-roledescription="並び替えハンドル"
                             className="hidden h-11 w-11 shrink-0 cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 sm:inline-flex"
                           >
@@ -716,29 +680,29 @@ export function DashboardSettingsForm({
                           </button>
                           <span className="min-w-0">
                             <span className="block break-words text-sm font-semibold text-ink">
-                              {hamster.name}
+                              {pet.name}
                             </span>
                             <span className="mt-1 block text-xs text-slate-500">
-                              {SPECIES_LABELS[hamster.species]}
+                              {SPECIES_LABELS[pet.species]}
                             </span>
                             <span
                               className={`mt-1 inline-flex shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${
-                                hamster.isActive
+                                pet.isActive
                                   ? "bg-straw/40 text-slate-700"
                                   : "bg-slate-200 text-slate-600"
                               }`}
                             >
-                              {hamster.isActive ? "管理中" : "管理終了"}
+                              {pet.isActive ? "管理中" : "管理終了"}
                             </span>
                           </span>
                         </div>
 
-                        <div className="grid shrink-0 grid-cols-2 gap-2" aria-label={`${hamster.name}の並び替え操作`}>
+                        <div className="grid shrink-0 grid-cols-2 gap-2" aria-label={`${pet.name}の並び替え操作`}>
                           <button
                             type="button"
                             disabled={index === 0}
-                            onClick={() => moveByOffset(hamster.id, "up")}
-                            aria-label={`${hamster.name}を上へ移動`}
+                            onClick={() => moveByOffset(pet.id, "up")}
+                            aria-label={`${pet.name}を上へ移動`}
                             data-move-feedback={isRecentlyMoved && recentMove.direction === "up" ? "true" : undefined}
                             className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
                               isRecentlyMoved && recentMove.direction === "up"
@@ -750,9 +714,9 @@ export function DashboardSettingsForm({
                           </button>
                           <button
                             type="button"
-                            disabled={index === orderedHamsters.length - 1}
-                            onClick={() => moveByOffset(hamster.id, "down")}
-                            aria-label={`${hamster.name}を下へ移動`}
+                            disabled={index === orderedPets.length - 1}
+                            onClick={() => moveByOffset(pet.id, "down")}
+                            aria-label={`${pet.name}を下へ移動`}
                             data-move-feedback={isRecentlyMoved && recentMove.direction === "down" ? "true" : undefined}
                             className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
                               isRecentlyMoved && recentMove.direction === "down"
@@ -781,13 +745,13 @@ export function DashboardSettingsForm({
 
           <section
             className="space-y-3 border-t border-slate-200 pt-5"
-            aria-labelledby="dashboard-hamster-selection-heading"
-            data-dashboard-hamster-selection
+            aria-labelledby="dashboard-pet-selection-heading"
+            data-dashboard-pet-selection
           >
-            <h4 id="dashboard-hamster-selection-heading" className="text-base font-bold text-ink">
+            <h4 id="dashboard-pet-selection-heading" className="text-base font-bold text-ink">
               ダッシュボードに表示するPet
             </h4>
-        {hamsters.length === 0 ? (
+        {pets.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
             Petがまだ登録されていません。
           </div>
@@ -813,7 +777,7 @@ export function DashboardSettingsForm({
                   className="grid grid-cols-4 rounded-xl bg-slate-100 p-1 sm:flex sm:flex-wrap sm:gap-2 sm:rounded-none sm:bg-transparent sm:p-0"
                   aria-label="Petの状態で絞り込む"
                 >
-                  {HAMSTER_STATUS_FILTERS.map((filter) => {
+                  {PET_STATUS_FILTERS.map((filter) => {
                     const isSelected = statusFilter === filter.value;
 
                     return (
@@ -837,10 +801,10 @@ export function DashboardSettingsForm({
             </div>
 
             <p className="text-xs text-slate-500">
-              {hamsters.length} 件中 {filteredHamsters.length} 件が条件に一致しています。
+              {pets.length} 件中 {filteredPets.length} 件が条件に一致しています。
             </p>
 
-            {filteredHamsters.length === 0 ? (
+            {filteredPets.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
                 {statusFilter === "selected"
                   ? "選択中のPetはいません。"
@@ -848,14 +812,14 @@ export function DashboardSettingsForm({
               </div>
             ) : (
               <div className="max-h-[50vh] divide-y divide-slate-200 overflow-y-auto rounded-md border border-slate-200 sm:max-h-96 lg:max-h-[28rem]">
-                {filteredHamsters.map((hamster) => {
-                  const checked = selectedIdSet.has(hamster.id);
+                {filteredPets.map((pet) => {
+                  const checked = selectedIdSet.has(pet.id);
                   // 上限に達した後は未選択の行だけを無効化し、選択済みの解除はできるようにする。
                   const disabled = !checked && needsSelection && selectedIds.length >= limit;
 
                   return (
                     <label
-                      key={hamster.id}
+                      key={pet.id}
                       className={`flex items-start gap-3 px-4 py-3 text-sm ${
                         disabled ? "cursor-not-allowed bg-slate-50 text-slate-400" : "cursor-pointer text-slate-700"
                       }`}
@@ -864,26 +828,26 @@ export function DashboardSettingsForm({
                         type="checkbox"
                         checked={checked}
                         disabled={!needsSelection || disabled}
-                        onChange={() => handleToggle(hamster.id)}
+                        onChange={() => handleToggle(pet.id)}
                         className="mt-0.5"
                       />
                       <span className="min-w-0">
                         <span className="flex flex-wrap items-center gap-2 font-semibold text-ink">
-                          {hamster.name}
+                          {pet.name}
                           <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                            {SPECIES_LABELS[hamster.species]}
+                            {SPECIES_LABELS[pet.species]}
                           </span>
                           <span
                             className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
-                              hamster.isActive
+                              pet.isActive
                                 ? "bg-straw/40 text-slate-700"
                                 : "bg-slate-200 text-slate-600"
                             }`}
                           >
-                            {hamster.isActive ? "管理中" : "管理終了"}
+                            {pet.isActive ? "管理中" : "管理終了"}
                           </span>
                         </span>
-                        {hamster.memo ? <span className="mt-1 block truncate text-slate-500">{hamster.memo}</span> : null}
+                        {pet.memo ? <span className="mt-1 block truncate text-slate-500">{pet.memo}</span> : null}
                       </span>
                     </label>
                   );

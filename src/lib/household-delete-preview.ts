@@ -9,16 +9,19 @@ export type HouseholdDeletePreview = {
   memberCount: number;
   ownerCount: number;
   joinedHouseholdCount: number;
-  hamsterCount: number;
+  petCount: number;
   weightRecordCount: number;
-  cleaningRecordCount: number;
-  healthRecordCount: number;
-  medicalVisitCount: number;
-  memoryRecordCount: number;
+  careRecordCount: number;
+  recordCount: number;
   imageCount: number;
   savedMemoryTagCount: number;
 };
 
+/**
+ * Household削除前に、Pet関連テーブルを横断して削除対象件数と実行者の権限状態を取得する。
+ *
+ * DBのCascade削除そのものとは分離し、確認画面に表示するための読み取り専用スナップショットを返す。
+ */
 export async function getHouseholdDeletePreview(
   householdId: string,
   actorUserId: string
@@ -28,8 +31,11 @@ export async function getHouseholdDeletePreview(
     ownerCount,
     joinedHouseholdCount,
     weightRecordCount,
-    cleaningRecordCount,
-    recordCounts,
+    feedingRecordCount,
+    waterRecordCount,
+    walkRecordCount,
+    litterRecordCount,
+    recordCount,
     memoryImageCount,
     profileImageCount,
     savedMemoryTagCount
@@ -39,7 +45,7 @@ export async function getHouseholdDeletePreview(
       select: {
         id: true,
         name: true,
-        _count: { select: { members: true, hamsters: true } },
+        _count: { select: { members: true, pets: true } },
         members: {
           where: { userId: actorUserId },
           select: { role: true },
@@ -49,23 +55,21 @@ export async function getHouseholdDeletePreview(
     }),
     prisma.householdMember.count({ where: { householdId, role: "OWNER" } }),
     prisma.householdMember.count({ where: { userId: actorUserId } }),
-    prisma.weightRecord.count({ where: { hamster: { householdId } } }),
-    prisma.cleaningRecord.count({ where: { hamster: { householdId } } }),
-    prisma.hamsterRecord.groupBy({
-      by: ["recordType"],
-      where: { hamster: { householdId } },
-      _count: { _all: true }
+    prisma.petWeightRecord.count({ where: { pet: { householdId } } }),
+    prisma.petFeedingRecord.count({ where: { pet: { householdId } } }),
+    prisma.petWaterRecord.count({ where: { pet: { householdId } } }),
+    prisma.petWalkRecord.count({ where: { pet: { householdId } } }),
+    prisma.petLitterRecord.count({ where: { pet: { householdId } } }),
+    prisma.petRecord.count({ where: { pet: { householdId } } }),
+    prisma.petMemoryRecordImage.count({
+      where: { memoryRecord: { petRecord: { pet: { householdId } } } }
     }),
-    prisma.memoryRecordImage.count({
-      where: { memoryRecord: { hamsterRecord: { hamster: { householdId } } } }
-    }),
-    prisma.hamster.count({ where: { householdId, profileImageFileName: { not: null } } }),
+    prisma.pet.count({ where: { householdId, profileImageFileName: { not: null } } }),
     prisma.savedMemoryTag.count({ where: { householdId } })
   ]);
 
   const currentRole = household?.members[0]?.role;
   if (!household || !currentRole) return null;
-  const countByType = new Map(recordCounts.map((row) => [row.recordType, row._count._all]));
 
   return {
     householdId: household.id,
@@ -74,12 +78,11 @@ export async function getHouseholdDeletePreview(
     memberCount: household._count.members,
     ownerCount,
     joinedHouseholdCount,
-    hamsterCount: household._count.hamsters,
+    petCount: household._count.pets,
     weightRecordCount,
-    cleaningRecordCount,
-    healthRecordCount: countByType.get("HEALTH") ?? 0,
-    medicalVisitCount: countByType.get("MEDICAL") ?? 0,
-    memoryRecordCount: countByType.get("MEMORY") ?? 0,
+    careRecordCount:
+      feedingRecordCount + waterRecordCount + walkRecordCount + litterRecordCount,
+    recordCount,
     imageCount: memoryImageCount + profileImageCount,
     savedMemoryTagCount
   };

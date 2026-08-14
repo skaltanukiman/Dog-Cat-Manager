@@ -14,8 +14,7 @@ import {
   parseDateInput,
   toDateInputValue
 } from "../src/lib/date";
-import { cleaningMonthSchema, createHamsterSchema, createWeightRecordSchema } from "../src/lib/schemas";
-import { parseWeightCsvImport } from "../src/lib/weight-csv-import";
+import { createPetSchema, createPetWeightRecordSchema } from "../src/lib/schemas";
 
 test("実在する日付と閏日だけを受け付ける", () => {
   assert.equal(isValidDateInput("2024-02-29"), true);
@@ -66,21 +65,26 @@ test("月範囲は年末から翌年へ正しく進む", () => {
   assert.equal(toDateInputValue(range.end), "2027-01-01");
 });
 
-test("画面用schemaも不正な暦日と年月を拒否する", () => {
+test("Pet画面用schemaも不正な暦日を拒否する", () => {
   assert.equal(
-    createHamsterSchema.safeParse({ name: "しろ", memo: "", birthDate: "2026-02-31", adoptionDate: "" }).success,
+    createPetSchema.safeParse({
+      name: "ポチ",
+      species: "DOG",
+      breed: "",
+      sex: "UNKNOWN",
+      memo: "",
+      birthDate: "2026-02-31",
+      adoptionDate: ""
+    }).success,
     false
   );
   assert.equal(
-    createWeightRecordSchema.safeParse({ hamsterId: "hamster-1", recordDate: "2026-02-31", weightG: "120" }).success,
+    createPetWeightRecordSchema.safeParse({
+      petId: "pet-1",
+      recordDate: "2026-02-31",
+      weightKg: "12.3",
+      memo: ""
+    }).success,
     false
   );
-  assert.equal(cleaningMonthSchema.safeParse({ hamsterId: "hamster-1", yearMonth: "2026-13" }).success, false);
-});
-
-test("CSV取込も存在しない日付を拒否する", () => {
-  const parsed = parseWeightCsvImport("date,hamster,weight\n2026/02/31,しろ,120", "2026-12-31");
-  assert.equal(parsed.rows.length, 0);
-  assert.equal(parsed.errors.length, 1);
-  assert.match(parsed.errors[0].message, /YYYY\/MM\/DD形式の日付/);
 });

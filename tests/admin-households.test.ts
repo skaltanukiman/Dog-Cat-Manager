@@ -66,7 +66,7 @@ test("共有管理画面は管理者認可、共有カード、共通ページ�
   assert.match(overviewSource, /household\.count\(\{\s*where:\s*\{\s*isDemo:\s*false/);
   assert.match(overviewSource, /household\.findMany\(\{\s*where:\s*\{\s*isDemo:\s*false/);
   assert.match(listSource, /household\._count\.members/);
-  assert.match(listSource, /household\._count\.hamsters/);
+  assert.match(listSource, /household\._count\.pets/);
   assert.match(listSource, /household\._count\.invitations/);
   assert.match(listSource, /HOUSEHOLD_ROLE_LABELS\[member\.role\]/);
   assert.match(listSource, /\[overflow-wrap:anywhere\]/);

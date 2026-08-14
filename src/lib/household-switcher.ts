@@ -6,7 +6,7 @@ type HouseholdSwitcherOption = {
   name: string;
   role: HouseholdRole;
   memberCount: number;
-  hamsterCount: number;
+  petCount: number;
 };
 
 export function getDuplicateHouseholdNames(households: ReadonlyArray<{ name: string }>) {
@@ -27,5 +27,5 @@ export function getHouseholdSwitcherOptionLabel(
     return `${household.name}（${roleLabel}）`;
   }
 
-  return `${household.name}（${roleLabel}・ハムスター${household.hamsterCount}匹・メンバー${household.memberCount}人）`;
+  return `${household.name}（${roleLabel}・Pet ${household.petCount}匹・メンバー${household.memberCount}人）`;
 }

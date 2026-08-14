@@ -1,13 +1,6 @@
-import type { CleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
-import type { HamsterSelectorMode } from "@/lib/dashboard-settings";
-import type { RecordScope } from "@/lib/records";
-
 export type SettingsSnapshot = {
   name: string;
   dashboardBoardCount: number;
-  hamsterSelectorMode: HamsterSelectorMode;
-  recordTimelineDefaultScope: RecordScope;
-  cleaningMobileDefaultDateFilter: CleaningMobileDefaultDateFilter;
   petIds: readonly string[];
 };
 
@@ -18,13 +11,8 @@ function hasSameOrder(currentIds: readonly string[], nextIds: readonly string[])
 export function getSettingsChanges(current: SettingsSnapshot, next: SettingsSnapshot) {
   return {
     profileChanged: current.name !== next.name,
-    recordTimelineDefaultScopeChanged:
-      current.recordTimelineDefaultScope !== next.recordTimelineDefaultScope,
-    cleaningMobileDefaultDateFilterChanged:
-      current.cleaningMobileDefaultDateFilter !== next.cleaningMobileDefaultDateFilter,
     dashboardChanged:
       current.dashboardBoardCount !== next.dashboardBoardCount ||
-      current.hamsterSelectorMode !== next.hamsterSelectorMode ||
       !hasSameOrder(current.petIds, next.petIds)
   };
 }

@@ -49,7 +49,7 @@ async function getInvitationOrigin() {
 async function getMembersPageData() {
   const context = await getRequiredHouseholdContext();
   const now = new Date();
-  const [members, invitations, hamsterCount, activityPreview] = await Promise.all([
+  const [members, invitations, petCount, activityPreview] = await Promise.all([
     prisma.householdMember.findMany({
       where: { householdId: context.household.id },
       include: { user: true },
@@ -69,11 +69,11 @@ async function getMembersPageData() {
       },
       orderBy: { createdAt: "desc" }
     }),
-    prisma.hamster.count({ where: { householdId: context.household.id } }),
+    prisma.pet.count({ where: { householdId: context.household.id } }),
     getCurrentHouseholdActivityPreview()
   ]);
 
-  return { context, members, invitations, hamsterCount, activities: activityPreview.activities, now };
+  return { context, members, invitations, petCount, activities: activityPreview.activities, now };
 }
 
 export default async function MembersPage({
@@ -83,7 +83,7 @@ export default async function MembersPage({
 }) {
   const params = await searchParams;
   const invitationOrigin = await getInvitationOrigin();
-  const { context, members, invitations, hamsterCount, activities, now } = await getMembersPageData();
+  const { context, members, invitations, petCount, activities, now } = await getMembersPageData();
   const canManageInvitations = canManageHouseholdInvitations(context.membership.role);
   const canManageMemberRoles = canManageHouseholdMemberRoles(context.membership.role);
   const canRemoveMembers = canRemoveHouseholdMembers(context.membership.role);
@@ -326,14 +326,14 @@ export default async function MembersPage({
             <dd className="mt-1 font-bold text-ink">{members.length}人</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold text-slate-500">登録ハムスター数</dt>
-            <dd className="mt-1 font-bold text-ink">{hamsterCount}匹</dd>
+            <dt className="text-xs font-semibold text-slate-500">登録Pet数</dt>
+            <dd className="mt-1 font-bold text-ink">{petCount}匹</dd>
           </div>
         </dl>
 
         <div className="mt-4 space-y-1 text-sm leading-6 text-slate-600">
-          <p>退出後は、このグループのハムスターや記録を閲覧・編集できなくなります。</p>
-          <p>退出しても、グループ内のハムスターや共有記録は削除されません。</p>
+          <p>退出後は、このグループのPetや記録を閲覧・編集できなくなります。</p>
+          <p>退出しても、グループ内のPetや共有記録は削除されません。</p>
         </div>
 
         <div className="mt-5 flex justify-end">

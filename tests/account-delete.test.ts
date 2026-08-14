@@ -16,9 +16,8 @@ import {
 import type { HouseholdDeleteRepository } from "../src/lib/household-delete";
 import { deleteHouseholdImageDirectoriesSafely } from "../src/lib/household-delete-images";
 import type { HouseholdLeaveRepository } from "../src/lib/household-leave";
-import { deleteHamsterImageHouseholdDirectory } from "../src/lib/hamster-image";
 import { deletePetImageHouseholdDirectory } from "../src/lib/pet-image";
-import { deleteRecordImageHouseholdDirectory } from "../src/lib/record-image";
+import { deletePetRecordImageHouseholdDirectory } from "../src/lib/pet-record-image";
 import {
   requiresAccountDeleteAttention,
   type AccountDeleteDisposition
@@ -85,7 +84,7 @@ function addHousehold(
   database: FakeDatabase,
   householdId: string,
   members: Array<{ userId: string; role: HouseholdRole }>,
-  data = ["hamster", "weight", "cleaning", "record", "savedTag", "invitation"]
+  data = ["pet", "petWeight", "petCare", "petRecord", "savedTag", "invitation"]
 ) {
   database.households.set(householdId, {
     id: householdId,
@@ -525,44 +524,37 @@ test("単独グループの画像だけをcommit後の削除対象にし、安�
   assert.equal(result.status, "deleted");
   if (result.status !== "deleted") return;
 
-  const hamsterRoot = await mkdtemp(join(tmpdir(), "account-delete-hamsters-"));
   const petRoot = await mkdtemp(join(tmpdir(), "account-delete-pets-"));
-  const recordRoot = await mkdtemp(join(tmpdir(), "account-delete-records-"));
+  const petRecordRoot = await mkdtemp(join(tmpdir(), "account-delete-pet-records-"));
   for (const householdId of ["household-solo", "household-shared"]) {
-    await mkdir(join(hamsterRoot, householdId));
     await mkdir(join(petRoot, householdId));
-    await mkdir(join(recordRoot, householdId));
-    await writeFile(join(hamsterRoot, householdId, "image.webp"), householdId);
+    await mkdir(join(petRecordRoot, householdId));
     await writeFile(join(petRoot, householdId, "image.webp"), householdId);
-    await writeFile(join(recordRoot, householdId, "image.webp"), householdId);
+    await writeFile(join(petRecordRoot, householdId, "image.webp"), householdId);
   }
   for (const householdId of result.deletedHouseholdIds) {
     await deleteHouseholdImageDirectoriesSafely(householdId, {
-      deleteHamsterDirectory: (id) => deleteHamsterImageHouseholdDirectory(id, hamsterRoot),
       deletePetDirectory: (id) => deletePetImageHouseholdDirectory(id, petRoot),
-      deleteRecordDirectory: (id) => deleteRecordImageHouseholdDirectory(id, recordRoot)
+      deletePetRecordDirectory: (id) => deletePetRecordImageHouseholdDirectory(id, petRecordRoot)
     });
   }
 
-  await assert.rejects(readFile(join(hamsterRoot, "household-solo", "image.webp")));
   await assert.rejects(readFile(join(petRoot, "household-solo", "image.webp")));
-  await assert.rejects(readFile(join(recordRoot, "household-solo", "image.webp")));
-  assert.equal(await readFile(join(hamsterRoot, "household-shared", "image.webp"), "utf8"), "household-shared");
+  await assert.rejects(readFile(join(petRecordRoot, "household-solo", "image.webp")));
   assert.equal(await readFile(join(petRoot, "household-shared", "image.webp"), "utf8"), "household-shared");
-  assert.equal(await readFile(join(recordRoot, "household-shared", "image.webp"), "utf8"), "household-shared");
-  await assert.rejects(deleteHamsterImageHouseholdDirectory("../household-shared", hamsterRoot));
+  assert.equal(await readFile(join(petRecordRoot, "household-shared", "image.webp"), "utf8"), "household-shared");
+  await assert.rejects(deletePetImageHouseholdDirectory("../household-shared", petRoot));
 
   const warnings: string[] = [];
   const cleanup = await deleteHouseholdImageDirectoriesSafely("household-solo", {
-    deleteHamsterDirectory: async () => {
+    deletePetDirectory: async () => {
       throw new Error("filesystem failure");
     },
-    deletePetDirectory: async () => undefined,
-    deleteRecordDirectory: async () => undefined,
+    deletePetRecordDirectory: async () => undefined,
     warn: (kind) => warnings.push(kind)
   });
-  assert.deepEqual(cleanup.failedKinds, ["hamster"]);
-  assert.deepEqual(warnings, ["hamster"]);
+  assert.deepEqual(cleanup.failedKinds, ["pet"]);
+  assert.deepEqual(warnings, ["pet"]);
 });
 
 test("共有グループの作成者参照はSetNull相当になり、記録自体は残る", async () => {
@@ -585,7 +577,7 @@ test("共有グループの作成者参照はSetNull相当になり、記録自�
   assert.equal(database.records.get("shared-record")?.createdByUserId, null);
 
   const schema = await readFile(join(process.cwd(), "prisma/schema.prisma"), "utf8");
-  assert.match(schema, /createdBy\s+User\?\s+@relation\("HamsterRecordCreator"[^\n]+onDelete: SetNull\)/);
+  assert.match(schema, /createdBy\s+User\?\s+@relation\("PetRecordCreator"[^\n]+onDelete: SetNull\)/);
   assert.match(schema, /createdBy\s+User\?\s+@relation\("HouseholdInvitationCreator"[^\n]+onDelete: SetNull\)/);
   assert.match(schema, /accounts\s+Account\[\]/);
   assert.match(schema, /sessions\s+Session\[\]/);

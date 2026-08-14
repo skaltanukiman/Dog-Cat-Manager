@@ -212,7 +212,7 @@ const executePrismaAccountDelete: AccountDeleteExecutor = (operation) =>
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`;
         },
         lockSuperAdminState: async () => {
-          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('hamster-manager-super-admin', 0))`;
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('dog-cat-manager-super-admin', 0))`;
         },
         findUser: (userId) =>
           tx.user.findUnique({ where: { id: userId }, select: { id: true, appRole: true, name: true } }),

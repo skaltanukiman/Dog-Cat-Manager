@@ -136,7 +136,7 @@ export function HouseholdLeaveForm({
               required
               className="mt-1 shrink-0"
             />
-            グループ内のハムスターや共有記録は削除されず、ほかのメンバーに残ることを確認しました
+            グループ内のPetや共有記録は削除されず、ほかのメンバーに残ることを確認しました
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 p-3 text-sm leading-6 text-slate-700">
             <input

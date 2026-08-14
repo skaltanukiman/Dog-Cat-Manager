@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getRequiredSessionUser, setCurrentHouseholdCookie } from "@/lib/auth-context";
-import { DEFAULT_DASHBOARD_BOARD_COUNT, DEFAULT_HAMSTER_SELECTOR_MODE } from "@/lib/dashboard-settings";
+import { DEFAULT_DASHBOARD_BOARD_COUNT } from "@/lib/dashboard-settings";
 import { prisma } from "@/lib/prisma";
 import { revalidatePathsSafely } from "@/lib/safe-side-effects";
 import { handleServerActionError } from "@/lib/server-errors";
@@ -35,8 +35,7 @@ export async function switchCurrentHousehold(formData: FormData) {
       create: {
         userId: user.id,
         householdId,
-        dashboardBoardCount: DEFAULT_DASHBOARD_BOARD_COUNT,
-        hamsterSelectorMode: DEFAULT_HAMSTER_SELECTOR_MODE
+        dashboardBoardCount: DEFAULT_DASHBOARD_BOARD_COUNT
       }
     });
     await setCurrentHouseholdCookie(householdId);

@@ -20,7 +20,7 @@ type StoredMembership = {
 type FakeDatabase = {
   memberships: Map<string, StoredMembership>;
   appSettings: Set<string>;
-  sharedData: { hamsters: string[]; records: string[]; otherUserSettings: string[] };
+  sharedData: { pets: string[]; records: string[]; otherUserSettings: string[] };
   lockTails: Map<string, Promise<void>>;
   revision: number;
   transactionCount: number;
@@ -41,7 +41,7 @@ function createDatabase(members: StoredMembership[]): FakeDatabase {
     memberships: new Map(members.map((member) => [key(member.householdId, member.userId), member])),
     appSettings: new Set(members.map((member) => key(member.householdId, member.userId))),
     sharedData: {
-      hamsters: ["hamster-1"],
+      pets: ["pet-1"],
       records: ["record-by-leaving-user", "record-by-other-user"],
       otherUserSettings: ["household-1:user-2"]
     },
@@ -287,7 +287,7 @@ test("共有画面と専用画面は唯一のOWNERでも手続きを開け、移
   assert.match(membersPage, /共有グループからの退出/);
   assert.match(membersPage, /現在参加している共有グループから退出する手続きです。/);
   assert.match(membersPage, /現在の共有グループ/);
-  assert.match(membersPage, /このグループのハムスターや記録/);
+  assert.match(membersPage, /このグループのPetや記録/);
   assert.match(leavePage, /requirement === "soleMember"/);
   assert.match(leavePage, /requiresTransfer={requirement === "transferOwnership"}/);
   assert.match(leavePage, /共有グループからの退出/);
@@ -301,7 +301,7 @@ test("共有画面と専用画面は唯一のOWNERでも手続きを開け、移
   assert.match(leaveForm, /この共有グループから退出する/);
   assert.match(leaveForm, /このグループで唯一のオーナーです。/);
   assert.match(leaveForm, /このグループへアクセスできなくなることを確認しました/);
-  assert.match(leaveForm, /グループ内のハムスターや共有記録は削除されず/);
+  assert.match(leaveForm, /グループ内のPetや共有記録は削除されず/);
   assert.match(leavePage, /sm:grid-cols-2/);
   assert.doesNotMatch(leaveForm, /window\.confirm/);
 });

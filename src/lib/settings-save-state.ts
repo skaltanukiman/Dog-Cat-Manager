@@ -1,6 +1,5 @@
 export type SettingsSaveStatus =
   | "saved"
-  | "notificationSaved"
   | "careDaySaved"
   | "unchanged"
   | "invalid"
@@ -15,13 +14,9 @@ export type SettingsSaveState = {
   status: SettingsSaveStatus | null;
   errorId?: string;
   savedName?: string;
-  savedCareNotificationSettings?: CareNotificationSettings;
   savedCareDayStartMinutes?: number;
   savedDashboardSettings?: {
     dashboardBoardCount: number;
-    hamsterSelectorMode: "combobox" | "select";
-    recordTimelineDefaultScope: "hamster" | "household";
-    cleaningMobileDefaultDateFilter: "today" | "all";
     petIds: string[];
   };
 };
@@ -38,7 +33,6 @@ export function createSettingsSaveState(
     SettingsSaveState,
     | "errorId"
     | "savedName"
-    | "savedCareNotificationSettings"
     | "savedCareDayStartMinutes"
     | "savedDashboardSettings"
   > = {}
@@ -53,9 +47,7 @@ export function createSettingsSaveState(
 export function isCommittedSettingsSave(state: SettingsSaveState) {
   return (
     state.status === "saved" ||
-    state.status === "notificationSaved" ||
     state.status === "careDaySaved" ||
     state.status === "unchanged"
   );
 }
-import type { CareNotificationSettings } from "@/lib/care-notifications";

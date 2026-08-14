@@ -31,7 +31,7 @@ type AccountDeleteFormHousehold = {
 const DISPOSITION_PRESENTATION = {
   deleteHousehold: {
     label: "グループごと削除",
-    description: "このグループ内のハムスター、記録、画像も削除されます。",
+    description: "このグループ内のPet、記録、画像も削除されます。",
     icon: Trash2,
     iconClassName: "bg-red-50 text-red-700",
     badgeClassName: "border-red-200 bg-red-50 text-red-700"
@@ -313,7 +313,7 @@ export function AccountDeleteForm({
         <h2 className="text-base font-bold text-red-800">削除前に確認してください</h2>
         <ul className="mt-3 list-disc space-y-1 pl-5 marker:text-red-500">
           <li>この操作は取り消せません。</li>
-          <li>単独で管理しているグループと、その中のハムスター・記録・画像も削除されます。</li>
+          <li>単独で管理しているグループと、その中のPet・記録・画像も削除されます。</li>
           <li>ほかのメンバーがいる共有グループと共有データは残ります。</li>
           <li>削除後はログアウトされ、現在のアカウントと保存データにはアクセスできなくなります。</li>
         </ul>

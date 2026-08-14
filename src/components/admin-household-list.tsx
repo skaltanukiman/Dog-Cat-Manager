@@ -19,7 +19,7 @@ export function AdminHouseholdList({ households }: { households: AdminHouseholdL
             <div className="min-w-0">
               <h4 className="break-words font-bold text-ink [overflow-wrap:anywhere]">{household.name}</h4>
               <p className="mt-1 break-words text-sm text-slate-600">
-                メンバー {household._count.members} 人 / ハムスター {household._count.hamsters} 件 / 招待{" "}
+                メンバー {household._count.members} 人 / Pet {household._count.pets} 件 / 招待{" "}
                 {household._count.invitations} 件
               </p>
             </div>

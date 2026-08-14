@@ -22,7 +22,7 @@ const adminHouseholdSelect = {
   },
   _count: {
     select: {
-      hamsters: true,
+      pets: true,
       invitations: true,
       members: true
     }

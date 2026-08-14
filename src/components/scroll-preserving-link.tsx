@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useLayoutEffect, type MouseEvent, type ReactNode } from "react";
 
-const SCROLL_POSITION_STORAGE_KEY = "hamster-manager:pagination-scroll-position";
+const SCROLL_POSITION_STORAGE_KEY = "dog-cat-manager:pagination-scroll-position";
 
 type StoredScrollPosition = {
   href: string;

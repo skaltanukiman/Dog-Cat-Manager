@@ -201,24 +201,24 @@ test("共有グループ名ActionはFormDataのhouseholdIdを信用せず、再�
 
 test("同名がある切り替え候補だけ件数を補足し、選択値はhouseholdIdを維持する", () => {
   const households = [
-    { id: "household-1", name: "ハムスター管理", role: "OWNER" as const, hamsterCount: 2, memberCount: 1 },
-    { id: "household-2", name: "ハムスター管理", role: "MEMBER" as const, hamsterCount: 1, memberCount: 3 },
-    { id: "household-3", name: "ゴールデン組", role: "OWNER" as const, hamsterCount: 1, memberCount: 1 }
+    { id: "household-1", name: "うちの子管理", role: "OWNER" as const, petCount: 2, memberCount: 1 },
+    { id: "household-2", name: "うちの子管理", role: "MEMBER" as const, petCount: 1, memberCount: 3 },
+    { id: "household-3", name: "いぬねこ組", role: "OWNER" as const, petCount: 1, memberCount: 1 }
   ];
   const duplicateNames = getDuplicateHouseholdNames(households);
 
-  assert.deepEqual([...duplicateNames], ["ハムスター管理"]);
+  assert.deepEqual([...duplicateNames], ["うちの子管理"]);
   assert.equal(
     getHouseholdSwitcherOptionLabel(households[0], duplicateNames.has(households[0].name)),
-    "ハムスター管理（オーナー・ハムスター2匹・メンバー1人）"
+    "うちの子管理（オーナー・Pet 2匹・メンバー1人）"
   );
   assert.equal(
     getHouseholdSwitcherOptionLabel(households[1], duplicateNames.has(households[1].name)),
-    "ハムスター管理（メンバー・ハムスター1匹・メンバー3人）"
+    "うちの子管理（メンバー・Pet 1匹・メンバー3人）"
   );
   assert.equal(
     getHouseholdSwitcherOptionLabel(households[2], duplicateNames.has(households[2].name)),
-    "ゴールデン組（オーナー）"
+    "いぬねこ組（オーナー）"
   );
 
   const switcher = source("src/components/household-switcher.tsx");

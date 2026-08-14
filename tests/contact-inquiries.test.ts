@@ -344,7 +344,7 @@ test("発生画面はアプリ内相対パスだけを許可し、URL初期値�
 test("公開問い合わせ番号はJST日付と安全なランダム値で内部IDを露出しない", () => {
   const ids = new Set(Array.from({ length: 1000 }, () => createContactPublicId(new Date("2026-07-23T15:00:00Z"))));
   assert.equal(ids.size, 1000);
-  for (const id of ids) assert.match(id, /^HMB-20260724-[A-F0-9]{10}$/);
+  for (const id of ids) assert.match(id, /^DCM-20260724-[A-F0-9]{10}$/);
 });
 
 test("本体と初回メッセージを同じmutation executor内で作成し、フォーム由来User IDを使わない", async () => {
@@ -627,7 +627,7 @@ test("メッセージ保存またはrevision更新失敗時は同一transaction�
 test("問い合わせSSE通知失敗はcommit済みの業務結果を失敗扱いにしない", () => {
   const result = publishContactInquiryChangeSafely(
     {
-      publicId: "HMB-20260724-A000000001",
+      publicId: "DCM-20260724-A000000001",
       source: "user-reply",
       actorClientId: "client-user-1",
       actorUserId: "user-1",
@@ -642,7 +642,7 @@ test("問い合わせSSE通知失敗はcommit済みの業務結果を失敗扱�
 });
 
 test("問い合わせリアルタイム認可は所有者と管理者だけを許可し不正な公開番号を拒否する", () => {
-  const publicId = "HMB-20260724-A000000001";
+  const publicId = "DCM-20260724-A000000001";
   const user = { id: "user-1", appRole: "USER", accessStatus: "ACTIVE" } as const;
   const otherUser = { id: "user-2", appRole: "USER", accessStatus: "ACTIVE" } as const;
   const admin = { id: "admin-1", appRole: "ADMIN", accessStatus: "ACTIVE" } as const;
@@ -653,7 +653,8 @@ test("問い合わせリアルタイム認可は所有者と管理者だけを�
   } as const;
 
   assert.equal(isPublicContactId(publicId), true);
-  assert.equal(isPublicContactId("HMB-invalid"), false);
+  assert.equal(isPublicContactId("DCM-invalid"), false);
+  assert.equal(isPublicContactId("HMB-20260724-A000000001"), true);
   assert.equal(canViewContactInquiryRealtime(user, { userId: "user-1" }), true);
   assert.equal(canViewContactInquiryRealtime(otherUser, { userId: "user-1" }), false);
   assert.equal(canViewContactInquiryRealtime(admin, { userId: "user-1" }), true);
@@ -906,7 +907,7 @@ test("管理問い合わせ一覧の条件を詳細のreturnToへ引き継ぐ", 
     const returnTo = buildAdminInquiryHref(query, query.page);
     assert.equal(returnTo, expectedReturnTo);
     assert.equal(normalizeAdminInquiryReturnTo(returnTo), expectedReturnTo);
-    const detailHref = buildAdminInquiryDetailHref("HMB-20260811-1234567890", returnTo);
+    const detailHref = buildAdminInquiryDetailHref("DCM-20260811-1234567890", returnTo);
     assert.equal(
       new URL(detailHref, "https://app.invalid").searchParams.get("returnTo"),
       expectedReturnTo
@@ -917,7 +918,7 @@ test("管理問い合わせ一覧の条件を詳細のreturnToへ引き継ぐ", 
 test("管理問い合わせ詳細のreturnToは一覧以外を拒否する", () => {
   for (const unsafeReturnTo of [
     "/admin",
-    "/admin/inquiries/HMB-20260811-1234567890",
+    "/admin/inquiries/DCM-20260811-1234567890",
     "https://example.com/admin/inquiries",
     "//example.com/admin/inquiries",
     "/admin/inquiries#https://example.com"

@@ -20,9 +20,8 @@ test("Householdに0時既定・0〜1439制約のお世話日設定を追加す�
   );
   assert.match(migration, /ADD COLUMN "care_day_start_minutes" INTEGER NOT NULL DEFAULT 0/);
   assert.match(migration, /CHECK \("care_day_start_minutes" BETWEEN 0 AND 1439\)/);
-  const appSettingModel = schema.slice(schema.indexOf("model AppSetting"), schema.indexOf("model DashboardHamster"));
+  const appSettingModel = schema.slice(schema.indexOf("model AppSetting"), schema.indexOf("model DashboardPet"));
   assert.doesNotMatch(appSettingModel, /careDayStartMinutes|care_day_start_minutes/);
-  assert.doesNotMatch(migration, /feeding_records[\s\S]*UPDATE|water_replacement_records[\s\S]*UPDATE/i);
 });
 
 test("お世話日設定の変更権限はOWNERとADMINだけに限定する", () => {
@@ -38,21 +37,16 @@ test("お世話日設定の変更権限はOWNERとADMINだけに限定する", (
   assert.match(action, /status: "forbidden"/);
 });
 
-test("共有設定保存は変更なしを判定し、Household・dispatch・revisionを同じtransactionで更新する", () => {
+test("共有設定保存は変更なしを判定し、Household・revisionを同じtransactionで更新する", () => {
   const action = source("src/app/actions/care-day-settings.ts");
 
   assert.match(action, /prisma\.\$transaction\(async \(tx\)/);
   assert.match(action, /normalizeCareDayStartMinutes[\s\S]*===\s*careDayStartMinutes/);
   assert.match(action, /status: "unchanged"/);
   assert.match(action, /tx\.household\.update\([\s\S]*data: \{ careDayStartMinutes \}/);
-  assert.match(action, /tx\.careNotificationDispatch\.updateMany\([\s\S]*"CLAIMED", "RETRYABLE"/);
-  assert.match(action, /status: "SKIPPED"/);
-  assert.doesNotMatch(action, /status: \{ in: \[[^\]]*"SENT"/);
   assert.match(action, /updateHouseholdRevision\(/);
   assert.match(action, /publishHouseholdChangeSafely\(outcome\.change\)/);
   assert.match(action, /\{ path: "\/" \}, \{ path: "\/settings" \}/);
-  assert.doesNotMatch(action, /feedingRecord\.(update|updateMany)/);
-  assert.doesNotMatch(action, /waterReplacementRecord\.(update|updateMany)/);
   assert.doesNotMatch(action, /pet(?:Feeding|Water|Walk|Litter)Record\.(update|updateMany)/);
 });
 
@@ -60,29 +54,25 @@ test("Petダッシュボードは同じnowと対象日を4種Careへ一括適用
   const queries = source("src/lib/queries.ts");
   const dashboard = queries.slice(
     queries.indexOf("export async function getDashboardData"),
-    queries.indexOf("export async function getHamsterManagementData")
+    queries.length
   );
 
-  assert.equal(dashboard.match(/const now = new Date\(\)/g)?.length, 1);
   assert.match(dashboard, /careDayStartMinutes = normalizeCareDayStartMinutes\(context\.household\.careDayStartMinutes\)/);
-  assert.match(dashboard, /careDayRecordDate = getCareDayRecordDate\(now, careDayStartMinutes\)/);
+  assert.match(dashboard, /careDayRecordDate = getCareDayRecordDate\(new Date\(\), careDayStartMinutes\)/);
   assert.equal(dashboard.match(/recordDate: careDayRecordDate/g)?.length, 4);
   assert.match(dashboard, /petId: \{ in: dashboardPetIds \}/);
   assert.doesNotMatch(dashboard, /for \([\s\S]*prisma\.pet(?:Feeding|Water|Walk|Litter)Record\.find/);
-  assert.doesNotMatch(dashboard, /cleaningRecord\.findMany/);
   assert.match(dashboard, /weightRecords:[\s\S]*orderBy: \[\{ recordDate: "desc" \}/);
 });
 
-test("設定画面は表示設定、お世話日設定、通知設定の順で即時反映の注意を表示する", () => {
+test("設定画面は表示設定、お世話日設定の順で即時反映の注意を表示する", () => {
   const page = source("src/app/(app)/settings/page.tsx");
   const component = source("src/components/care-day-settings-form.tsx");
   const statusMessage = source("src/components/status-message.tsx");
   const dashboardPosition = page.indexOf("<DashboardSettingsForm");
   const careDayPosition = page.indexOf("<CareDaySettingsForm");
-  const notificationPosition = page.indexOf("<NotificationSettingsForm");
 
   assert.ok(dashboardPosition >= 0 && careDayPosition > dashboardPosition);
-  assert.ok(notificationPosition > careDayPosition);
   assert.match(component, /お世話日の切り替え時刻/);
   assert.match(component, /type="time"/);
   assert.match(component, /step=\{60\}/);

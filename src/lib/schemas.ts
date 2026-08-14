@@ -1,21 +1,17 @@
 import { z } from "zod";
 
-import { CLEANING_MOBILE_DEFAULT_DATE_FILTERS } from "@/lib/cleaning-settings";
-import { HAMSTER_SELECTOR_MODES, MAX_DASHBOARD_BOARD_COUNT, MIN_DASHBOARD_BOARD_COUNT } from "@/lib/dashboard-settings";
-import { isValidDateInput, isValidYearMonthInput, parseDateInput, todayInputJst } from "@/lib/date";
-import { RECORD_SCOPES } from "@/lib/records";
+import { MAX_DASHBOARD_BOARD_COUNT, MIN_DASHBOARD_BOARD_COUNT } from "@/lib/dashboard-settings";
+import { isValidDateInput, parseDateInput, todayInputJst } from "@/lib/date";
 import {
   isPetWeightInHundredths,
   MAX_PET_WEIGHT_KG,
   PET_WEIGHT_MEMO_MAX_LENGTH
 } from "@/lib/pet-weight-rules";
 import { isValidJstDateTimeLocal, PET_CARE_MEMO_MAX_LENGTH } from "@/lib/pet-care";
-import { isWeightInTenths, MAX_WEIGHT_G } from "@/lib/weight-rules";
 
 export const idSchema = z.string().min(1);
 
 export const dateInputSchema = z.string().refine(isValidDateInput);
-export const yearMonthSchema = z.string().refine(isValidYearMonthInput);
 
 // 空文字のメモはDBへ空文字ではなくnullで保存し、未入力として扱いを統一する。
 const nullableMemoSchema = z.preprocess((value) => {
@@ -56,30 +52,6 @@ const nullablePastOrTodayDateInputSchema = nullableDateInputSchema.refine(
   (value) => value === null || value.getTime() <= parseDateInput(todayInputJst()).getTime(),
   { message: "future" }
 );
-
-export const createHamsterSchema = z.object({
-  name: z.string().trim().min(1).max(15),
-  memo: nullableMemoSchema,
-  birthDate: nullablePastOrTodayDateInputSchema,
-  adoptionDate: nullablePastOrTodayDateInputSchema
-});
-
-export const updateHamsterSchema = createHamsterSchema.extend({
-  id: idSchema
-});
-
-export const deleteHamsterSchema = z.object({
-  id: idSchema
-});
-
-export const deleteHamstersSchema = z.object({
-  ids: z.array(idSchema).min(1)
-});
-
-export const updateHamsterActiveStatusSchema = z.object({
-  id: idSchema,
-  isActive: z.enum(["true", "false"]).transform((value) => value === "true")
-});
 
 export const createPetSchema = z.object({
   name: z.string().trim().min(1).max(50),
@@ -212,46 +184,8 @@ export const deletePetLitterRecordSchema = z.object({
   petId: idSchema
 });
 
-export const createWeightRecordSchema = z.object({
-  hamsterId: idSchema,
-  recordDate: dateInputSchema,
-  weightG: z.coerce.number().positive().max(MAX_WEIGHT_G).refine(isWeightInTenths, { message: "weightIncrement" })
-});
-
-export const updateWeightRecordSchema = createWeightRecordSchema.extend({
-  id: idSchema
-});
-
-export const deleteWeightRecordSchema = z.object({
-  id: idSchema,
-  hamsterId: idSchema
-});
-
-export const deleteWeightRecordsSchema = z.object({
-  ids: z.array(idSchema).min(1),
-  hamsterId: idSchema
-});
-
-export const cleaningMonthSchema = z.object({
-  hamsterId: idSchema,
-  yearMonth: yearMonthSchema
-});
-
-export const feedingStateSchema = z.object({
-  hamsterId: idSchema,
-  state: z.enum(["marked", "unmarked"])
-});
-
-export const waterReplacementStateSchema = z.object({
-  hamsterId: idSchema,
-  state: z.enum(["marked", "unmarked"])
-});
-
 export const dashboardSettingsSchema = z.object({
   dashboardBoardCount: z.coerce.number().int().min(MIN_DASHBOARD_BOARD_COUNT).max(MAX_DASHBOARD_BOARD_COUNT),
-  hamsterSelectorMode: z.enum(HAMSTER_SELECTOR_MODES),
-  recordTimelineDefaultScope: z.enum(RECORD_SCOPES),
-  cleaningMobileDefaultDateFilter: z.enum(CLEANING_MOBILE_DEFAULT_DATE_FILTERS),
   petIds: z
     .array(idSchema)
     .refine((ids) => new Set(ids).size === ids.length, { message: "Pet IDが重複しています。" })

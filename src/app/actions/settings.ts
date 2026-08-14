@@ -3,15 +3,12 @@
 import { redirect, unstable_rethrow } from "next/navigation";
 
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
-import { normalizeCleaningMobileDefaultDateFilter } from "@/lib/cleaning-settings";
 import {
   getDashboardPetSelectionError,
   normalizeDashboardBoardCount,
-  normalizeHamsterSelectorMode,
   pickDashboardPets
 } from "@/lib/dashboard-settings";
 import { prisma } from "@/lib/prisma";
-import { normalizeRecordScope } from "@/lib/records";
 import {
   getRealtimeActorId,
   publishHouseholdChangesSafely,
@@ -44,25 +41,14 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
     }
     const dashboardResult = dashboardSettingsSchema.safeParse({
       dashboardBoardCount: formData.get("dashboardBoardCount"),
-      hamsterSelectorMode: formData.get("hamsterSelectorMode"),
-      recordTimelineDefaultScope: formData.get("recordTimelineDefaultScope"),
-      cleaningMobileDefaultDateFilter: formData.get("cleaningMobileDefaultDateFilter"),
       petIds: formData.getAll("petIds")
     });
     if (!dashboardResult.success) return createSettingsSaveState(previousState, "invalid");
 
-    const {
-      dashboardBoardCount,
-      hamsterSelectorMode,
-      recordTimelineDefaultScope,
-      cleaningMobileDefaultDateFilter
-    } = dashboardResult.data;
+    const { dashboardBoardCount } = dashboardResult.data;
     const selectedPetIds = dashboardResult.data.petIds;
     const savedDashboardSettings = {
       dashboardBoardCount,
-      hamsterSelectorMode,
-      recordTimelineDefaultScope,
-      cleaningMobileDefaultDateFilter,
       petIds: selectedPetIds
     };
     const [user, pets, setting] = await Promise.all([
@@ -98,45 +84,27 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
     }
 
     const currentBoardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
-    const currentSelectorMode = normalizeHamsterSelectorMode(setting?.hamsterSelectorMode);
-    const currentRecordTimelineDefaultScope = normalizeRecordScope(setting?.recordTimelineDefaultScope);
-    const currentCleaningMobileDefaultDateFilter = normalizeCleaningMobileDefaultDateFilter(
-      setting?.cleaningMobileDefaultDateFilter
-    );
     const currentSelectedPetIds = pickDashboardPets(
       pets,
       currentBoardCount,
       setting?.dashboardPets.map((entry) => entry.petId) ?? []
     ).map((pet) => pet.id);
-    const {
-      profileChanged,
-      dashboardChanged,
-      recordTimelineDefaultScopeChanged,
-      cleaningMobileDefaultDateFilterChanged
-    } = getSettingsChanges(
+    const { profileChanged, dashboardChanged } = getSettingsChanges(
       {
         name: user.name ?? "",
         dashboardBoardCount: currentBoardCount,
-        hamsterSelectorMode: currentSelectorMode,
-        recordTimelineDefaultScope: currentRecordTimelineDefaultScope,
-        cleaningMobileDefaultDateFilter: currentCleaningMobileDefaultDateFilter,
         petIds: currentSelectedPetIds
       },
       {
         name: profileResult.data.name,
         dashboardBoardCount,
-        hamsterSelectorMode,
-        recordTimelineDefaultScope,
-        cleaningMobileDefaultDateFilter,
         petIds: selectedPetIds
       }
     );
 
     if (
       !profileChanged &&
-      !dashboardChanged &&
-      !recordTimelineDefaultScopeChanged &&
-      !cleaningMobileDefaultDateFilterChanged
+      !dashboardChanged
     ) {
       return createSettingsSaveState(previousState, "unchanged", {
         savedName: profileResult.data.name,
@@ -150,29 +118,21 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
         await tx.user.update({ where: { id: context.user.id }, data: { name: profileResult.data.name } });
       }
 
-      if (dashboardChanged || recordTimelineDefaultScopeChanged || cleaningMobileDefaultDateFilterChanged) {
+      if (dashboardChanged) {
         const setting = await tx.appSetting.upsert({
           where: { userId_householdId: { userId: context.user.id, householdId: context.household.id } },
           update: {
-            dashboardBoardCount,
-            hamsterSelectorMode,
-            recordTimelineDefaultScope,
-            cleaningMobileDefaultDateFilter
+            dashboardBoardCount
           },
           create: {
             userId: context.user.id,
             householdId: context.household.id,
-            dashboardBoardCount,
-            hamsterSelectorMode,
-            recordTimelineDefaultScope,
-            cleaningMobileDefaultDateFilter
+            dashboardBoardCount
           }
         });
-        if (dashboardChanged) {
-          await tx.dashboardPet.deleteMany({ where: { settingId: setting.id } });
-          for (const [index, petId] of selectedPetIds.entries()) {
-            await tx.dashboardPet.create({ data: { settingId: setting.id, petId, sortOrder: index } });
-          }
+        await tx.dashboardPet.deleteMany({ where: { settingId: setting.id } });
+        for (const [index, petId] of selectedPetIds.entries()) {
+          await tx.dashboardPet.create({ data: { settingId: setting.id, petId, sortOrder: index } });
         }
       }
       // 表示名は全所属Householdに現れるため、個人用ダッシュボード設定と異なり全所属先へ通知する。
@@ -198,12 +158,9 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
     revalidatePathsSafely(
       [
         { path: "/", type: "layout" },
-        { path: "/cleaning" },
-        { path: "/records" },
         { path: "/settings" },
         { path: "/settings/members" },
         { path: "/weights" },
-        { path: "/weights/export" },
         { path: "/admin" }
       ],
       "settings.save.revalidate",

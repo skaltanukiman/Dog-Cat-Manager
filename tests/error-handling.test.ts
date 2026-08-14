@@ -106,7 +106,7 @@ test("revision更新が失敗した場合は同じトランザクションのデ
     commitHouseholdMutation(
       {
         householdId: "household-1",
-        source: "weight",
+        source: "petWeight",
         mutate: async () => {
           persistedValue = 1;
         }
@@ -122,7 +122,7 @@ test("SSE配信失敗は保存成功後の処理を失敗に変えない", () =>
   const result = publishHouseholdChangeSafely(
     {
       householdId: "household-1",
-      source: "weight",
+      source: "petWeight",
       actorClientId: null,
       actorUserId: "user-1",
       revision: "2"

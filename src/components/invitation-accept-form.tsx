@@ -8,7 +8,7 @@ import { useFormStatus } from "react-dom";
 import { acceptHouseholdInvitation, getHouseholdInvitationPreview } from "@/app/actions/members";
 import { getInvitationTokenFromHash, type HouseholdInvitationPreview } from "@/lib/invitations";
 
-const INVITATION_TOKEN_STORAGE_KEY = "hamster-manager-invitation-token";
+const INVITATION_TOKEN_STORAGE_KEY = "dog-cat-manager-invitation-token";
 
 function readStoredInvitationToken() {
   try {
@@ -154,7 +154,7 @@ export function InvitationAcceptForm({ isLoggedIn }: { isLoggedIn: boolean }) {
       <input type="hidden" name="token" value={token} />
       <InvitedHouseholdName preview={preview} />
       <p className="text-sm leading-6 text-slate-600">
-        参加すると、同じ共有内のハムスター、体重記録、衛生記録を共有できます。
+        参加すると、同じ共有内のPetと体重・お世話・健康などの記録を共有できます。
       </p>
       <AcceptInvitationButton />
     </form>

@@ -77,7 +77,7 @@ const executePrismaUserAccessMutation: UserAccessMutationExecutor = (operation) 
   prisma.$transaction(async (tx) =>
     operation({
       lockSuperAdminState: async () => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('hamster-manager-super-admin', 0))`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('dog-cat-manager-super-admin', 0))`;
       },
       findUser: (userId) =>
         tx.user.findUnique({
