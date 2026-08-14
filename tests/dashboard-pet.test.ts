@@ -101,6 +101,16 @@ test("DashboardのCareサマリー値は共通badgeで折り返さない", () =>
   assert.doesNotMatch(page, /DASHBOARD_(?:EMPTY_)?VALUE_CLASS =\s*"[^"]*(?:whitespace-normal|break-words)/);
 });
 
+test("Dashboard species badge and Care icon colors use semantic tokens", () => {
+  assert.match(page, /const SPECIES_BADGE_CLASS = \{[\s\S]*DOG: "border-species-dog\/20 bg-species-dog-soft text-species-dog"[\s\S]*CAT: "border-species-cat\/20 bg-species-cat-soft text-species-cat"/);
+  assert.match(page, /rounded-full border px-2 py-0\.5 text-xs font-medium/);
+  assert.match(page, /<Scale className="h-4 w-4 text-brand-dark"/);
+  assert.match(page, /<Utensils className="h-4 w-4 text-accent"/);
+  assert.match(page, /<Droplets className="h-4 w-4 text-brand"/);
+  assert.match(page, /<Footprints className="h-4 w-4 text-care-walk"/);
+  assert.match(page, /<ClipboardCheck className="h-4 w-4 text-care-litter"/);
+});
+
 test("最新体重だけをDecimalのまま表示し、PetThumbnailと犬猫・管理状態を描画する", () => {
   assert.match(queries, /weightRecords: \{[\s\S]*take: 1[\s\S]*weightKg: true/);
   assert.match(page, /latestWeight\.weightKg\.toString\(\)/);
