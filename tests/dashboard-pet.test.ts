@@ -92,6 +92,12 @@ test("カードは食事・水・DOG散歩・CATトイレの件数と最新内�
   assert.ok((page.match(/"未記録"/g) ?? []).length >= 4);
 });
 
+test("DashboardのCareサマリー値は共通badgeで折り返さない", () => {
+  assert.match(page, /const DASHBOARD_VALUE_CLASS =\s*"[^"]*whitespace-nowrap/);
+  assert.match(page, /const DASHBOARD_EMPTY_VALUE_CLASS =\s*"[^"]*whitespace-nowrap/);
+  assert.doesNotMatch(page, /DASHBOARD_(?:EMPTY_)?VALUE_CLASS =\s*"[^"]*(?:whitespace-normal|break-words)/);
+});
+
 test("最新体重だけをDecimalのまま表示し、PetThumbnailと犬猫・管理状態を描画する", () => {
   assert.match(queries, /weightRecords: \{[\s\S]*take: 1[\s\S]*weightKg: true/);
   assert.match(page, /latestWeight\.weightKg\.toString\(\)/);
