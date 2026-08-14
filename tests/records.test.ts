@@ -747,6 +747,19 @@ test("共通タイムラインは共通ページングを使用し、検索条�
   assert.match(pagination, /pagination\.totalCount > 0/);
 });
 
+test("共通タイムラインの記録種類フィルターは1行の横スクロールnavigationにする", () => {
+  const page = source("src/app/(app)/records/page.tsx");
+  const timelineSection = page.slice(page.indexOf('<section className="grid gap-4">'));
+
+  assert.match(timelineSection, /<div className="grid gap-3">[\s\S]*?<h2[\s\S]*?<nav className="max-w-full overflow-x-auto overscroll-x-contain" aria-label="記録種類の切り替え">/);
+  assert.match(timelineSection, /<div className="flex w-max flex-nowrap gap-2 whitespace-nowrap">/);
+  assert.doesNotMatch(timelineSection, /flex-wrap|sm:flex-row|sm:items-end|sm:justify-between/);
+  assert.match(timelineSection, /typeTabs\.map\(\(tab\) => <Link/);
+  assert.match(timelineSection, /scroll=\{false\}/);
+  assert.match(timelineSection, /aria-current=\{filters\.type === tab\.value \? "page" : undefined\}/);
+  assert.match(timelineSection, /favoriteOnly: \(tab\.value === "all" \|\| tab\.value === "memory"\) && currentFilters\.favoriteOnly, page: 1/);
+});
+
 test("Pet記録の更新・削除後も安全に正規化した絞り込みとページを維持する", () => {
   const page = source("src/app/(app)/records/page.tsx");
   const timeline = source("src/components/pet-record-timeline.tsx");
