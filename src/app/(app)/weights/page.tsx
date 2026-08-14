@@ -140,7 +140,7 @@ export default async function WeightsPage({
                       </label>
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         メモ
-                        <textarea className="!h-16 !min-h-16" name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} rows={2} placeholder="夕食前" />
+                        <input className="h-10" type="text" name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} placeholder="夕食前" />
                       </label>
                       <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark">
                         <Plus className="h-4 w-4" aria-hidden />

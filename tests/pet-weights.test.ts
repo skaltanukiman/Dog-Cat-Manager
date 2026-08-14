@@ -88,6 +88,8 @@ test("Pet版weights画面はkg・species・管理終了閲覧を提供する", a
   const page = await source("src/app/(app)/weights/page.tsx");
   const chart = await source("src/components/pet-weight-chart.tsx");
   const history = await source("src/components/pet-weight-history-list.tsx");
+  const dirtyButton = await source("src/components/dirty-submit-button.tsx");
+  const dirtyState = await source("src/components/form-dirty-state.ts");
 
   assert.match(page, /犬・猫の日付ごとの体重を記録し、推移を確認します。/);
   assert.match(page, /name="petId"/);
@@ -101,11 +103,21 @@ test("Pet版weights画面はkg・species・管理終了閲覧を提供する", a
   assert.match(page, /readOnly=\{!canMutateSelectedPet\}/);
   assert.match(page, /lg:grid-cols-\[minmax\(280px,360px\)_minmax\(0,1fr\)\]/);
   assert.match(page, /!h-10 !min-h-10/);
-  assert.match(page, /!h-16 !min-h-16/);
-  assert.match(page, /rows=\{2\}/);
+  assert.match(page, /<input[^>]*type="text"[^>]*name="memo"[^>]*maxLength=\{PET_WEIGHT_MEMO_MAX_LENGTH\}[^>]*>/);
+  assert.match(page, /<input[^>]*className="[^"]*h-10[^"]*"[^>]*name="memo"[^>]*>/);
+  assert.doesNotMatch(page, /<textarea[^>]*name="memo"/);
   assert.match(history, /!h-10 !min-h-10/);
-  assert.match(history, /!h-16 !min-h-16/);
-  assert.match(history, /rows=\{1\}/);
+  assert.match(history, /<input[^>]*type="text"[^>]*name="memo"[^>]*maxLength=\{PET_WEIGHT_MEMO_MAX_LENGTH\}[^>]*>/);
+  assert.match(history, /<input[^>]*className="[^"]*h-10[^"]*"[^>]*name="memo"[^>]*>/);
+  assert.doesNotMatch(history, /<textarea[^>]*name="memo"/);
+  assert.match(history, /id=\{`weight-update-\$\{record\.id\}`\}/);
+  assert.match(history, /lg:grid-cols-\[170px_150px_minmax\(0,1fr\)\]/);
+  assert.match(history, /<div className="mt-3 flex justify-end gap-2">/);
+  assert.match(history, /form=\{`weight-update-\$\{record\.id\}`\}/);
+  assert.match(history, /action=\{deletePetWeightRecord\} onSubmit=\{confirmDelete\}/);
+  assert.match(history, /data-dirty-watch/);
+  assert.match(dirtyButton, /event\.currentTarget\.form/);
+  assert.match(dirtyState, /buttonRef\.current\?\.form/);
   assert.match(chart, /dataKey="weightKg"/);
   assert.match(chart, /unit="kg"/);
   assert.match(history, /name="memo"/);

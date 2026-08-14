@@ -47,9 +47,10 @@ export function PetWeightHistoryList({
             <>
               <form
                 key={`${record.id}:${record.recordDate}:${record.weightKg}:${record.memo ?? ""}`}
+                id={`weight-update-${record.id}`}
                 action={updatePetWeightRecord}
                 data-dirty-watch
-                className="grid gap-3 lg:grid-cols-[170px_150px_1fr_auto]"
+                className="grid gap-3 lg:grid-cols-[170px_150px_minmax(0,1fr)]"
               >
                 <input type="hidden" name="id" value={record.id} />
                 <input type="hidden" name="petId" value={selectedPetId} />
@@ -65,23 +66,25 @@ export function PetWeightHistoryList({
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   メモ
-                  <textarea className="!h-16 !min-h-16" name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} rows={1} defaultValue={record.memo ?? ""} />
+                  <input className="h-10" type="text" name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} defaultValue={record.memo ?? ""} />
                 </label>
-                <DirtySubmitButton className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md border border-brand px-4 text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400">
+              </form>
+              <div className="mt-3 flex justify-end gap-2">
+                <form action={deletePetWeightRecord} onSubmit={confirmDelete}>
+                  <input type="hidden" name="id" value={record.id} />
+                  <input type="hidden" name="petId" value={selectedPetId} />
+                  <input type="hidden" name="page" value={currentPage} />
+                  {includeInactive ? <input type="hidden" name="includeInactive" value="1" /> : null}
+                  <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-red-200 px-4 text-sm font-semibold text-red-600 hover:bg-red-50">
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                    削除
+                  </button>
+                </form>
+                <DirtySubmitButton form={`weight-update-${record.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-brand px-4 text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400">
                   <Save className="h-4 w-4" aria-hidden />
                   保存
                 </DirtySubmitButton>
-              </form>
-              <form action={deletePetWeightRecord} onSubmit={confirmDelete} className="mt-3 flex justify-end">
-                <input type="hidden" name="id" value={record.id} />
-                <input type="hidden" name="petId" value={selectedPetId} />
-                <input type="hidden" name="page" value={currentPage} />
-                {includeInactive ? <input type="hidden" name="includeInactive" value="1" /> : null}
-                <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-red-200 px-4 text-sm font-semibold text-red-600 hover:bg-red-50">
-                  <Trash2 className="h-4 w-4" aria-hidden />
-                  削除
-                </button>
-              </form>
+              </div>
             </>
           )}
         </article>
