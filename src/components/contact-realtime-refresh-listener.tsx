@@ -229,7 +229,7 @@ export function ContactRealtimeRefreshListener({
               <button
                 type="button"
                 onClick={handleRefresh}
-                className="mt-3 inline-flex h-9 items-center gap-2 rounded-md bg-moss px-3 text-sm font-semibold text-white hover:bg-moss/90"
+                className="mt-3 inline-flex h-9 items-center gap-2 rounded-md bg-brand px-3 text-sm font-semibold text-white hover:bg-brand-dark"
               >
                 <RefreshCw className="h-4 w-4" aria-hidden />
                 再読み込み

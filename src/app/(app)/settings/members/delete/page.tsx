@@ -51,7 +51,7 @@ export default async function HouseholdDeletePage({
       <div>
         <Link
           href="/settings/members/leave"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-moss"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-brand"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           退出画面へ戻る
@@ -68,21 +68,21 @@ export default async function HouseholdDeletePage({
       <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="flex items-start gap-3 sm:col-span-2">
-            <Home className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Home className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-500">共有グループ名</p>
               <p className="mt-1 break-words font-bold text-ink">{preview.householdName}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Shield className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Shield className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div>
               <p className="text-xs font-semibold text-slate-500">現在の権限</p>
               <p className="mt-1 font-bold text-ink">{HOUSEHOLD_ROLE_LABELS[preview.currentRole]}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Users className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Users className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div>
               <p className="text-xs font-semibold text-slate-500">メンバー数</p>
               <p className="mt-1 font-bold text-ink">{preview.memberCount}人</p>

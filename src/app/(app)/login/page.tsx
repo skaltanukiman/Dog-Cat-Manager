@@ -41,7 +41,7 @@ export default async function LoginPage({
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md items-center">
       <section className="w-full rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-persimmon">Dog & Cat Manager</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-brand">Dog & Cat Manager</p>
         <h2 className="mt-2 text-2xl font-bold text-ink">ログイン</h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           犬・猫管理を利用するには Google アカウントでログインしてください。
@@ -80,7 +80,7 @@ export default async function LoginPage({
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
           <button
             type="submit"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-moss px-4 text-sm font-semibold text-white hover:bg-moss/90"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark"
           >
             <LogIn className="h-4 w-4" aria-hidden />
             Googleでログイン

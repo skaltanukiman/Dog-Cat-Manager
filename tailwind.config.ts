@@ -9,14 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#1f2933",
-        moss: "#426b5a",
-        persimmon: "#c45f35",
-        straw: "#f6c85f",
-        paper: "#fbfaf7"
+        ink: "#24313D",
+        brand: "#3E6F8E",
+        "brand-dark": "#2E566F",
+        accent: "#D97955",
+        highlight: "#F2C879",
+        canvas: "#F5F7FA",
+        "surface-warm": "#FFF8F1"
       },
       boxShadow: {
-        panel: "0 8px 24px rgba(31, 41, 51, 0.08)"
+        panel: "0 8px 24px rgba(36, 49, 61, 0.08)"
       }
     }
   },
@@ -24,4 +26,3 @@ const config: Config = {
 };
 
 export default config;
-

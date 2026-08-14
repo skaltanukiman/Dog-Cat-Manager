@@ -141,7 +141,7 @@ export default async function WeightsPage({
                         メモ
                         <textarea name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} rows={3} placeholder="夕食前" />
                       </label>
-                      <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white hover:bg-moss/90">
+                      <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
                         <Plus className="h-4 w-4" aria-hidden />
                         登録
                       </button>

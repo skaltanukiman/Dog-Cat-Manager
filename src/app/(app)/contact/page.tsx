@@ -39,7 +39,7 @@ export default async function ContactPage({
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2">
-          <MessageCircleQuestion className="h-6 w-6 text-moss" aria-hidden />
+          <MessageCircleQuestion className="h-6 w-6 text-brand" aria-hidden />
           <h2 className="text-xl font-bold text-ink">サポート・お問い合わせ</h2>
         </div>
         <p className="mt-2 text-sm leading-6 text-slate-600">

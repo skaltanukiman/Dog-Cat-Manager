@@ -98,7 +98,7 @@ export default async function RecordsPage({
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6 lg:px-8">
       <header>
-        <p className="text-sm font-semibold text-moss">健康と大切な時間をひとつの年表に</p>
+        <p className="text-sm font-semibold text-brand">健康と大切な時間をひとつの年表に</p>
         <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">記録</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">犬・猫の健康、通院、投薬、ワクチン、思い出を記録します。</p>
       </header>
@@ -121,7 +121,7 @@ export default async function RecordsPage({
                   { scope: "pet", label: "選択中のPet" },
                   { scope: "household", label: "共有グループ全体" }
                 ] as const).map((option) => (
-                  <Link key={option.scope} href={petRecordsUrl({ ...currentFilters, scope: option.scope, page: 1 })} scroll={false} aria-current={scope === option.scope ? "page" : undefined} className={`rounded-full border px-2 py-2 text-center text-xs font-semibold sm:rounded-md sm:border-0 sm:px-3 sm:text-sm ${scope === option.scope ? "border-moss bg-moss text-white sm:shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-moss hover:text-moss sm:bg-transparent"}`}>
+                  <Link key={option.scope} href={petRecordsUrl({ ...currentFilters, scope: option.scope, page: 1 })} scroll={false} aria-current={scope === option.scope ? "page" : undefined} className={`rounded-full border px-2 py-2 text-center text-xs font-semibold sm:rounded-md sm:border-0 sm:px-3 sm:text-sm ${scope === option.scope ? "border-brand bg-brand text-white sm:shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-brand hover:text-brand sm:bg-transparent"}`}>
                     {option.label}
                   </Link>
                 ))}
@@ -149,7 +149,7 @@ export default async function RecordsPage({
               </div>
               {invalidRange ? <p role="alert" className="text-sm text-red-600">開始日は終了日以前の日付を指定してください。</p> : null}
               {futureDateFilter ? <p role="alert" className="text-sm text-red-600">未来日は絞り込みに指定できません。</p> : null}
-              <div><FilterClearButton fieldNames={["from", "to", "keyword", "favorite"]} className="text-sm font-semibold text-moss hover:underline">絞り込みをクリア</FilterClearButton></div>
+              <div><FilterClearButton fieldNames={["from", "to", "keyword", "favorite"]} className="text-sm font-semibold text-brand hover:underline">絞り込みをクリア</FilterClearButton></div>
             </AutoSubmitFilterForm>
           </section>
 
@@ -177,7 +177,7 @@ export default async function RecordsPage({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <h2 className="text-xl font-bold text-ink">{scope === "household" ? "共有グループ全体のタイムライン" : "共通タイムライン"}</h2>
                   <nav className="flex flex-wrap gap-2" aria-label="記録種類の切り替え">
-                    {typeTabs.map((tab) => <Link key={tab.value} href={petRecordsUrl({ ...currentFilters, type: tab.value, favoriteOnly: (tab.value === "all" || tab.value === "memory") && currentFilters.favoriteOnly, page: 1 })} scroll={false} aria-current={filters.type === tab.value ? "page" : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold ${filters.type === tab.value ? "border-moss bg-moss text-white" : "border-slate-200 bg-white text-slate-700 hover:border-moss hover:text-moss"}`}>{tab.label}</Link>)}
+                    {typeTabs.map((tab) => <Link key={tab.value} href={petRecordsUrl({ ...currentFilters, type: tab.value, favoriteOnly: (tab.value === "all" || tab.value === "memory") && currentFilters.favoriteOnly, page: 1 })} scroll={false} aria-current={filters.type === tab.value ? "page" : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold ${filters.type === tab.value ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-700 hover:border-brand hover:text-brand"}`}>{tab.label}</Link>)}
                   </nav>
                 </div>
                 <PaginationLayout ariaLabel="記録一覧のページ移動" pagination={data.pagination} visibleCount={data.records.length} buildHref={buildRecordsPageHref} scroll={false} preserveScroll />

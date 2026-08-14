@@ -534,7 +534,7 @@ export function DashboardSettingsForm({
         >
           <header className="space-y-1">
             <div className="flex items-center gap-2">
-              <LayoutDashboard className="h-5 w-5 text-moss" aria-hidden />
+              <LayoutDashboard className="h-5 w-5 text-brand" aria-hidden />
               <h3 id="dashboard-settings-heading" className="text-base font-bold text-ink">
                 ダッシュボード設定
               </h3>
@@ -623,9 +623,9 @@ export function DashboardSettingsForm({
                   const isDragging = draggedId === pet.id;
                   const isRecentlyMoved = recentMove?.petId === pet.id;
                   const rowStateClass = isDropTarget
-                    ? "border-moss bg-moss/10 ring-2 ring-moss/20"
+                    ? "border-brand bg-brand/10 ring-2 ring-brand/20"
                     : isRecentlyMoved
-                      ? "border-moss/70 bg-moss/10"
+                      ? "border-brand/70 bg-brand/10"
                       : "border-slate-200 bg-white sm:hover:border-slate-300 sm:hover:bg-slate-50";
 
                   return (
@@ -645,14 +645,14 @@ export function DashboardSettingsForm({
                         <span
                           aria-hidden="true"
                           data-drop-indicator="before"
-                          className={`pointer-events-none absolute -top-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm ${beforeLinePositionClass}`}
+                          className={`pointer-events-none absolute -top-1.5 left-2 right-2 z-10 h-1 rounded-full bg-brand shadow-sm ${beforeLinePositionClass}`}
                         />
                       ) : null}
                       {isDropAfter ? (
                         <span
                           aria-hidden="true"
                           data-drop-indicator="after"
-                          className={`pointer-events-none absolute -bottom-1.5 left-2 right-2 z-10 h-1 rounded-full bg-moss shadow-sm ${afterLinePositionClass}`}
+                          className={`pointer-events-none absolute -bottom-1.5 left-2 right-2 z-10 h-1 rounded-full bg-brand shadow-sm ${afterLinePositionClass}`}
                         />
                       ) : null}
                       <span
@@ -674,7 +674,7 @@ export function DashboardSettingsForm({
                             onDragEnd={handleDragEnd}
                             aria-label={`${pet.name}をドラッグして並び替え`}
                             aria-roledescription="並び替えハンドル"
-                            className="hidden h-11 w-11 shrink-0 cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 sm:inline-flex"
+                            className="hidden h-11 w-11 shrink-0 cursor-grab items-center justify-center rounded-md border border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex"
                           >
                             <GripVertical className="h-5 w-5" aria-hidden />
                           </button>
@@ -688,7 +688,7 @@ export function DashboardSettingsForm({
                             <span
                               className={`mt-1 inline-flex shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${
                                 pet.isActive
-                                  ? "bg-straw/40 text-slate-700"
+                                  ? "bg-highlight/40 text-slate-700"
                                   : "bg-slate-200 text-slate-600"
                               }`}
                             >
@@ -704,9 +704,9 @@ export function DashboardSettingsForm({
                             onClick={() => moveByOffset(pet.id, "up")}
                             aria-label={`${pet.name}を上へ移動`}
                             data-move-feedback={isRecentlyMoved && recentMove.direction === "up" ? "true" : undefined}
-                            className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                            className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
                               isRecentlyMoved && recentMove.direction === "up"
-                                ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                                ? "border-brand bg-brand/[0.15] text-brand hover:bg-brand/20 disabled:border-brand disabled:bg-brand/[0.15] disabled:text-brand disabled:opacity-70"
                                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
                             }`}
                           >
@@ -718,9 +718,9 @@ export function DashboardSettingsForm({
                             onClick={() => moveByOffset(pet.id, "down")}
                             aria-label={`${pet.name}を下へ移動`}
                             data-move-feedback={isRecentlyMoved && recentMove.direction === "down" ? "true" : undefined}
-                            className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+                            className={`inline-flex h-11 w-11 items-center justify-center rounded-md border transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
                               isRecentlyMoved && recentMove.direction === "down"
-                                ? "border-moss bg-moss/[0.15] text-moss hover:bg-moss/20 disabled:border-moss disabled:bg-moss/[0.15] disabled:text-moss disabled:opacity-70"
+                                ? "border-brand bg-brand/[0.15] text-brand hover:bg-brand/20 disabled:border-brand disabled:bg-brand/[0.15] disabled:text-brand disabled:opacity-70"
                                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400"
                             }`}
                           >
@@ -786,9 +786,9 @@ export function DashboardSettingsForm({
                         type="button"
                         aria-pressed={isSelected}
                         onClick={() => setStatusFilter(filter.value)}
-                        className={`flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-lg px-1 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-1 sm:min-h-0 sm:rounded-md sm:border sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold ${
+                        className={`flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-lg px-1 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 sm:min-h-0 sm:rounded-md sm:border sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold ${
                           isSelected
-                            ? "bg-moss/10 text-moss ring-1 ring-inset ring-moss/20 sm:border-moss sm:bg-moss sm:text-white sm:ring-0"
+                            ? "bg-brand/10 text-brand ring-1 ring-inset ring-brand/20 sm:border-brand sm:bg-brand sm:text-white sm:ring-0"
                             : "text-slate-600 hover:bg-white/70 hover:text-ink sm:border-slate-300 sm:bg-white sm:text-slate-700 sm:hover:border-slate-400 sm:hover:bg-slate-100"
                         }`}
                       >
@@ -840,7 +840,7 @@ export function DashboardSettingsForm({
                           <span
                             className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
                               pet.isActive
-                                ? "bg-straw/40 text-slate-700"
+                                ? "bg-highlight/40 text-slate-700"
                                 : "bg-slate-200 text-slate-600"
                             }`}
                           >
@@ -872,7 +872,7 @@ export function DashboardSettingsForm({
           <div className="flex justify-end pr-16 sm:pr-20 xl:pr-0">
             <DirtySubmitButton
               disabled={!canSave || isSaving}
-              className="inline-flex items-center gap-2 rounded-md bg-moss px-5 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               <Save className="h-4 w-4" aria-hidden />
               {isSaving ? "保存中…" : "保存"}

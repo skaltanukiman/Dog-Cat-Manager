@@ -35,7 +35,7 @@ type PetRecordCreateKind = "health" | "medical" | "medication" | "vaccination" |
 type CreateAction = (formData: FormData) => Promise<PetRecordCreateActionResult>;
 type CreateError = Extract<PetRecordCreateActionResult, { success: false }>;
 const fieldClass = "grid gap-1 text-sm font-medium text-slate-700";
-const submitClass = "inline-flex h-10 items-center justify-center rounded-md bg-moss px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-fit";
+const submitClass = "inline-flex h-10 items-center justify-center rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-fit";
 
 const kinds: Array<{
   value: PetRecordCreateKind;
@@ -156,7 +156,7 @@ export function PetRecordCreateForms({
                 type="button"
                 onClick={() => setKind(option.value)}
                 aria-pressed={kind === option.value}
-                className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold ${kind === option.value ? "border-moss bg-moss text-white" : "border-slate-200 text-slate-700 hover:border-moss hover:text-moss"}`}
+                className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold ${kind === option.value ? "border-brand bg-brand text-white" : "border-slate-200 text-slate-700 hover:border-brand hover:text-brand"}`}
               >
                 <Icon className="h-4 w-4" aria-hidden />
                 <span className="sm:hidden">{option.shortLabel}</span><span className="hidden sm:inline">{option.label}</span>

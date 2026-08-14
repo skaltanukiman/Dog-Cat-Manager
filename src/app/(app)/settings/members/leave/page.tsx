@@ -73,7 +73,7 @@ export default async function HouseholdLeavePage({
       <div>
         <Link
           href="/settings/members"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-moss"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-brand"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           共有画面へ戻る
@@ -87,28 +87,28 @@ export default async function HouseholdLeavePage({
       <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex items-start gap-3">
-            <Home className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Home className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div>
               <p className="text-xs font-semibold text-slate-500">現在の共有グループ</p>
               <p className="mt-1 break-words font-bold text-ink">{household.name}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Shield className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Shield className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div>
               <p className="text-xs font-semibold text-slate-500">あなたの権限</p>
               <p className="mt-1 font-bold text-ink">{HOUSEHOLD_ROLE_LABELS[currentMembership.role]}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Users className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Users className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div>
               <p className="text-xs font-semibold text-slate-500">メンバー数</p>
               <p className="mt-1 font-bold text-ink">{household._count.members}人</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Database className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Database className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div>
               <p className="text-xs font-semibold text-slate-500">登録Pet数</p>
               <p className="mt-1 font-bold text-ink">{household._count.pets}匹</p>

@@ -102,9 +102,9 @@ export function MemoryPetSelector({
       <fieldset className="grid gap-2">
         <legend className="text-sm font-semibold text-slate-700">対象Pet</legend>
         {!readOnly ? <input type="hidden" name="petIds" value={pet.id} /> : null}
-        <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-moss bg-moss/5 px-3 py-2 text-sm font-semibold text-ink">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-brand bg-brand/5 px-3 py-2 text-sm font-semibold text-ink">
           <span className="min-w-0 break-words">{pet.name}（{pet.species === "DOG" ? "犬" : "猫"}）</span>
-          <span className="shrink-0 rounded-full bg-moss/10 px-2 py-0.5 text-[11px] font-bold text-moss">代表</span>
+          <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-bold text-brand">代表</span>
         </div>
       </fieldset>
     );
@@ -120,7 +120,7 @@ export function MemoryPetSelector({
         onToggle={(event) => setIsOpen(event.currentTarget.open)}
         className={`group rounded-md border bg-slate-50 px-3 py-2 ${hasError ? "border-red-300" : "border-slate-200"}`}
       >
-        <summary className="cursor-pointer list-none text-sm text-slate-700 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+        <summary className="cursor-pointer list-none text-sm text-slate-700 select-none focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
           <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-2">
             <span className="flex h-5 shrink-0 items-center">
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-open:rotate-90" aria-hidden />
@@ -159,7 +159,7 @@ export function MemoryPetSelector({
                   key={pet.id}
                   className={`flex min-h-11 min-w-0 items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${
                     checked
-                      ? "border-moss bg-moss/5 font-semibold text-ink ring-1 ring-inset ring-moss/20"
+                      ? "border-brand bg-brand/5 font-semibold text-ink ring-1 ring-inset ring-brand/20"
                       : "border-slate-200 bg-white text-slate-700"
                   } ${!pet.isActive ? "opacity-60" : ""}`}
                 >
@@ -182,7 +182,7 @@ export function MemoryPetSelector({
                   />
                   <span className="min-w-0 flex-1 break-words">{pet.name}（{pet.species === "DOG" ? "犬" : "猫"}）</span>
                   <span className="flex shrink-0 flex-wrap justify-end gap-1">
-                    {isRepresentative ? <span id={representativeLabelId} className="rounded-full bg-moss/10 px-2 py-0.5 text-[11px] font-bold text-moss">代表</span> : null}
+                    {isRepresentative ? <span id={representativeLabelId} className="rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-bold text-brand">代表</span> : null}
                     {!pet.isActive ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">管理終了</span> : null}
                   </span>
                 </label>

@@ -82,7 +82,7 @@ export function MemoryTagInput({
           onClick={() => addTag(tag)}
           disabled={selected}
           aria-pressed={selected}
-          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-moss hover:text-moss disabled:border-moss/30 disabled:bg-moss/10 disabled:text-moss"
+          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-brand hover:text-brand disabled:border-brand/30 disabled:bg-brand/10 disabled:text-brand"
         >
           {tag}
         </button>
@@ -166,7 +166,7 @@ export function MemoryTagInput({
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">{selectedTags.length}件選択中</span>
               <div className="flex gap-2 text-xs font-medium">
-                <button type="button" onClick={() => setSelectedTags([...reusableTags])} disabled={isDeletePending || selectedTags.length === reusableTags.length} className="rounded-full px-3 py-1.5 text-moss hover:bg-moss/10 disabled:opacity-40">すべて選択</button>
+                <button type="button" onClick={() => setSelectedTags([...reusableTags])} disabled={isDeletePending || selectedTags.length === reusableTags.length} className="rounded-full px-3 py-1.5 text-brand hover:bg-brand/10 disabled:opacity-40">すべて選択</button>
                 <button type="button" onClick={() => setSelectedTags([])} disabled={isDeletePending || selectedTags.length === 0} className="rounded-full px-3 py-1.5 text-slate-600 hover:bg-slate-100 disabled:opacity-40">選択解除</button>
               </div>
             </div>

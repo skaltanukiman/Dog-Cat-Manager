@@ -101,7 +101,7 @@ export default async function MembersPage({
 
       <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <Settings2 className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+          <Settings2 className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
           <div>
             <h3 className="text-base font-bold text-ink">共有グループ設定</h3>
             <p className="mt-1 text-sm text-slate-600">
@@ -128,7 +128,7 @@ export default async function MembersPage({
               </span>
             </label>
             <div className="flex justify-end">
-              <DirtySubmitButton className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-moss px-4 py-2 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto">
+              <DirtySubmitButton className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto">
                 <Save className="h-4 w-4" aria-hidden />
                 共有グループ名を保存
               </DirtySubmitButton>
@@ -166,7 +166,7 @@ export default async function MembersPage({
       ) : (
         <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex min-w-0 items-start gap-3">
-            <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
             <div className="min-w-0">
               <h3 className="text-base font-bold text-ink">招待リンク</h3>
               <p className="mt-1 text-sm text-slate-600">リンクは作成から {INVITATION_TTL_DAYS} 日間だけ有効です。</p>
@@ -182,7 +182,7 @@ export default async function MembersPage({
 
       <section className="space-y-3 border-t border-slate-300 pt-6 sm:space-y-4 sm:pt-8">
         <div className="flex min-w-0 items-center gap-2">
-          <Users className="h-5 w-5 shrink-0 text-moss" aria-hidden />
+          <Users className="h-5 w-5 shrink-0 text-brand" aria-hidden />
           <h3 className="text-base font-bold text-ink">メンバー一覧</h3>
         </div>
 
@@ -261,7 +261,7 @@ export default async function MembersPage({
                     <h4 className="break-words font-bold text-ink">{member.user.name || "未設定"}</h4>
                     <p className="mt-1 break-words text-slate-600">{member.user.email || "未設定"}</p>
                   </div>
-                  <span className="shrink-0 rounded-md bg-straw/40 px-2 py-1 text-xs font-semibold text-slate-700">
+                  <span className="shrink-0 rounded-md bg-highlight/40 px-2 py-1 text-xs font-semibold text-slate-700">
                     {HOUSEHOLD_ROLE_LABELS[member.role]}
                   </span>
                 </div>
@@ -290,12 +290,12 @@ export default async function MembersPage({
       >
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <History className="h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <History className="h-5 w-5 shrink-0 text-brand" aria-hidden />
             <h3 id="household-activity-heading" className="text-base font-bold text-ink">共有グループの操作履歴</h3>
           </div>
           <Link
             href="/settings/members/activity"
-            className="ml-auto shrink-0 whitespace-nowrap text-sm font-semibold text-moss hover:underline"
+            className="ml-auto shrink-0 whitespace-nowrap text-sm font-semibold text-brand hover:underline"
           >
             すべての履歴を見る
           </Link>

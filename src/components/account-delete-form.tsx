@@ -199,7 +199,7 @@ export function AccountDeleteForm({
                   type="checkbox"
                   checked={showOnlyAttentionRequired}
                   onChange={(event) => setShowOnlyAttentionRequired(event.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-moss focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                 />
                 <span className="min-w-0">
                   <span className="block font-semibold text-ink">
@@ -349,7 +349,7 @@ export function AccountDeleteForm({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/settings"
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 sm:w-auto"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:w-auto"
         >
           削除をやめる
         </Link>

@@ -137,7 +137,7 @@ export default async function CarePage({
               管理終了したPetも含む
             </label>
             <div className="flex items-center md:justify-end">
-              <Link href={todayHref} className="text-sm font-semibold text-moss hover:underline">
+              <Link href={todayHref} className="text-sm font-semibold text-brand hover:underline">
                 今日に戻る
               </Link>
             </div>
@@ -189,7 +189,7 @@ export default async function CarePage({
                       メモ
                       <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="朝ごはん" />
                     </label>
-                    <button type="submit" className="rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-2">
+                    <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2">
                       登録
                     </button>
                   </form>
@@ -219,7 +219,7 @@ export default async function CarePage({
                                 メモ
                                 <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                               </label>
-                              <button type="submit" className="rounded-md border border-moss px-4 py-2 text-sm font-semibold text-moss hover:bg-moss/5 md:col-span-2">更新</button>
+                              <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2">更新</button>
                             </form>
                             <form action={deletePetFeedingRecord}>
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -257,7 +257,7 @@ export default async function CarePage({
                       メモ
                       <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="容器も洗浄" />
                     </label>
-                    <button type="submit" className="rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-3">登録</button>
+                    <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
                   </form>
                 ) : null}
                 {waterRecords.length === 0 ? (
@@ -292,7 +292,7 @@ export default async function CarePage({
                                 メモ
                                 <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                               </label>
-                              <button type="submit" className="rounded-md border border-moss px-4 py-2 text-sm font-semibold text-moss hover:bg-moss/5 md:col-span-3">更新</button>
+                              <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</button>
                             </form>
                             <form action={deletePetWaterRecord}>
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -328,7 +328,7 @@ export default async function CarePage({
                         メモ
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="公園まで" />
                       </label>
-                      <button type="submit" className="rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-3">登録</button>
+                      <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
                     </form>
                   ) : null}
                   {walkRecords.length === 0 ? (
@@ -362,7 +362,7 @@ export default async function CarePage({
                                   メモ
                                   <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                                 </label>
-                                <button type="submit" className="rounded-md border border-moss px-4 py-2 text-sm font-semibold text-moss hover:bg-moss/5 md:col-span-3">更新</button>
+                                <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</button>
                               </form>
                               <form action={deletePetWalkRecord}>
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -404,7 +404,7 @@ export default async function CarePage({
                         メモ
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="普通" />
                       </label>
-                      <button type="submit" className="rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-3">登録</button>
+                      <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
                     </form>
                   ) : null}
                   {litterRecords.length === 0 ? (
@@ -441,7 +441,7 @@ export default async function CarePage({
                                   メモ
                                   <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                                 </label>
-                                <button type="submit" className="rounded-md border border-moss px-4 py-2 text-sm font-semibold text-moss hover:bg-moss/5 md:col-span-3">更新</button>
+                                <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</button>
                               </form>
                               <form action={deletePetLitterRecord}>
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />

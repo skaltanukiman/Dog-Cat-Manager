@@ -50,7 +50,7 @@ export default async function AdminInquiryDetailPage({
         initialRevision={inquiry.realtimeRevision.toString()}
       />
       <div>
-        <Link href={returnTo} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
+        <Link href={returnTo} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           問い合わせ一覧へ戻る
         </Link>

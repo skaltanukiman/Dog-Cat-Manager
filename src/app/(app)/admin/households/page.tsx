@@ -21,12 +21,12 @@ export default async function AdminHouseholdsPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
+        <Link href="/admin" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           管理トップへ戻る
         </Link>
         <div className="mt-2 flex items-center gap-2">
-          <ShieldCheck className="h-6 w-6 text-moss" aria-hidden />
+          <ShieldCheck className="h-6 w-6 text-brand" aria-hidden />
           <h2 className="text-xl font-bold text-ink">共有管理</h2>
         </div>
         <p className="mt-1 text-sm text-slate-600">共有と所属メンバー、共有内権限を確認します。</p>

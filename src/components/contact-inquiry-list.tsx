@@ -44,7 +44,7 @@ export function ContactInquiryList({ inquiries }: { inquiries: ContactInquiryLis
                   <Link
                     href={`/contact/${inquiry.publicId}`}
                     aria-label={`${inquiry.publicId}の詳細を表示`}
-                    className="inline-flex min-h-10 items-center gap-1 font-semibold text-moss hover:underline"
+                    className="inline-flex min-h-10 items-center gap-1 font-semibold text-brand hover:underline"
                   >
                     詳細
                     <ChevronRight className="h-4 w-4" aria-hidden />
@@ -76,7 +76,7 @@ export function ContactInquiryList({ inquiries }: { inquiries: ContactInquiryLis
             </dl>
             <Link
               href={`/contact/${inquiry.publicId}`}
-              className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-md border border-moss px-4 text-sm font-semibold text-moss hover:bg-moss hover:text-white sm:w-auto"
+              className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-md border border-brand px-4 text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white sm:w-auto"
             >
               詳細を確認
               <ChevronRight className="h-4 w-4" aria-hidden />
@@ -160,7 +160,7 @@ export function AdminContactInquiryList({
                   <Link
                     href={buildDetailHref(inquiry.publicId)}
                     aria-label={`${inquiry.publicId}の管理詳細を表示`}
-                    className="inline-flex min-h-10 items-center gap-1 font-semibold text-moss hover:underline"
+                    className="inline-flex min-h-10 items-center gap-1 font-semibold text-brand hover:underline"
                   >
                     詳細
                     <ChevronRight className="h-4 w-4" aria-hidden />
@@ -217,7 +217,7 @@ export function AdminContactInquiryList({
             </dl>
             <Link
               href={buildDetailHref(inquiry.publicId)}
-              className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-md border border-moss px-4 text-sm font-semibold text-moss hover:bg-moss hover:text-white sm:w-auto"
+              className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-md border border-brand px-4 text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white sm:w-auto"
             >
               詳細を確認
               <ChevronRight className="h-4 w-4" aria-hidden />

@@ -37,7 +37,7 @@ export default async function ContactDetailPage({
         initialRevision={inquiry.realtimeRevision.toString()}
       />
       <div>
-        <Link href="/contact" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
+        <Link href="/contact" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           お問い合わせへ戻る
         </Link>

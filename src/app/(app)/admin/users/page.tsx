@@ -30,12 +30,12 @@ export default async function AdminUsersPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
+        <Link href="/admin" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           管理トップへ戻る
         </Link>
         <div className="mt-2 flex items-center gap-2">
-          <Users className="h-6 w-6 text-moss" aria-hidden />
+          <Users className="h-6 w-6 text-brand" aria-hidden />
           <h2 className="text-xl font-bold text-ink">ユーザー管理</h2>
         </div>
         <p className="mt-1 text-sm text-slate-600">ユーザー情報、利用状態、アプリ全体権限を確認・管理します。</p>

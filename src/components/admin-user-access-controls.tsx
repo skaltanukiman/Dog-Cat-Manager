@@ -23,7 +23,7 @@ function SubmitButton({ mode }: { mode: Exclude<AccessMode, null> }) {
       type="submit"
       disabled={pending}
       className={`inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
-        mode === "suspend" ? "bg-red-700 hover:bg-red-800" : "bg-moss hover:bg-moss/90"
+        mode === "suspend" ? "bg-red-700 hover:bg-red-800" : "bg-brand hover:bg-brand-dark"
       }`}
     >
       {pending ? "処理中..." : mode === "suspend" ? "利用停止を確定する" : "利用停止解除を確定する"}
@@ -175,7 +175,7 @@ export function AdminUserAccessControls({
               closeMenu({ restoreFocus: true });
             }
           }}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
         >
           <EllipsisVertical className="h-4 w-4" aria-hidden />
         </button>
@@ -186,7 +186,7 @@ export function AdminUserAccessControls({
           onClick={openAccessDialog}
           className={`inline-flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md border px-3 text-sm font-semibold sm:w-auto ${
             isSuspended
-              ? "border-moss text-moss hover:bg-moss hover:text-white"
+              ? "border-brand text-brand hover:bg-brand-dark hover:text-white"
               : "border-red-300 text-red-700 hover:bg-red-50"
           }`}
         >
@@ -213,7 +213,7 @@ export function AdminUserAccessControls({
                     closeMenu();
                     setIsDetailsOpen(true);
                   }}
-                  className="flex w-full items-center whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/70"
+                  className="flex w-full items-center whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                 >
                   停止情報の詳細
                 </button>
@@ -222,8 +222,8 @@ export function AdminUserAccessControls({
                 type="button"
                 role="menuitem"
                 onClick={openAccessDialog}
-                className={`flex w-full items-center whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/70 ${
-                  isSuspended ? "text-moss hover:bg-moss/10" : "text-red-700 hover:bg-red-50"
+                className={`flex w-full items-center whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+                  isSuspended ? "text-brand hover:bg-brand/10" : "text-red-700 hover:bg-red-50"
                 }`}
               >
                 {isSuspended ? "利用停止解除" : "利用停止"}

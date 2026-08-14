@@ -38,7 +38,7 @@ export default async function AccountDeletePage({
       <div>
         <Link
           href="/settings"
-          className="inline-flex items-center gap-1 rounded-sm text-sm font-semibold text-slate-600 hover:text-moss focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+          className="inline-flex items-center gap-1 rounded-sm text-sm font-semibold text-slate-600 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           設定へ戻る

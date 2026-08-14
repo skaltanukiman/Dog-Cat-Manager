@@ -41,7 +41,7 @@ function CreateInvitationButton({
       type="submit"
       disabled={disabled}
       aria-describedby={activeLimitReached ? activeLimitMessageId : cooldownActive ? cooldownMessageId : undefined}
-      className={`inline-flex h-10 items-center justify-center gap-2 rounded-md bg-moss px-4 text-sm font-semibold text-white hover:bg-moss/90 disabled:opacity-60 ${
+      className={`inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60 ${
         activeLimitReached || cooldownActive ? "disabled:cursor-not-allowed" : "disabled:cursor-wait"
       }`}
     >
@@ -212,7 +212,7 @@ export function HouseholdInvitationForm({
     <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-moss" aria-hidden />
+          <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
           <div className="min-w-0">
             <h3 className="text-base font-bold text-ink">招待リンク</h3>
             <p className="mt-1 text-sm text-slate-600">リンクは作成から {ttlDays} 日間だけ有効です。</p>
@@ -289,7 +289,7 @@ export function HouseholdInvitationForm({
           }`}
         >
           {toast.variant === "success" ? (
-            <Check className="h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Check className="h-5 w-5 shrink-0 text-brand" aria-hidden />
           ) : null}
           <span>{toast.message}</span>
         </div>

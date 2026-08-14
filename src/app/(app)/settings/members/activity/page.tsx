@@ -60,11 +60,11 @@ export default async function HouseholdActivityPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/settings/members" className="inline-flex items-center gap-1 text-sm font-semibold text-moss hover:underline">
+        <Link href="/settings/members" className="inline-flex items-center gap-1 text-sm font-semibold text-brand hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />共有へ戻る
         </Link>
         <div className="mt-3 flex items-start gap-3">
-          <History className="mt-0.5 h-6 w-6 shrink-0 text-moss" aria-hidden />
+          <History className="mt-0.5 h-6 w-6 shrink-0 text-brand" aria-hidden />
           <div className="min-w-0">
             <h2 className="text-xl font-bold text-ink">共有グループの操作履歴</h2>
             <p className="mt-1 break-words text-sm text-slate-600">{data.context.household.name} で行われた主要な操作を表示します。</p>
@@ -88,9 +88,9 @@ export default async function HouseholdActivityPage({
               key={filter.label}
               href={activityHref(filter.value)}
               aria-current={selected ? "page" : undefined}
-              className={`flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-lg px-0.5 text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-1 sm:min-h-10 sm:rounded-md sm:border sm:px-4 sm:py-2 sm:text-sm sm:font-semibold ${
+              className={`flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-lg px-0.5 text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 sm:min-h-10 sm:rounded-md sm:border sm:px-4 sm:py-2 sm:text-sm sm:font-semibold ${
                 selected
-                  ? "bg-moss/10 text-moss ring-1 ring-inset ring-moss/20 sm:border-moss sm:bg-moss sm:text-white sm:ring-0"
+                  ? "bg-brand/10 text-brand ring-1 ring-inset ring-brand/20 sm:border-brand sm:bg-brand sm:text-white sm:ring-0"
                   : "text-slate-600 hover:bg-white/70 hover:text-ink sm:border-slate-200 sm:bg-white sm:text-slate-700 sm:hover:bg-slate-50"
               }`}
             >

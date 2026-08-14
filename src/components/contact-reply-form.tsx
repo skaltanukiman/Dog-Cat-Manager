@@ -28,7 +28,7 @@ function ReplySubmitButton({ label, pending }: { label: string; pending?: boolea
     <button
       type="submit"
       disabled={isPending}
-      className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-moss px-5 py-2.5 text-sm font-bold text-white hover:bg-moss/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+      className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
     >
       {isPending ? "送信中..." : label}
     </button>

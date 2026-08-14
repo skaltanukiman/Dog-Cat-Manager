@@ -46,7 +46,7 @@ function SubmitButton({ pending }: { pending: boolean }) {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-moss px-5 py-2.5 text-sm font-bold text-white hover:bg-moss/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 md:w-auto"
+      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 md:w-auto"
     >
       <Send className="h-4 w-4" aria-hidden />
       {pending ? "送信中..." : "問い合わせを送信"}
@@ -150,7 +150,7 @@ export function ContactInquiryForm({
           </dl>
           <Link
             href={`/contact/${state.created.publicId}`}
-            className="mt-4 inline-flex min-h-10 items-center font-bold text-moss hover:underline"
+            className="mt-4 inline-flex min-h-10 items-center font-bold text-brand hover:underline"
           >
             問い合わせ詳細を確認する
           </Link>

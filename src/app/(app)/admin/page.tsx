@@ -100,16 +100,16 @@ export default async function AdminPage({
   const hasInProgressInquiries = inquiryOverview.inProgressCount > 0;
   const hasWaitingInquiries = inquiryOverview.waitingCount > 0;
   const openInquiryCardClassName = hasOverdueOpenInquiries
-    ? "rounded-md border border-red-300 bg-red-50 p-4 shadow-sm transition hover:border-red-400 hover:bg-red-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
+    ? "rounded-md border border-red-300 bg-red-50 p-4 shadow-sm transition hover:border-red-400 hover:bg-red-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
     : hasOpenInquiries
-      ? "rounded-md border border-amber-300 bg-amber-50/50 p-4 shadow-sm transition hover:border-amber-400 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
-      : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
+      ? "rounded-md border border-amber-300 bg-amber-50/50 p-4 shadow-sm transition hover:border-amber-400 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+      : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2";
   const inProgressInquiryCardClassName = hasInProgressInquiries
-    ? "rounded-md border border-sky-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:bg-sky-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
-    : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
+    ? "rounded-md border border-sky-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:bg-sky-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+    : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2";
   const waitingInquiryCardClassName = hasWaitingInquiries
-    ? "rounded-md border border-violet-200 bg-white p-4 shadow-sm transition hover:border-violet-300 hover:bg-violet-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2"
-    : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
+    ? "rounded-md border border-violet-200 bg-white p-4 shadow-sm transition hover:border-violet-300 hover:bg-violet-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+    : "rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2";
 
   return (
     <div className="space-y-6">
@@ -138,10 +138,10 @@ export default async function AdminPage({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <MessageCircleQuestion className="h-5 w-5 text-moss" aria-hidden />
+            <MessageCircleQuestion className="h-5 w-5 text-brand" aria-hidden />
             <h3 className="text-base font-bold text-ink">問い合わせ概要</h3>
           </div>
-          <Link href="/admin/inquiries" className="inline-flex min-h-10 items-center text-sm font-semibold text-moss hover:underline">
+          <Link href="/admin/inquiries" className="inline-flex min-h-10 items-center text-sm font-semibold text-brand hover:underline">
             すべての問い合わせを表示
           </Link>
         </div>
@@ -169,10 +169,10 @@ export default async function AdminPage({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-moss" aria-hidden />
+            <Users className="h-5 w-5 text-brand" aria-hidden />
             <h3 className="text-base font-bold text-ink">ユーザー一覧</h3>
           </div>
-          <Link href="/admin/users" className="inline-flex min-h-10 items-center text-sm font-semibold text-moss hover:underline">
+          <Link href="/admin/users" className="inline-flex min-h-10 items-center text-sm font-semibold text-brand hover:underline">
             すべてのユーザーを表示
           </Link>
         </div>
@@ -182,10 +182,10 @@ export default async function AdminPage({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-moss" aria-hidden />
+            <ShieldCheck className="h-5 w-5 text-brand" aria-hidden />
             <h3 className="text-base font-bold text-ink">共有一覧</h3>
           </div>
-          <Link href="/admin/households" className="inline-flex min-h-10 items-center text-sm font-semibold text-moss hover:underline">
+          <Link href="/admin/households" className="inline-flex min-h-10 items-center text-sm font-semibold text-brand hover:underline">
             すべての共有を表示
           </Link>
         </div>

@@ -95,7 +95,7 @@ export default async function PetsPage({
             </div>
             <button
               type="submit"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-moss px-4 text-sm font-semibold text-white hover:bg-moss/90 md:col-span-2 lg:col-span-4 lg:justify-self-end"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2 lg:col-span-4 lg:justify-self-end"
             >
               <Plus className="h-4 w-4" aria-hidden />
               登録
@@ -120,7 +120,7 @@ export default async function PetsPage({
               <article key={pet.id} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <span className={`rounded-md px-2 py-1 text-xs font-semibold ${pet.isActive ? "bg-straw/40 text-slate-700" : "bg-slate-200 text-slate-600"}`}>
+                    <span className={`rounded-md px-2 py-1 text-xs font-semibold ${pet.isActive ? "bg-highlight/40 text-slate-700" : "bg-slate-200 text-slate-600"}`}>
                       {pet.isActive ? "管理中" : "管理終了"}
                     </span>
                     <span className="text-sm font-semibold text-slate-700">{SPECIES_LABELS[pet.species]}</span>
@@ -190,7 +190,7 @@ export default async function PetsPage({
                     />
                   </div>
                   {canEdit ? (
-                    <DirtySubmitButton className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-moss px-4 text-sm font-semibold text-moss hover:bg-moss hover:text-white md:col-span-2 lg:col-span-4 lg:justify-self-end">
+                    <DirtySubmitButton className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-brand px-4 text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white md:col-span-2 lg:col-span-4 lg:justify-self-end">
                       <Save className="h-4 w-4" aria-hidden />
                       保存
                     </DirtySubmitButton>

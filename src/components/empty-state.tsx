@@ -7,7 +7,7 @@ export function EmptyState({ title, href, actionLabel }: { title: string; href: 
       <p className="text-base font-semibold text-slate-800">{title}</p>
       <Link
         href={href}
-        className="mt-4 inline-flex items-center gap-2 rounded-md bg-moss px-4 py-2 text-sm font-semibold text-white hover:bg-moss/90"
+        className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
       >
         <Plus className="h-4 w-4" aria-hidden />
         {actionLabel}

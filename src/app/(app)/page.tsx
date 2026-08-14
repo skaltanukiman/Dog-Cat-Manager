@@ -45,14 +45,14 @@ export default async function DashboardPage({
         <div className="flex flex-wrap gap-2">
           <Link
             href="/settings"
-            className="inline-flex items-center gap-2 rounded-md border border-moss px-4 py-2 text-sm font-semibold text-moss hover:bg-moss hover:text-white"
+            className="inline-flex items-center gap-2 rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white"
           >
             <Settings className="h-4 w-4" aria-hidden />
             表示設定
           </Link>
           <Link
             href="/pets"
-            className="inline-flex items-center gap-2 rounded-md bg-moss px-4 py-2 text-sm font-semibold text-white hover:bg-moss/90"
+            className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
           >
             <Plus className="h-4 w-4" aria-hidden />
             Pet登録
@@ -91,7 +91,7 @@ export default async function DashboardPage({
                     </div>
                     <span
                       className={`shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${
-                        pet.isActive ? "bg-straw/40 text-slate-700" : "bg-slate-200 text-slate-600"
+                        pet.isActive ? "bg-highlight/40 text-slate-700" : "bg-slate-200 text-slate-600"
                       }`}
                     >
                       {pet.isActive ? "管理中" : "管理終了"}
@@ -109,7 +109,7 @@ export default async function DashboardPage({
                   <dl className="mt-5 grid flex-1 content-start gap-3">
                     <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
                       <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
-                        <Scale className="h-4 w-4 text-persimmon" aria-hidden />
+                        <Scale className="h-4 w-4 text-accent" aria-hidden />
                         最新体重
                       </dt>
                       <dd className="min-w-0 flex-1 text-right">
@@ -120,7 +120,7 @@ export default async function DashboardPage({
                     </div>
                     <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
                       <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
-                        <Utensils className="h-4 w-4 text-persimmon" aria-hidden />
+                        <Utensils className="h-4 w-4 text-accent" aria-hidden />
                         今日の食事
                       </dt>
                       <dd className="min-w-0 flex-1 text-right">
@@ -133,7 +133,7 @@ export default async function DashboardPage({
                     </div>
                     <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
                       <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
-                        <Droplets className="h-4 w-4 text-moss" aria-hidden />
+                        <Droplets className="h-4 w-4 text-brand" aria-hidden />
                         今日の水
                       </dt>
                       <dd className="min-w-0 flex-1 text-right">
@@ -151,7 +151,7 @@ export default async function DashboardPage({
                     {pet.species === "DOG" ? (
                       <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
                         <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
-                          <Footprints className="h-4 w-4 text-moss" aria-hidden />
+                          <Footprints className="h-4 w-4 text-brand" aria-hidden />
                           今日の散歩
                         </dt>
                         <dd className="min-w-0 flex-1 text-right">
@@ -171,7 +171,7 @@ export default async function DashboardPage({
                     ) : (
                       <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
                         <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
-                          <ClipboardCheck className="h-4 w-4 text-moss" aria-hidden />
+                          <ClipboardCheck className="h-4 w-4 text-brand" aria-hidden />
                           今日のトイレ
                         </dt>
                         <dd className="min-w-0 flex-1 text-right">
@@ -193,7 +193,7 @@ export default async function DashboardPage({
                     {pet.isActive ? (
                       <Link
                         href={`/care?petId=${encodeURIComponent(pet.id)}`}
-                        className="rounded-md bg-moss px-3 py-2 text-sm font-semibold text-white hover:bg-moss/90"
+                        className="rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
                       >
                         お世話を記録
                       </Link>

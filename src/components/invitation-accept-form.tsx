@@ -42,7 +42,7 @@ function AcceptInvitationButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-moss px-4 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-wait disabled:opacity-60"
+      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-wait disabled:opacity-60"
     >
       <Check className="h-4 w-4" aria-hidden />
       {pending ? "参加中..." : "この共有に参加する"}
@@ -56,8 +56,8 @@ function InvitedHouseholdName({ preview }: { preview: HouseholdInvitationPreview
   }
 
   return (
-    <div className="rounded-md border border-moss/30 bg-moss/10 px-4 py-3">
-      <p className="text-xs font-semibold text-moss">招待された共有グループ</p>
+    <div className="rounded-md border border-brand/30 bg-brand/10 px-4 py-3">
+      <p className="text-xs font-semibold text-brand">招待された共有グループ</p>
       <p className="mt-1 break-words text-lg font-bold text-ink [overflow-wrap:anywhere]">
         {preview.householdName}
       </p>
@@ -141,7 +141,7 @@ export function InvitationAcceptForm({ isLoggedIn }: { isLoggedIn: boolean }) {
         <p>招待を受けるGoogleアカウントでログインしてください。招待トークンはこのタブ内だけに一時保存されます。</p>
         <Link
           href="/login?callbackUrl=%2Finvitations%2Faccept"
-          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-moss px-4 text-sm font-semibold text-white hover:bg-moss/90"
+          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark"
         >
           Googleアカウントでログイン
         </Link>

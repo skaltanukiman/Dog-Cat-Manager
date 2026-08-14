@@ -27,7 +27,7 @@ export function PetWeightChart({ data }: { data: PetWeightChartPoint[] }) {
           <Line
             type="monotone"
             dataKey="weightKg"
-            stroke="#c45f35"
+            stroke="#D97955"
             strokeWidth={2.5}
             dot={{ r: 3, strokeWidth: 2 }}
             activeDot={{ r: 5 }}

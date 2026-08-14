@@ -57,19 +57,19 @@ export function CareDaySettingsForm({
     <section
       aria-label="お世話日の設定"
       data-settings-section="care-day"
-      className="min-w-0 overflow-hidden rounded-md border border-moss/30 bg-white shadow-sm"
+      className="min-w-0 overflow-hidden rounded-md border border-brand/30 bg-white shadow-sm"
     >
       <button
         type="button"
         aria-expanded={isOpen}
         aria-controls={contentId}
         onClick={() => setIsOpen((current) => !current)}
-        className={`min-h-11 w-full text-left transition-colors duration-200 ease-out active:bg-moss/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss motion-reduce:transition-none ${SETTINGS_CARD_RESPONSIVE_PADDING} ${
-          isOpen ? "bg-moss/[0.15] hover:bg-moss/20" : "bg-moss/10 hover:bg-moss/[0.15]"
+        className={`min-h-11 w-full text-left transition-colors duration-200 ease-out active:bg-brand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand motion-reduce:transition-none ${SETTINGS_CARD_RESPONSIVE_PADDING} ${
+          isOpen ? "bg-brand/[0.15] hover:bg-brand/20" : "bg-brand/10 hover:bg-brand/[0.15]"
         }`}
       >
         <span className="flex min-w-0 items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-moss/20 text-moss">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand/20 text-brand">
             <Clock3 className="h-5 w-5" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
@@ -81,10 +81,10 @@ export function CareDaySettingsForm({
             </span>
           </span>
         </span>
-        <span className="mt-3 inline-flex rounded-md border border-moss/20 bg-white px-2 py-1 text-xs font-medium text-slate-700">
+        <span className="mt-3 inline-flex rounded-md border border-brand/20 bg-white px-2 py-1 text-xs font-medium text-slate-700">
           切り替え時刻：{formatMinutesAsTime(savedMinutes)}
         </span>
-        <span className="mt-3 flex items-center justify-end gap-1 text-sm font-bold text-moss">
+        <span className="mt-3 flex items-center justify-end gap-1 text-sm font-bold text-brand">
           {isOpen ? "閉じる" : canManage ? "設定を変更" : "設定を確認"}
           <ChevronDown
             className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -150,7 +150,7 @@ export function CareDaySettingsForm({
                 <div className="mt-4 flex justify-end">
                   <DirtySubmitButton
                     disabled={isSaving}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white hover:bg-moss/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-md bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     <Save className="h-4 w-4" aria-hidden />
                     {isSaving ? "保存中…" : "お世話日の設定を保存"}

@@ -45,7 +45,7 @@ export function PetThumbnail({ petId, petName, profileImageFileName, size = "car
           aria-label={`${petName}のプロフィール画像を拡大表示`}
           title="クリックして拡大表示"
           onClick={() => setIsOpen(true)}
-          className={`${sizeClass} flex shrink-0 cursor-zoom-in items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 shadow-sm transition hover:border-moss focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss`}
+          className={`${sizeClass} flex shrink-0 cursor-zoom-in items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 shadow-sm transition hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`}
         >
           {/* 認証Cookie付きのPet画像APIだけを画像ソースに使用する。 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}

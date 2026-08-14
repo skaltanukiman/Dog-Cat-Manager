@@ -13,7 +13,7 @@ export function ProfileSettingsFields({ name, email }: ProfileSettingsFieldsProp
       className={`space-y-4 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
     >
       <div className="flex items-center gap-2">
-        <UserRound className="h-5 w-5 text-moss" aria-hidden />
+        <UserRound className="h-5 w-5 text-brand" aria-hidden />
         <h3 className="text-base font-bold text-ink">プロフィール</h3>
       </div>
 

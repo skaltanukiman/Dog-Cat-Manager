@@ -32,7 +32,7 @@ export function HouseholdActivityList({
                 <p className="break-words text-sm font-semibold leading-6 text-ink">{formatted.summary}</p>
                 {formatted.detail ? <p className="mt-1 break-words text-sm text-slate-600">{formatted.detail}</p> : null}
               </div>
-              <span className="inline-flex w-24 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-straw/40 px-2 py-1 text-center text-xs font-semibold text-slate-700">
+              <span className="inline-flex w-24 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-highlight/40 px-2 py-1 text-center text-xs font-semibold text-slate-700">
                 {CATEGORY_LABELS[activity.category]}
               </span>
             </div>

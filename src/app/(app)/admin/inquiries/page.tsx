@@ -47,12 +47,12 @@ export default async function AdminInquiriesPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-moss hover:underline">
+        <Link href="/admin" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           管理トップへ戻る
         </Link>
         <div className="mt-2 flex items-center gap-2">
-          <MessageCircleQuestion className="h-6 w-6 text-moss" aria-hidden />
+          <MessageCircleQuestion className="h-6 w-6 text-brand" aria-hidden />
           <h2 className="text-xl font-bold text-ink">問い合わせ管理</h2>
         </div>
         <p className="mt-1 text-sm text-slate-600">利用者からの問い合わせを検索・確認し、返信や担当者設定を行います。</p>

@@ -51,7 +51,7 @@ import {
 
 type PetRecordItem = Awaited<ReturnType<typeof getPetRecordsPageData>>["records"][number];
 const fieldClass = "grid gap-1 text-sm font-medium text-slate-700";
-const submitClass = "inline-flex h-10 items-center justify-center rounded-md bg-moss px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-fit";
+const submitClass = "inline-flex h-10 items-center justify-center rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-fit";
 const speciesLabel = { DOG: "犬", CAT: "猫" } as const;
 type PetRecordReturnFilters = {
   type: PetRecordTypeFilter;
@@ -120,7 +120,7 @@ function PetRecordPhoto({ recordId, title }: { recordId: string; title: string }
   if (failed) return <div className="grid h-48 place-items-center rounded-md bg-slate-100 text-sm text-slate-500">写真を読み込めませんでした</div>;
   return (
     <>
-      <button type="button" aria-haspopup="dialog" aria-label={`${title}の写真を拡大表示`} onClick={() => setIsOpen(true)} className="block w-full cursor-zoom-in overflow-hidden rounded-md bg-slate-100 hover:ring-2 hover:ring-moss/50">
+      <button type="button" aria-haspopup="dialog" aria-label={`${title}の写真を拡大表示`} onClick={() => setIsOpen(true)} className="block w-full cursor-zoom-in overflow-hidden rounded-md bg-slate-100 hover:ring-2 hover:ring-brand/50">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={imageUrl} alt={title} onError={handleImageError} className="max-h-96 w-full object-contain" />
       </button>
@@ -325,7 +325,7 @@ export function PetRecordTimeline({
               {record.recordType === "VACCINATION" && record.vaccinationDetail ? <div className="mt-4 grid gap-2 text-sm"><p className="font-semibold">{record.vaccinationDetail.vaccineName}</p>{record.vaccinationDetail.hospitalName ? <p>{record.vaccinationDetail.hospitalName}</p> : null}{record.vaccinationDetail.nextDueDate ? <p className="inline-flex w-fit items-center gap-2 rounded-md bg-amber-50 px-3 py-2 font-semibold text-amber-800"><CalendarClock className="h-4 w-4" aria-hidden />次回予定: {record.vaccinationDetail.nextDueDate.replaceAll("-", "/")}</p> : null}</div> : null}
               {record.recordType === "MEMORY" && record.memoryDetail ? <div className="mt-4 grid gap-3">{record.memoryDetail.imageFileName ? <PetRecordPhoto recordId={record.id} title={record.title} /> : null}{record.memoryDetail.tags.length ? <div className="flex flex-wrap gap-1.5">{record.memoryDetail.tags.map((tag) => <span key={tag} className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">#{tag}</span>)}</div> : null}</div> : null}
               {record.memo ? <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{record.memo}</p> : null}
-              {editable ? <details className="group mt-4"><summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-moss"><Pencil className="h-4 w-4" aria-hidden /><span className="group-open:hidden">編集フォームを開く</span><span className="hidden group-open:inline">編集フォームを閉じる</span></summary><PetRecordEditForm record={record} pets={pets} viewScope={scope} returnPetId={returnPetId} includeInactive={includeInactive} returnFilters={returnFilters} today={today} /></details> : !canEdit ? null : <p className="mt-4 text-xs text-amber-700">管理終了したPetが関連するため、この記録は閲覧のみです。</p>}
+              {editable ? <details className="group mt-4"><summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-brand"><Pencil className="h-4 w-4" aria-hidden /><span className="group-open:hidden">編集フォームを開く</span><span className="hidden group-open:inline">編集フォームを閉じる</span></summary><PetRecordEditForm record={record} pets={pets} viewScope={scope} returnPetId={returnPetId} includeInactive={includeInactive} returnFilters={returnFilters} today={today} /></details> : !canEdit ? null : <p className="mt-4 text-xs text-amber-700">管理終了したPetが関連するため、この記録は閲覧のみです。</p>}
             </article>
           );
         })}

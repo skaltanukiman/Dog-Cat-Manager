@@ -85,10 +85,10 @@ export function AppNav({ isAppAdmin = false }: { isAppAdmin?: boolean }) {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex min-h-11 items-center justify-center whitespace-nowrap border-b-2 px-1 text-center text-[11px] font-medium transition ${
+                className={`flex min-h-11 items-center justify-center whitespace-nowrap border-b-2 px-1 text-center text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand ${
                   isActive
-                    ? "border-moss font-semibold text-moss"
-                    : "border-transparent text-slate-600 hover:border-slate-300 hover:text-ink"
+                    ? "border-brand font-semibold text-brand"
+                    : "border-transparent text-slate-600 hover:border-brand hover:text-brand"
                 }`}
               >
                 {item.mobileLabel}
@@ -107,7 +107,7 @@ export function AppNav({ isAppAdmin = false }: { isAppAdmin?: boolean }) {
               aria-haspopup="menu"
               aria-controls={mobileMenuId}
               onClick={() => setIsMobileMenuOpen((open) => !open)}
-              className={`inline-flex min-h-10 cursor-pointer items-center justify-center gap-1 rounded-md px-2 text-sm font-medium text-moss transition-colors hover:text-moss/75 active:bg-moss/5 active:text-moss/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 ${
+              className={`inline-flex min-h-10 cursor-pointer items-center justify-center gap-1 rounded-md px-2 text-sm font-medium text-brand transition-colors hover:text-brand-dark active:bg-brand/10 active:text-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
                 isUtilityActive ? "font-semibold" : ""
               }`}
             >
@@ -142,13 +142,13 @@ export function AppNav({ isAppAdmin = false }: { isAppAdmin?: boolean }) {
                     tabIndex={isMobileMenuOpen ? 0 : -1}
                     aria-current={isActive ? "page" : undefined}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-moss transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/70 ${
+                    className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
                       isActive
-                        ? "bg-moss/10 hover:bg-moss/15 active:bg-moss/15"
-                        : "hover:bg-moss/10 active:bg-moss/15"
+                        ? "bg-brand/10 hover:bg-brand/15 active:bg-brand/15"
+                        : "hover:bg-brand/10 active:bg-brand/15"
                     }`}
                   >
-                    <Icon className="h-4 w-4 shrink-0 text-moss" aria-hidden />
+                    <Icon className="h-4 w-4 shrink-0 text-brand" aria-hidden />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -168,10 +168,10 @@ export function AppNav({ isAppAdmin = false }: { isAppAdmin?: boolean }) {
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-2 text-sm font-medium transition ${
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
                 isActive
-                  ? "border-moss bg-moss text-white shadow-sm"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-moss hover:text-moss"
+                  ? "border-brand bg-brand text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-brand hover:text-brand"
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden />

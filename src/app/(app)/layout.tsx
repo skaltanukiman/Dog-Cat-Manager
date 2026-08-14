@@ -30,11 +30,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               householdId={householdSwitcherData.context.household.id}
             />
           ) : null}
-          <header className="border-b border-slate-200 bg-paper">
+          <header className="border-b border-slate-200 bg-surface-warm">
             <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-wide text-persimmon">Dog & Cat Manager</p>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-brand">Dog & Cat Manager</p>
                   <h1 className="text-2xl font-bold text-ink">犬・猫管理</h1>
                 </div>
                 <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3 text-sm text-slate-600">

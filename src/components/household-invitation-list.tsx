@@ -39,7 +39,7 @@ export function HouseholdInvitationList({
       <div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Link2 className="h-5 w-5 shrink-0 text-moss" aria-hidden />
+            <Link2 className="h-5 w-5 shrink-0 text-brand" aria-hidden />
             <h3 className="text-base font-bold text-ink">有効な招待リンク</h3>
           </div>
           <p className="mt-1 text-sm text-slate-600">過去のリンク自体は再表示されません。有効なリンクだけ無効化できます。</p>

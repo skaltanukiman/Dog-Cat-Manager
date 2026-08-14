@@ -15,7 +15,7 @@ type ClientPaginationProps = {
 };
 
 const focusClassName =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2";
 
 export function ClientPagination({
   ariaLabel,
@@ -97,7 +97,7 @@ export function ClientPagination({
                 <span
                   key={item}
                   aria-current="page"
-                  className="inline-flex h-9 min-w-9 items-center justify-center rounded-md bg-moss px-2 text-sm font-bold text-white"
+                  className="inline-flex h-9 min-w-9 items-center justify-center rounded-md bg-brand px-2 text-sm font-bold text-white"
                 >
                   {item}
                 </span>

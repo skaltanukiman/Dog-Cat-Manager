@@ -76,7 +76,7 @@ test("参加画面はトークンをURLへ戻さず、招待先の共有グル�
   assert.match(formSource, /getHouseholdInvitationPreview\(token\)/);
   assert.match(formSource, /招待された共有グループ/);
   assert.match(formSource, /\{preview\.householdName\}/);
-  assert.match(formSource, /border-moss\/30 bg-moss\/10/);
+  assert.match(formSource, /border-brand\/30 bg-brand\/10/);
   assert.doesNotMatch(formSource, /dangerouslySetInnerHTML/);
   assert.match(actionSource, /where: \{ tokenHash: hashInvitationToken\(token\) \}/);
   assert.match(actionSource, /household:\s*\{\s*select: \{ name: true \}/);

@@ -22,7 +22,7 @@ export function ContactMessageThread({
           <li
             key={message.id}
             className={`min-w-0 rounded-md border p-4 shadow-sm ${
-              fromAdmin ? "border-moss/30 bg-emerald-50/50" : "border-slate-200 bg-white"
+              fromAdmin ? "border-brand/30 bg-emerald-50/50" : "border-slate-200 bg-white"
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">

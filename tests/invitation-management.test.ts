@@ -465,9 +465,9 @@ test("共有画面は有効件数と上限を表示し、上限到達時の作�
   assert.match(pageSource, /maxActiveInvitations=\{MAX_ACTIVE_HOUSEHOLD_INVITATIONS\}/);
   assert.doesNotMatch(pageSource, /PaginationLayout|invitePage|skip:|take:/);
   assert.match(formSource, /import \{ Check, Copy, Link as LinkIcon, Plus, UserPlus \} from "lucide-react"/);
-  assert.match(formSource, /<UserPlus className="mt-0\.5 h-5 w-5 shrink-0 text-moss" aria-hidden \/>/);
+  assert.match(formSource, /<UserPlus className="mt-0\.5 h-5 w-5 shrink-0 text-brand" aria-hidden \/>/);
   assert.match(pageSource, /import \{ History, LogOut, Save, Settings2, UserPlus, Users \} from "lucide-react"/);
-  assert.match(pageSource, /<UserPlus className="mt-0\.5 h-5 w-5 shrink-0 text-moss" aria-hidden \/>/);
+  assert.match(pageSource, /<UserPlus className="mt-0\.5 h-5 w-5 shrink-0 text-brand" aria-hidden \/>/);
   assert.match(formSource, /有効なリンク \{activeInvitationCount} \/ \{maxActiveInvitations}件/);
   assert.match(formSource, /const disabled = pending \|\| activeLimitReached \|\| cooldownActive;/);
   assert.match(formSource, /disabled=\{disabled\}/);

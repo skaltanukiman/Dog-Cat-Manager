@@ -12,8 +12,8 @@
 
 body {
   margin: 0;
-  background: #f4f6f4;
-  color: #1f2933;
+  background: #f5f7fa;
+  color: #24313d;
   font-family:
     system-ui,
     -apple-system,
@@ -95,13 +95,28 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 input[type="checkbox"] {
   width: 1.15rem;
   height: 1.15rem;
-  accent-color: #426b5a;
+  accent-color: #3e6f8e;
 }
 
 input[type="radio"] {
   width: 1.15rem;
   height: 1.15rem;
-  accent-color: #426b5a;
+  accent-color: #3e6f8e;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: #3e6f8e;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(62, 111, 142, 0.22);
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid #3e6f8e;
+  outline-offset: 2px;
 }
 
 button,
@@ -149,13 +164,13 @@ a {
 }
 
 .data-table th {
-  background: #eef3ef;
+  background: #eef3f6;
   color: #334155;
   font-weight: 700;
 }
 
 .data-table tbody tr:hover {
-  background: #fbfaf7;
+  background: #fff8f1;
 }
 
 .data-table .date-cell,

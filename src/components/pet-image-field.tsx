@@ -68,7 +68,7 @@ export function PetImageField({
             name="profileImage"
             accept="image/jpeg,image/png,image/webp"
             disabled={disabled}
-            className="block w-full min-w-0 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-moss file:px-3 file:py-2 file:font-semibold file:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="block w-full min-w-0 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:font-semibold file:text-white disabled:cursor-not-allowed disabled:opacity-60"
             aria-invalid={validationError ? "true" : undefined}
             aria-describedby={validationError ? errorId : undefined}
             onChange={(event) => {

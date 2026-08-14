@@ -86,7 +86,7 @@ function AppRoleField({
       </select>
       <button
         type="submit"
-        className={`inline-flex shrink-0 items-center justify-center rounded-md border border-moss text-sm font-semibold text-moss hover:bg-moss hover:text-white ${
+        className={`inline-flex shrink-0 items-center justify-center rounded-md border border-brand text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white ${
           compact ? "h-8 px-2.5" : "h-9 w-full px-3 sm:w-auto"
         }`}
       >
