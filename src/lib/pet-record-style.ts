@@ -34,23 +34,28 @@ export const petRecordTypeStyles = {
 
 export const petRecordCreateKindStyles = {
   health: {
+    icon: "text-record-health",
     selected: "border-record-health/30 bg-record-health-soft text-record-health",
-    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-health/40 hover:bg-record-health-soft hover:text-record-health"
+    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-health/40 hover:bg-record-health-soft"
   },
   medical: {
+    icon: "text-record-medical",
     selected: "border-record-medical/30 bg-record-medical-soft text-record-medical",
-    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-medical/40 hover:bg-record-medical-soft hover:text-record-medical"
+    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-medical/40 hover:bg-record-medical-soft"
   },
   medication: {
+    icon: "text-record-medication",
     selected: "border-record-medication/30 bg-record-medication-soft text-record-medication",
-    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-medication/40 hover:bg-record-medication-soft hover:text-record-medication"
+    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-medication/40 hover:bg-record-medication-soft"
   },
   vaccination: {
+    icon: "text-record-vaccination",
     selected: "border-record-vaccination/30 bg-record-vaccination-soft text-record-vaccination",
-    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-vaccination/40 hover:bg-record-vaccination-soft hover:text-record-vaccination"
+    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-vaccination/40 hover:bg-record-vaccination-soft"
   },
   memory: {
+    icon: "text-record-memory",
     selected: "border-record-memory/30 bg-record-memory-soft text-record-memory",
-    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-memory/40 hover:bg-record-memory-soft hover:text-record-memory"
+    unselected: "border-slate-200 bg-white text-slate-700 hover:border-record-memory/40 hover:bg-record-memory-soft"
   }
-} satisfies Record<string, { selected: string; unselected: string }>;
+} satisfies Record<string, { icon: string; selected: string; unselected: string }>;

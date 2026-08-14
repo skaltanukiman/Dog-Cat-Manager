@@ -675,6 +675,30 @@ test("Pet Records UIは5種類の作成フォームと5種類のtimelineを持�
   assert.doesNotMatch(forms, /name="recordType"/);
 });
 
+test("Pet Recordsの作成selectorは全幅で5列を維持し、短い表示ラベルとsemantic colorを使う", () => {
+  const forms = source("src/components/pet-record-create-forms.tsx");
+  const timeline = source("src/components/pet-record-timeline.tsx");
+  const styles = source("src/lib/pet-record-style.ts");
+  const selectorStart = forms.indexOf('aria-label="登録する記録種類"');
+  const selector = forms.slice(forms.lastIndexOf("<div", selectorStart), forms.indexOf('<div className={kind === "health"'));
+
+  assert.match(selector, /grid grid-cols-5/);
+  assert.doesNotMatch(selector, /sm:flex|sm:flex-wrap|grid-cols-2/);
+  assert.match(selector, /min-h-12[\s\S]*whitespace-nowrap/);
+  assert.match(selector, /md:flex-row/);
+  assert.match(selector, /aria-pressed=\{kind === option\.value\}/);
+  for (const [label, actionLabel] of [
+    ["体調", "体調を記録"], ["通院", "通院を記録"], ["投薬", "投薬を記録"],
+    ["ワクチン", "ワクチンを記録"], ["思い出", "思い出を追加"]
+  ]) {
+    assert.match(forms, new RegExp(`label: "${label}", actionLabel: "${actionLabel}"`));
+  }
+  for (const token of ["health", "medical", "medication", "vaccination", "memory"]) {
+    assert.match(styles, new RegExp(`record-${token}`));
+  }
+  assert.match(timeline, /petRecordTypeStyles\[record\.recordType\]/);
+});
+
 test("Pet記録フィルターはPet・日付・keyword・favoriteを自動適用し、不正範囲と未来日を表示する", () => {
   const page = source("src/app/(app)/records/page.tsx");
   const form = source("src/components/auto-submit-filter-form.tsx");

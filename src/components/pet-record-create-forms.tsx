@@ -41,14 +41,14 @@ const submitClass = "inline-flex h-10 items-center justify-center rounded-md bg-
 const kinds: Array<{
   value: PetRecordCreateKind;
   label: string;
-  shortLabel: string;
+  actionLabel: string;
   icon: typeof HeartPulse;
 }> = [
-  { value: "health", label: "体調を記録", shortLabel: "体調", icon: HeartPulse },
-  { value: "medical", label: "通院を記録", shortLabel: "通院", icon: Stethoscope },
-  { value: "medication", label: "投薬を記録", shortLabel: "投薬", icon: Pill },
-  { value: "vaccination", label: "ワクチンを記録", shortLabel: "ワクチン", icon: Syringe },
-  { value: "memory", label: "思い出を追加", shortLabel: "思い出", icon: ImagePlus }
+  { value: "health", label: "体調", actionLabel: "体調を記録", icon: HeartPulse },
+  { value: "medical", label: "通院", actionLabel: "通院を記録", icon: Stethoscope },
+  { value: "medication", label: "投薬", actionLabel: "投薬を記録", icon: Pill },
+  { value: "vaccination", label: "ワクチン", actionLabel: "ワクチンを記録", icon: Syringe },
+  { value: "memory", label: "思い出", actionLabel: "思い出を追加", icon: ImagePlus }
 ];
 
 function CreateErrorMessage({ error }: { error?: CreateError }) {
@@ -148,7 +148,7 @@ export function PetRecordCreateForms({
   return (
     <UnsavedChangesGuard>
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid grid-cols-5 gap-1.5 sm:flex sm:flex-wrap sm:gap-2" aria-label="登録する記録種類">
+        <div className="grid grid-cols-5 gap-px sm:gap-2" aria-label="登録する記録種類">
           {kinds.map((option) => {
             const Icon = option.icon;
             return (
@@ -157,10 +157,12 @@ export function PetRecordCreateForms({
                 type="button"
                 onClick={() => setKind(option.value)}
                 aria-pressed={kind === option.value}
-                className={`inline-flex min-h-10 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${kind === option.value ? petRecordCreateKindStyles[option.value].selected : petRecordCreateKindStyles[option.value].unselected}`}
+                aria-label={option.actionLabel}
+                title={option.actionLabel}
+                className={`inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden whitespace-nowrap rounded-md border px-px text-[11px] font-semibold tracking-[-0.05em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:px-2 md:flex-row md:gap-2 md:px-3 md:text-sm md:tracking-normal ${kind === option.value ? petRecordCreateKindStyles[option.value].selected : petRecordCreateKindStyles[option.value].unselected}`}
               >
-                <Icon className="h-4 w-4" aria-hidden />
-                <span className="sm:hidden">{option.shortLabel}</span><span className="hidden sm:inline">{option.label}</span>
+                <Icon className={`h-4 w-4 shrink-0 ${petRecordCreateKindStyles[option.value].icon}`} aria-hidden />
+                <span>{option.label}</span>
               </button>
             );
           })}
