@@ -12,9 +12,9 @@ export const dynamic = "force-dynamic";
 
 const SPECIES_LABELS = { DOG: "犬", CAT: "猫" } as const;
 const DASHBOARD_VALUE_CLASS =
-  "inline-flex min-h-8 min-w-32 max-w-full items-center justify-end whitespace-normal break-words rounded-md border border-slate-200 bg-white px-2.5 py-1 text-right text-sm font-bold text-ink shadow-sm";
+  "inline-flex min-h-8 min-w-32 max-w-full items-center justify-end whitespace-normal break-words rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-bold text-ink shadow-sm";
 const DASHBOARD_EMPTY_VALUE_CLASS =
-  "inline-flex min-h-8 min-w-32 max-w-full items-center justify-end whitespace-normal break-words rounded-md border border-slate-200 bg-white px-2.5 py-1 text-right text-sm font-semibold text-slate-500 shadow-sm";
+  "inline-flex min-h-8 min-w-32 max-w-full items-center justify-end whitespace-normal break-words rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-semibold text-slate-500 shadow-sm";
 
 function getParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -80,7 +80,10 @@ export default async function DashboardPage({
                 : `/records?petId=${encodeURIComponent(pet.id)}&scope=pet&includeInactive=1`;
 
               return (
-                <article key={pet.id} className="min-w-0 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+                <article
+                  key={pet.id}
+                  className="flex min-w-0 flex-col rounded-md border border-slate-200 bg-white p-5 shadow-sm xl:p-4"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <h3 className="break-words text-lg font-bold text-ink">{pet.name}</h3>
@@ -103,9 +106,9 @@ export default async function DashboardPage({
                     />
                   </div>
 
-                  <dl className="mt-5 grid gap-3">
-                    <div className="flex items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3">
-                      <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                  <dl className="mt-5 grid flex-1 content-start gap-3">
+                    <div className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
+                      <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                         <Scale className="h-4 w-4 text-persimmon" aria-hidden />
                         最新体重
                       </dt>
@@ -115,8 +118,8 @@ export default async function DashboardPage({
                         </span>
                       </dd>
                     </div>
-                    <div className="flex items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3">
-                      <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                    <div className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
+                      <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                         <Utensils className="h-4 w-4 text-persimmon" aria-hidden />
                         今日の食事
                       </dt>
@@ -128,8 +131,8 @@ export default async function DashboardPage({
                         </span>
                       </dd>
                     </div>
-                    <div className="flex items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3">
-                      <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                    <div className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
+                      <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                         <Droplets className="h-4 w-4 text-moss" aria-hidden />
                         今日の水
                       </dt>
@@ -146,8 +149,8 @@ export default async function DashboardPage({
                       </dd>
                     </div>
                     {pet.species === "DOG" ? (
-                      <div className="flex items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3">
-                        <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
+                        <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                           <Footprints className="h-4 w-4 text-moss" aria-hidden />
                           今日の散歩
                         </dt>
@@ -166,8 +169,8 @@ export default async function DashboardPage({
                         </dd>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between gap-4 rounded-md bg-slate-50 px-3 py-3">
-                        <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
+                        <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                           <ClipboardCheck className="h-4 w-4 text-moss" aria-hidden />
                           今日のトイレ
                         </dt>
