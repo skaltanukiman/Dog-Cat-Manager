@@ -114,7 +114,7 @@ export default async function DashboardPage({
                         <Scale className="h-4 w-4 text-brand-dark" aria-hidden />
                         最新体重
                       </dt>
-                      <dd className="ml-auto text-right">
+                      <dd className="text-right">
                         <span className={latestWeight ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                           {latestWeight ? `${latestWeight.weightKg.toString()}kg` : "未記録"}
                         </span>
@@ -125,7 +125,7 @@ export default async function DashboardPage({
                         <Utensils className="h-4 w-4 text-accent" aria-hidden />
                         今日の食事
                       </dt>
-                      <dd className="ml-auto text-right">
+                      <dd className="text-right">
                         <span className={pet.todayFeeding ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                           {pet.todayFeeding
                             ? careSummary(pet.todayFeeding.count, pet.todayFeeding.latest.fedAt)
@@ -138,7 +138,7 @@ export default async function DashboardPage({
                         <Droplets className="h-4 w-4 text-brand" aria-hidden />
                         今日の水
                       </dt>
-                      <dd className="ml-auto text-right">
+                      <dd className="text-right">
                         <span className={pet.todayWater ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                           {pet.todayWater
                             ? careSummary(
@@ -156,7 +156,7 @@ export default async function DashboardPage({
                           <Footprints className="h-4 w-4 text-care-walk" aria-hidden />
                           今日の散歩
                         </dt>
-                        <dd className="ml-auto text-right">
+                        <dd className="text-right">
                           <span className={pet.todayWalk ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                             {pet.todayWalk
                               ? careSummary(
@@ -176,7 +176,7 @@ export default async function DashboardPage({
                           <ClipboardCheck className="h-4 w-4 text-care-litter" aria-hidden />
                           今日のトイレ
                         </dt>
-                        <dd className="ml-auto text-right">
+                        <dd className="text-right">
                           <span className={pet.todayLitter ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                             {pet.todayLitter
                               ? careSummary(

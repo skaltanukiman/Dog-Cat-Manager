@@ -106,7 +106,8 @@ test("Dashboard Care rows wrap only when the label and value no longer fit", () 
   const careRowClass = /flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3/g;
 
   assert.equal(page.match(careRowClass)?.length, 5);
-  assert.equal(page.match(/<dd className="ml-auto text-right">/g)?.length, 5);
+  assert.equal(page.match(/<dd className="text-right">/g)?.length, 5);
+  assert.doesNotMatch(page, /<dd className="ml-auto text-right">/);
   assert.doesNotMatch(page, /sm:flex-row|sm:items-center|min-\[\d+px\]:flex-row/);
 });
 
