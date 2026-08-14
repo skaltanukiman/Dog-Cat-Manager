@@ -225,6 +225,16 @@ npm run seed:contact-inquiries
 
 seedは実DBへの書き込みです。接続先と用途を確認し、本番では明示的な承認なしに実行しないでください。
 
+全画面のUI確認には、再利用可能なdevelopment DB限定fixtureを使用できます。引数なしは対象User・DB・予定件数のpreviewだけを表示し、`--apply`を指定したときだけ投入します。Google Accountを持つ実利用者が複数いる場合は、対象を推測せず停止するため、`UI_FIXTURE_TARGET_USER_ID`で明示してください。接続先の明示overrideには`UI_FIXTURE_DATABASE_URL`を使用できます。
+
+```bash
+npm run seed:ui
+npm run seed:ui -- --apply
+npm run seed:ui:cleanup
+```
+
+seedとcleanupはDB URL上のDB名と実接続先の両方が`dog_cat_manager_dev`であることを検証します。fixture画像rootを個別指定する場合は`UI_FIXTURE_PET_IMAGE_DIR`と`UI_FIXTURE_PET_RECORD_IMAGE_DIR`を使用してください。
+
 ## 検証
 
 変更範囲のテストを先に実行し、最終的に全体を確認します。

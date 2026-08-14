@@ -19,7 +19,9 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "seed:contact-inquiries": "tsx prisma/seed-contact-inquiries.ts",
-    "seed:admin-pagination": "tsx prisma/seed-admin-pagination.ts"
+    "seed:admin-pagination": "tsx prisma/seed-admin-pagination.ts",
+    "seed:ui": "tsx prisma/seed-ui-fixtures.ts",
+    "seed:ui:cleanup": "tsx prisma/seed-ui-fixtures.ts --cleanup"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

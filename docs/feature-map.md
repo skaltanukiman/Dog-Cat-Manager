@@ -108,6 +108,7 @@
 - **Action / query:** `src/app/actions/admin.ts`、`src/lib/admin-users.ts`、`admin-households.ts`、`admin-invitations.ts`、`user-access.ts`。
 - **Prisma:** `AppRole`、`UserAccessStatus`、`UserAccessAction`。停止はデータを削除せず全Sessionを無効化し、履歴を保存する。
 - **補助 / テスト:** `prisma/admin-role.ts`、`prisma/seed-admin-pagination.ts`、`tests/admin-overview.test.ts`、`admin-users.test.ts`、`admin-households.test.ts`、`admin-invitations.test.ts`、`user-access.test.ts`。
+- **UI fixture:** `prisma/seed-ui-fixtures.ts`、`prisma/ui-fixture-logic.ts`、`tests/ui-fixtures.test.ts`。development DB限定の全画面確認データをpreview・投入・cleanupする。
 
 ## リアルタイム同期
 
