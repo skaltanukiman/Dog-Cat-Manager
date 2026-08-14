@@ -83,6 +83,9 @@ test("Care集計は現在のお世話日と表示Pet IDを種類別一括query�
 });
 
 test("カードは食事・水・DOG散歩・CATトイレの件数と最新内容、未記録を表示する", () => {
+  assert.match(page, /\$\{count\}回｜\$\{formatTimeJst\(occurredAt\)\}/);
+  assert.match(page, /suffix \? `｜\$\{suffix\}` : ""/);
+  assert.doesNotMatch(page, /回 \/ 最終/);
   assert.match(page, /careSummary\(pet\.todayFeeding\.count, pet\.todayFeeding\.latest\.fedAt\)/);
   assert.match(page, /pet\.todayWater\.latest\.caredAt[\s\S]*PET_WATER_ACTION_LABELS/);
   assert.match(page, /pet\.species === "DOG"/);
