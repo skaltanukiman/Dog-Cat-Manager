@@ -30,6 +30,7 @@ import { PetThumbnail } from "@/components/pet-thumbnail";
 import { RecordImageField } from "@/components/record-image-field";
 import { RecordTimeInput } from "@/components/record-time-input";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
+import { petRecordTypeStyles } from "@/lib/pet-record-style";
 import type { getPetRecordsPageData } from "@/lib/pet-record-queries";
 import {
   PET_HEALTH_AMOUNT_CONDITIONS as HEALTH_AMOUNT_CONDITIONS,
@@ -61,34 +62,6 @@ type PetRecordReturnFilters = {
   favoriteOnly: boolean;
   page: number;
 };
-const recordTypeStyles = {
-  HEALTH: {
-    card: "border-l-emerald-500",
-    marker: "bg-emerald-600",
-    badge: "bg-emerald-50 text-emerald-800 ring-emerald-200"
-  },
-  MEDICAL: {
-    card: "border-l-sky-500",
-    marker: "bg-sky-600",
-    badge: "bg-sky-50 text-sky-800 ring-sky-200"
-  },
-  MEDICATION: {
-    card: "border-l-violet-500",
-    marker: "bg-violet-600",
-    badge: "bg-violet-50 text-violet-800 ring-violet-200"
-  },
-  VACCINATION: {
-    card: "border-l-amber-500",
-    marker: "bg-amber-600",
-    badge: "bg-amber-50 text-amber-800 ring-amber-200"
-  },
-  MEMORY: {
-    card: "border-l-rose-400",
-    marker: "bg-rose-500",
-    badge: "bg-rose-50 text-rose-800 ring-rose-200"
-  }
-} satisfies Record<PetRecordItem["recordType"], { card: string; marker: string; badge: string }>;
-
 function TypeIcon({ type }: { type: PetRecordItem["recordType"] }) {
   if (type === "HEALTH") return <HeartPulse className="h-4 w-4" aria-hidden />;
   if (type === "MEDICAL") return <Stethoscope className="h-4 w-4" aria-hidden />;
@@ -299,7 +272,7 @@ export function PetRecordTimeline({
         {records.map((record) => {
           const relatedPets = record.recordType === "MEMORY" ? record.memoryDetail?.pets ?? [record.pet] : [record.pet];
           const editable = canEdit && record.pet.isActive && relatedPets.every((pet) => pet.isActive);
-          const typeStyle = recordTypeStyles[record.recordType];
+          const typeStyle = petRecordTypeStyles[record.recordType];
           return (
             <article key={record.id} className={`relative ml-9 rounded-lg border border-l-4 border-slate-200 bg-white p-4 shadow-sm sm:ml-12 sm:p-5 ${typeStyle.card}`}>
               <span className={`absolute -left-[2.25rem] top-5 grid h-8 w-8 place-items-center rounded-full border-2 border-white text-white shadow sm:-left-[3.1rem] sm:h-10 sm:w-10 ${typeStyle.marker}`}><TypeIcon type={record.recordType} /></span>

@@ -74,7 +74,7 @@
 - **画面:** `/records`。健康、通院、投薬、ワクチン、思い出をPetまたはHousehold scopeで検索・ページングする。
 - **Action:** `src/app/actions/pet-health-records.ts`、`pet-medical-records.ts`、`pet-medication-records.ts`、`pet-vaccination-records.ts`、`pet-memory-records.ts`、共通`pet-records.ts`。
 - **query / schema:** `src/lib/pet-record-queries.ts`、`pet-record-mutations.ts`、`pet-record-schemas.ts`、`pet-records.ts`。
-- **UI:** `src/components/pet-record-create-forms.tsx`、`pet-record-timeline.tsx`、`memory-pet-selector.tsx`、`memory-tag-input.tsx`、`record-image-field.tsx`。
+- **UI:** `src/components/pet-record-create-forms.tsx`、`pet-record-timeline.tsx`、`src/lib/pet-record-style.ts`、`memory-pet-selector.tsx`、`memory-tag-input.tsx`、`record-image-field.tsx`。
 - **Prisma:** `PetRecord`を親に5種類のdetail、`PetMemoryRecordPet`、`PetMemoryRecordImage`を持つ。`SavedMemoryTag`と4種類のHealth enumはPet Memory / Healthが使用する。検索は`pg_trgm`を使う。
 - **画像:** `src/lib/pet-record-image.ts`、認証付き`/api/pet-records/[id]/image`。`PET_RECORD_IMAGE_DIR`へHousehold別UUID WebPを保存する。
 - **テスト:** `tests/records.test.ts`、`tests/authorization.test.ts`、`tests/pet-image.test.tsx`。

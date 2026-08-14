@@ -18,6 +18,7 @@ import { RecordImageField } from "@/components/record-image-field";
 import { RecordTimeInput } from "@/components/record-time-input";
 import { AutoDismissSuccessMessage } from "@/components/status-message";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
+import { petRecordCreateKindStyles } from "@/lib/pet-record-style";
 import {
   PET_HEALTH_AMOUNT_CONDITIONS as HEALTH_AMOUNT_CONDITIONS,
   PET_HEALTH_EXCRETION_CONDITIONS as HEALTH_EXCRETION_CONDITIONS,
@@ -147,7 +148,7 @@ export function PetRecordCreateForms({
   return (
     <UnsavedChangesGuard>
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" aria-label="登録する記録種類">
+        <div className="grid grid-cols-5 gap-1.5 sm:flex sm:flex-wrap sm:gap-2" aria-label="登録する記録種類">
           {kinds.map((option) => {
             const Icon = option.icon;
             return (
@@ -156,7 +157,7 @@ export function PetRecordCreateForms({
                 type="button"
                 onClick={() => setKind(option.value)}
                 aria-pressed={kind === option.value}
-                className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold ${kind === option.value ? "border-brand bg-brand text-white" : "border-slate-200 text-slate-700 hover:border-brand hover:text-brand"}`}
+                className={`inline-flex min-h-10 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${kind === option.value ? petRecordCreateKindStyles[option.value].selected : petRecordCreateKindStyles[option.value].unselected}`}
               >
                 <Icon className="h-4 w-4" aria-hidden />
                 <span className="sm:hidden">{option.shortLabel}</span><span className="hidden sm:inline">{option.label}</span>
