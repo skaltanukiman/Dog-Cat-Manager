@@ -109,23 +109,23 @@ export default async function DashboardPage({
                   </div>
 
                   <dl className="mt-5 grid flex-1 content-start gap-3">
-                    <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
                       <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                         <Scale className="h-4 w-4 text-brand-dark" aria-hidden />
                         最新体重
                       </dt>
-                      <dd className="min-w-0 flex-1 text-right">
+                      <dd className="ml-auto text-right">
                         <span className={latestWeight ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                           {latestWeight ? `${latestWeight.weightKg.toString()}kg` : "未記録"}
                         </span>
                       </dd>
                     </div>
-                    <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
                       <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                         <Utensils className="h-4 w-4 text-accent" aria-hidden />
                         今日の食事
                       </dt>
-                      <dd className="min-w-0 flex-1 text-right">
+                      <dd className="ml-auto text-right">
                         <span className={pet.todayFeeding ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                           {pet.todayFeeding
                             ? careSummary(pet.todayFeeding.count, pet.todayFeeding.latest.fedAt)
@@ -133,12 +133,12 @@ export default async function DashboardPage({
                         </span>
                       </dd>
                     </div>
-                    <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
                       <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                         <Droplets className="h-4 w-4 text-brand" aria-hidden />
                         今日の水
                       </dt>
-                      <dd className="min-w-0 flex-1 text-right">
+                      <dd className="ml-auto text-right">
                         <span className={pet.todayWater ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                           {pet.todayWater
                             ? careSummary(
@@ -151,12 +151,12 @@ export default async function DashboardPage({
                       </dd>
                     </div>
                     {pet.species === "DOG" ? (
-                      <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
                         <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                           <Footprints className="h-4 w-4 text-care-walk" aria-hidden />
                           今日の散歩
                         </dt>
-                        <dd className="min-w-0 flex-1 text-right">
+                        <dd className="ml-auto text-right">
                           <span className={pet.todayWalk ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                             {pet.todayWalk
                               ? careSummary(
@@ -171,12 +171,12 @@ export default async function DashboardPage({
                         </dd>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-stretch justify-between gap-2 rounded-md bg-slate-50 px-2 py-3 sm:flex-row sm:items-center">
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3">
                         <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-600">
                           <ClipboardCheck className="h-4 w-4 text-care-litter" aria-hidden />
                           今日のトイレ
                         </dt>
-                        <dd className="min-w-0 flex-1 text-right">
+                        <dd className="ml-auto text-right">
                           <span className={pet.todayLitter ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                             {pet.todayLitter
                               ? careSummary(

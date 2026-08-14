@@ -102,6 +102,14 @@ test("DashboardのCareサマリー値は共通badgeで折り返さない", () =>
   assert.doesNotMatch(page, /DASHBOARD_(?:EMPTY_)?VALUE_CLASS =\s*"[^"]*(?:whitespace-normal|break-words)/);
 });
 
+test("Dashboard Care rows wrap only when the label and value no longer fit", () => {
+  const careRowClass = /flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-3/g;
+
+  assert.equal(page.match(careRowClass)?.length, 5);
+  assert.equal(page.match(/<dd className="ml-auto text-right">/g)?.length, 5);
+  assert.doesNotMatch(page, /sm:flex-row|sm:items-center|min-\[\d+px\]:flex-row/);
+});
+
 test("Dashboard species badge and Care icon colors use semantic tokens", () => {
   assert.match(speciesBadge, /DOG: "border-species-dog\/20 bg-species-dog-soft text-species-dog"/);
   assert.match(speciesBadge, /CAT: "border-species-cat\/20 bg-species-cat-soft text-species-cat"/);
