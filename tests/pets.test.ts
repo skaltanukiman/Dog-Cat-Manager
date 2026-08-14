@@ -134,6 +134,7 @@ test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規�
   assert.match(page, /<PetSpeciesBadge species=\{pet\.species\} \/>/);
   assert.ok((page.match(/className="h-10"/g) ?? []).length >= 13);
   assert.match(page, /<span className="flex h-10 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-3">/);
+  assert.match(page, /className="grid items-start gap-3 md:grid-cols-2 lg:grid-cols-4"/);
   assert.match(page, /種類は登録後変更できません/);
   for (const label of ["犬", "猫", "オス", "メス", "不明", "管理中", "管理終了"]) {
     assert.match(page, new RegExp(label));

@@ -139,7 +139,7 @@ export default async function PetsPage({
                 <form
                   action={canEdit ? updatePet : undefined}
                   data-dirty-watch={canEdit ? true : undefined}
-                  className="grid gap-3 md:grid-cols-2 lg:grid-cols-4"
+                  className="grid items-start gap-3 md:grid-cols-2 lg:grid-cols-4"
                 >
                   <input type="hidden" name="id" value={pet.id} />
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
