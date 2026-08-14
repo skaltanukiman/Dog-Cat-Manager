@@ -99,6 +99,13 @@ test("Pet版weights画面はkg・species・管理終了閲覧を提供する", a
   assert.match(page, /name="weightKg"/);
   assert.match(page, /体重\(kg\)/);
   assert.match(page, /readOnly=\{!canMutateSelectedPet\}/);
+  assert.match(page, /lg:grid-cols-\[minmax\(280px,360px\)_minmax\(0,1fr\)\]/);
+  assert.match(page, /!h-10 !min-h-10/);
+  assert.match(page, /!h-16 !min-h-16/);
+  assert.match(page, /rows=\{2\}/);
+  assert.match(history, /!h-10 !min-h-10/);
+  assert.match(history, /!h-16 !min-h-16/);
+  assert.match(history, /rows=\{1\}/);
   assert.match(chart, /dataKey="weightKg"/);
   assert.match(chart, /unit="kg"/);
   assert.match(history, /name="memo"/);

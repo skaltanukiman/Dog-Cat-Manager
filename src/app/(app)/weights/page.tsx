@@ -123,26 +123,26 @@ export default async function WeightsPage({
                 </p>
               ) : null}
 
-              <section className={canMutateSelectedPet ? "grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]" : "grid gap-4"}>
+              <section className={canMutateSelectedPet ? "grid items-start gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]" : "grid gap-4"}>
                 {canMutateSelectedPet ? (
-                  <form action={createPetWeightRecord} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+                  <form action={createPetWeightRecord} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
                     <input type="hidden" name="petId" value={selectedPet.id} />
                     {includeInactive ? <input type="hidden" name="includeInactive" value="1" /> : null}
                     <h3 className="text-base font-bold text-ink">体重登録</h3>
-                    <div className="mt-4 grid gap-4">
+                    <div className="mt-3 grid gap-3">
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         測定日
-                        <input type="date" name="recordDate" defaultValue={today} max={today} required />
+                        <input className="!h-10 !min-h-10" type="date" name="recordDate" defaultValue={today} max={today} required />
                       </label>
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         体重(kg)
-                        <input type="number" name="weightKg" min="0.01" max={MAX_PET_WEIGHT_KG} step="0.01" placeholder="5.25" required />
+                        <input className="h-10" type="number" name="weightKg" min="0.01" max={MAX_PET_WEIGHT_KG} step="0.01" placeholder="5.25" required />
                       </label>
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         メモ
-                        <textarea name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} rows={3} placeholder="夕食前" />
+                        <textarea className="!h-16 !min-h-16" name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} rows={2} placeholder="夕食前" />
                       </label>
-                      <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
+                      <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark">
                         <Plus className="h-4 w-4" aria-hidden />
                         登録
                       </button>

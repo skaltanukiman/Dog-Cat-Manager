@@ -57,15 +57,15 @@ export function PetWeightHistoryList({
                 {includeInactive ? <input type="hidden" name="includeInactive" value="1" /> : null}
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   測定日
-                  <input type="date" name="recordDate" defaultValue={record.recordDate} max={today} required />
+                  <input className="!h-10 !min-h-10" type="date" name="recordDate" defaultValue={record.recordDate} max={today} required />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   体重(kg)
-                  <input type="number" name="weightKg" min="0.01" max={MAX_PET_WEIGHT_KG} step="0.01" defaultValue={record.weightKg} required />
+                  <input className="h-10" type="number" name="weightKg" min="0.01" max={MAX_PET_WEIGHT_KG} step="0.01" defaultValue={record.weightKg} required />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   メモ
-                  <textarea name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} rows={2} defaultValue={record.memo ?? ""} />
+                  <textarea className="!h-16 !min-h-16" name="memo" maxLength={PET_WEIGHT_MEMO_MAX_LENGTH} rows={1} defaultValue={record.memo ?? ""} />
                 </label>
                 <DirtySubmitButton className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md border border-brand px-4 text-sm font-semibold text-brand hover:bg-brand-dark hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400">
                   <Save className="h-4 w-4" aria-hidden />
