@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClipboardCheck, Droplets, Footprints, Utensils } from "lucide-react";
 
 import {
   createPetFeedingRecord,
@@ -11,6 +12,7 @@ import { createPetWaterRecord, deletePetWaterRecord, updatePetWaterRecord } from
 import { AutoSubmitInput } from "@/components/auto-submit-input";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { EmptyState } from "@/components/empty-state";
+import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { PetThumbnail } from "@/components/pet-thumbnail";
 import { StatusMessage } from "@/components/status-message";
 import { canEditHouseholdSharedData } from "@/lib/authorization";
@@ -159,7 +161,10 @@ export default async function CarePage({
                 />
                 <div>
                   <h3 className="text-lg font-bold text-ink">{selectedPet.name}</h3>
-                  <p className="text-sm text-slate-600">{SPECIES_LABELS[selectedPet.species]}・お世話日 {selectedCareDate.replaceAll("-", "/")}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <PetSpeciesBadge species={selectedPet.species} />
+                    <span>お世話日 {selectedCareDate.replaceAll("-", "/")}</span>
+                  </div>
                 </div>
               </section>
 
@@ -175,7 +180,7 @@ export default async function CarePage({
 
               <section className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-bold text-ink">食事</h3>
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Utensils className="h-5 w-5 text-accent" aria-hidden />食事</h3>
                   <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
                 </div>
                 {canMutateSelectedPet ? (
@@ -236,7 +241,7 @@ export default async function CarePage({
 
               <section className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-bold text-ink">水</h3>
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Droplets className="h-5 w-5 text-brand" aria-hidden />水</h3>
                   <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 </div>
                 {canMutateSelectedPet ? (
@@ -310,7 +315,7 @@ export default async function CarePage({
               {selectedPet.species === "DOG" ? (
                 <section className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-bold text-ink">散歩</h3>
+                    <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Footprints className="h-5 w-5 text-care-walk" aria-hidden />散歩</h3>
                     <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
                   </div>
                   {canMutateSelectedPet ? (
@@ -381,7 +386,7 @@ export default async function CarePage({
               {selectedPet.species === "CAT" ? (
                 <section className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-bold text-ink">猫トイレ</h3>
+                    <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><ClipboardCheck className="h-5 w-5 text-care-litter" aria-hidden />猫トイレ</h3>
                     <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
                   </div>
                   {canMutateSelectedPet ? (

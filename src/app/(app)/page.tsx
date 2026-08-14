@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ClipboardCheck, Droplets, Footprints, Plus, Scale, Settings, Utensils } from "lucide-react";
 
 import { EmptyState } from "@/components/empty-state";
+import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { PetThumbnail } from "@/components/pet-thumbnail";
 import { StatusMessage } from "@/components/status-message";
 import { formatTimeJst } from "@/lib/date";
@@ -10,11 +11,6 @@ import { getDashboardData } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-const SPECIES_LABELS = { DOG: "犬", CAT: "猫" } as const;
-const SPECIES_BADGE_CLASS = {
-  DOG: "border-species-dog/20 bg-species-dog-soft text-species-dog",
-  CAT: "border-species-cat/20 bg-species-cat-soft text-species-cat"
-} as const;
 const DASHBOARD_VALUE_CLASS =
   "inline-flex min-h-8 min-w-32 max-w-full items-center justify-end whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-bold text-ink shadow-sm";
 const DASHBOARD_EMPTY_VALUE_CLASS =
@@ -91,11 +87,9 @@ export default async function DashboardPage({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <h3 className="break-words text-lg font-bold text-ink">{pet.name}</h3>
-                      <span
-                        className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${SPECIES_BADGE_CLASS[pet.species]}`}
-                      >
-                        {SPECIES_LABELS[pet.species]}
-                      </span>
+                      <div className="mt-1">
+                        <PetSpeciesBadge species={pet.species} />
+                      </div>
                     </div>
                     <span
                       className={`shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${

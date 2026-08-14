@@ -130,7 +130,8 @@ test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規�
   }
   assert.match(page, /<select name="species" required defaultValue="">/);
   assert.equal((page.match(/name="species"/g) ?? []).length, 1);
-  assert.match(page, /SPECIES_LABELS\[pet\.species\]/);
+  assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
+  assert.match(page, /<PetSpeciesBadge species=\{pet\.species\} \/>/);
   assert.match(page, /種類は登録後変更できません/);
   for (const label of ["犬", "猫", "オス", "メス", "不明", "管理中", "管理終了"]) {
     assert.match(page, new RegExp(label));

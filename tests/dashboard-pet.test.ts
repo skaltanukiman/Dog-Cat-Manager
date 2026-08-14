@@ -17,6 +17,7 @@ function readSource(path: string) {
 }
 
 const page = readSource("src/app/(app)/page.tsx");
+const speciesBadge = readSource("src/components/pet-species-badge.tsx");
 const queries = readSource("src/lib/queries.ts");
 const settingsAction = readSource("src/app/actions/settings.ts");
 const settingsForm = readSource("src/components/dashboard-settings-form.tsx");
@@ -102,8 +103,10 @@ test("DashboardのCareサマリー値は共通badgeで折り返さない", () =>
 });
 
 test("Dashboard species badge and Care icon colors use semantic tokens", () => {
-  assert.match(page, /const SPECIES_BADGE_CLASS = \{[\s\S]*DOG: "border-species-dog\/20 bg-species-dog-soft text-species-dog"[\s\S]*CAT: "border-species-cat\/20 bg-species-cat-soft text-species-cat"/);
-  assert.match(page, /rounded-full border px-2 py-0\.5 text-xs font-medium/);
+  assert.match(speciesBadge, /DOG: "border-species-dog\/20 bg-species-dog-soft text-species-dog"/);
+  assert.match(speciesBadge, /CAT: "border-species-cat\/20 bg-species-cat-soft text-species-cat"/);
+  assert.match(speciesBadge, /inline-flex rounded-full border px-2 py-0\.5 text-xs font-medium/);
+  assert.match(page, /<PetSpeciesBadge species=\{pet\.species\} \/>/);
   assert.match(page, /<Scale className="h-4 w-4 text-brand-dark"/);
   assert.match(page, /<Utensils className="h-4 w-4 text-accent"/);
   assert.match(page, /<Droplets className="h-4 w-4 text-brand"/);
@@ -116,7 +119,7 @@ test("最新体重だけをDecimalのまま表示し、PetThumbnailと犬猫・�
   assert.match(page, /latestWeight\.weightKg\.toString\(\)/);
   assert.doesNotMatch(page, /Number\(latestWeight\.weightKg\)|parseFloat/);
   assert.match(page, /<PetThumbnail/);
-  assert.match(page, /SPECIES_LABELS\[pet\.species\]/);
+  assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
   assert.match(page, /pet\.isActive \? "管理中" : "管理終了"/);
 });
 

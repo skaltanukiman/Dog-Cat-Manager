@@ -135,6 +135,12 @@ test("/careはPet選択・画像・お世話日・食事・水・閲覧専用状
   ]) assert.match(page, new RegExp(text));
   assert.match(page, /name="petId"/);
   assert.match(page, /SPECIES_LABELS\[pet\.species\]/);
+  assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
+  assert.match(page, /<PetSpeciesBadge species=\{selectedPet\.species\} \/>/);
+  assert.match(page, /<Utensils className="h-5 w-5 text-accent"/);
+  assert.match(page, /<Droplets className="h-5 w-5 text-brand"/);
+  assert.match(page, /<Footprints className="h-5 w-5 text-care-walk"/);
+  assert.match(page, /<ClipboardCheck className="h-5 w-5 text-care-litter"/);
   assert.match(page, /<PetThumbnail/);
   assert.match(page, /name="date"/);
   assert.match(page, /name="fedAt"/);

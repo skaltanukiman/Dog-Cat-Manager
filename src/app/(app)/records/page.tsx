@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PaginationLayout } from "@/components/pagination";
 import { PetRecordCreateForms } from "@/components/pet-record-create-forms";
 import { PetRecordTimeline } from "@/components/pet-record-timeline";
+import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { PetThumbnail } from "@/components/pet-thumbnail";
 import { RecordKeywordInput } from "@/components/record-keyword-input";
 import { StatusMessage } from "@/components/status-message";
@@ -161,7 +162,10 @@ export default async function RecordsPage({
                 <PetThumbnail petId={data.selectedPet.id} petName={data.selectedPet.name} profileImageFileName={data.selectedPet.profileImageFileName} />
                 <div>
                   <h2 className="text-lg font-bold text-ink">{data.selectedPet.name}</h2>
-                  <p className="text-sm text-slate-600">{speciesLabel[data.selectedPet.species]}{data.selectedPet.isActive ? "" : "・管理終了"}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <PetSpeciesBadge species={data.selectedPet.species} />
+                    {!data.selectedPet.isActive ? <span>管理終了</span> : null}
+                  </div>
                 </div>
               </section>
 

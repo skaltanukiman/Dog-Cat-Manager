@@ -755,6 +755,8 @@ test("/recordsはPet selector・species・管理終了切替・2 scope・6種類
   assert.match(page, /<input type="hidden" name="scope" value=\{scope\} \/>/);
   assert.match(page, /<select name="petId"[\s\S]*pet\.name\}（\{speciesLabel\[pet\.species\]\}）/);
   assert.match(page, /<PetThumbnail petId=\{data\.selectedPet\.id\}/);
+  assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
+  assert.match(page, /<PetSpeciesBadge species=\{data\.selectedPet\.species\} \/>/);
   assert.match(page, /管理終了したPetも含む/);
   for (const tab of ["すべて", "健康・体調", "通院", "投薬", "ワクチン", "思い出"]) {
     assert.match(page, new RegExp(`label: "${tab}"`));

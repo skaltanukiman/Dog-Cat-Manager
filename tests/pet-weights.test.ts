@@ -92,6 +92,8 @@ test("Pet版weights画面はkg・species・管理終了閲覧を提供する", a
   assert.match(page, /犬・猫の日付ごとの体重を記録し、推移を確認します。/);
   assert.match(page, /name="petId"/);
   assert.match(page, /SPECIES_LABELS\[pet\.species\]/);
+  assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
+  assert.match(page, /<PetSpeciesBadge species=\{selectedPet\.species\} \/>/);
   assert.match(page, /管理終了したPetも含む/);
   assert.match(page, /href="\/pets"/);
   assert.match(page, /name="weightKg"/);

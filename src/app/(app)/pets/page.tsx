@@ -3,6 +3,7 @@ import { Archive, Plus, RotateCcw, Save } from "lucide-react";
 import { createPet, updatePet, updatePetActiveStatus } from "@/app/actions/pets";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import { PetImageField } from "@/components/pet-image-field";
+import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { StatusMessage } from "@/components/status-message";
 import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
@@ -10,11 +11,6 @@ import { toDateInputValue, todayInputJst } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-
-const SPECIES_LABELS = {
-  DOG: "犬",
-  CAT: "猫"
-} as const;
 
 const SEX_LABELS = {
   MALE: "オス",
@@ -123,7 +119,7 @@ export default async function PetsPage({
                     <span className={`rounded-md px-2 py-1 text-xs font-semibold ${pet.isActive ? "bg-highlight/40 text-slate-700" : "bg-slate-200 text-slate-600"}`}>
                       {pet.isActive ? "管理中" : "管理終了"}
                     </span>
-                    <span className="text-sm font-semibold text-slate-700">{SPECIES_LABELS[pet.species]}</span>
+                    <PetSpeciesBadge species={pet.species} />
                   </div>
                   {canEdit ? (
                     <form action={updatePetActiveStatus}>
@@ -152,8 +148,8 @@ export default async function PetsPage({
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     種類
-                    <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
-                      {SPECIES_LABELS[pet.species]}
+                    <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                      <PetSpeciesBadge species={pet.species} />
                     </span>
                     <span className="text-xs font-normal text-slate-500">種類は登録後変更できません</span>
                   </label>

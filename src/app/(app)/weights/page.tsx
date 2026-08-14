@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PaginationLayout } from "@/components/pagination";
 import { PetWeightChart } from "@/components/pet-weight-chart";
 import { PetWeightHistoryList } from "@/components/pet-weight-history-list";
+import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { StatusMessage } from "@/components/status-message";
 import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
@@ -149,8 +150,10 @@ export default async function WeightsPage({
                   </form>
                 ) : null}
                 <section>
-                  <h3 className="mb-3 text-base font-bold text-ink">
-                    {selectedPet.name}（{SPECIES_LABELS[selectedPet.species]}）の体重推移
+                  <h3 className="mb-3 flex flex-wrap items-center gap-2 text-base font-bold text-ink">
+                    <span>{selectedPet.name}</span>
+                    <PetSpeciesBadge species={selectedPet.species} />
+                    <span>の体重推移</span>
                   </h3>
                   <PetWeightChart data={chartData} />
                   {pagination.totalCount > chartData.length ? (
