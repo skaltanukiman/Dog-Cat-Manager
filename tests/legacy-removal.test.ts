@@ -214,3 +214,16 @@ test("旧 route・API・runtime access・環境設定は復活していない", 
   assert.match(configuration, /PET_IMAGE_DIR/);
   assert.match(configuration, /PET_RECORD_IMAGE_DIR/);
 });
+
+test("current CI runtime configuration does not reintroduce Hamster settings", () => {
+  const ciConfiguration = source(".github/workflows/ci.yml");
+
+  assert.doesNotMatch(
+    ciConfiguration,
+    /HAMSTER_IMAGE_DIR|(?:^|\n)\s*RECORD_IMAGE_DIR=|uploads\/hamsters|hamster_manager_ci|hamster_user|hamster_ci_password|RUNNER_TEMP\/hamster-manager/
+  );
+  assert.match(ciConfiguration, /PET_IMAGE_DIR/);
+  assert.match(ciConfiguration, /PET_RECORD_IMAGE_DIR/);
+  assert.match(ciConfiguration, /dog_cat_manager_ci/);
+  assert.match(ciConfiguration, /RUNNER_TEMP\/dog-cat-manager/);
+});

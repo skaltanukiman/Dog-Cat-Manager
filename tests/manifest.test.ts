@@ -26,8 +26,8 @@ test("PWA Manifest にインストール情報とアイコンを設定する", (
       scope: "/",
       display: "standalone",
       lang: "ja",
-      background_color: "#f4f6f4",
-      theme_color: "#426b5a"
+      background_color: "#F5F7FA",
+      theme_color: "#3E6F8E"
     }
   );
   assert.deepEqual(metadata.icons, [

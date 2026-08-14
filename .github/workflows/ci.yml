@@ -26,19 +26,19 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: hamster_manager_ci
-          POSTGRES_USER: hamster_user
-          POSTGRES_PASSWORD: hamster_ci_password
+          POSTGRES_DB: dog_cat_manager_ci
+          POSTGRES_USER: dog_cat_user
+          POSTGRES_PASSWORD: dog_cat_ci_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U hamster_user -d hamster_manager_ci"
+          --health-cmd "pg_isready -U dog_cat_user -d dog_cat_manager_ci"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://hamster_user:hamster_ci_password@localhost:5432/hamster_manager_ci?schema=public
+      DATABASE_URL: postgresql://dog_cat_user:dog_cat_ci_password@localhost:5432/dog_cat_manager_ci?schema=public
       AUTH_SECRET: ci-only-dummy-auth-secret-not-for-production
       AUTH_GOOGLE_ID: ci-dummy-google-client-id
       AUTH_GOOGLE_SECRET: ci-dummy-google-client-secret
@@ -64,13 +64,13 @@ jobs:
       - name: Configure writable runtime directories
         shell: bash
         run: |
-          runtime_root="$RUNNER_TEMP/hamster-manager"
+          runtime_root="$RUNNER_TEMP/dog-cat-manager"
           printf '%s\n' \
             "LOG_DIR=$runtime_root/logs" \
-            "HAMSTER_IMAGE_DIR=$runtime_root/uploads/hamsters" \
-            "RECORD_IMAGE_DIR=$runtime_root/uploads/records" \
+            "PET_IMAGE_DIR=$runtime_root/uploads/pets" \
+            "PET_RECORD_IMAGE_DIR=$runtime_root/uploads/pet-records" \
             >> "$GITHUB_ENV"
-          mkdir -p "$runtime_root/logs" "$runtime_root/uploads/hamsters" "$runtime_root/uploads/records"
+          mkdir -p "$runtime_root/logs" "$runtime_root/uploads/pets" "$runtime_root/uploads/pet-records"
 
       - name: Generate Prisma Client
         run: npm run prisma:generate
