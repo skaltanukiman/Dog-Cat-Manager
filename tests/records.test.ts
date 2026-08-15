@@ -675,6 +675,17 @@ test("Pet Records UIは5種類の作成フォームと5種類のtimelineを持�
   assert.doesNotMatch(forms, /name="recordType"/);
 });
 
+test("Pet Record timelineは主情報から本文・操作へ進む単一DOMの情報階層を持つ", () => {
+  const timeline = source("src/components/pet-record-timeline.tsx");
+
+  assert.match(
+    timeline,
+    /PET_RECORD_TYPE_LABELS\[record\.recordType\][\s\S]*record\.title[\s\S]*record\.recordDate[\s\S]*relatedPets\.map[\s\S]*record\.memoryDetail\?\.isFavorite[\s\S]*record\.memo[\s\S]*<details[\s\S]*<form action=\{deletePetRecord\}/
+  );
+  assert.equal(timeline.match(/<form action=\{deletePetRecord\}/g)?.length, 1);
+  assert.equal(timeline.match(/relatedPets\.map/g)?.length, 1);
+});
+
 test("Pet Recordsの作成selectorは全幅で5列を維持し、短い表示ラベルとsemantic colorを使う", () => {
   const forms = source("src/components/pet-record-create-forms.tsx");
   const timeline = source("src/components/pet-record-timeline.tsx");
