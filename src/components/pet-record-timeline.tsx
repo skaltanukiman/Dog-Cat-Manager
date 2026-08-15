@@ -278,7 +278,7 @@ export function PetRecordTimeline({
               <span className={`absolute -left-[2.25rem] top-5 grid h-8 w-8 place-items-center rounded-full border-2 border-white text-white shadow sm:-left-[3.1rem] sm:h-10 sm:w-10 ${typeStyle.marker}`}><TypeIcon type={record.recordType} /></span>
               <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start">
                 <PetThumbnail petId={record.pet.id} petName={record.pet.name} profileImageFileName={record.pet.profileImageFileName} size="timeline" />
-                <div className="min-w-0 self-start sm:col-start-2">
+                <div className="min-w-0 self-center sm:col-start-2 sm:self-start">
                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${typeStyle.badge}`}><TypeIcon type={record.recordType} />{PET_RECORD_TYPE_LABELS[record.recordType]}</span>
                 </div>
                 <h3 className="col-span-full mt-2 min-w-0 break-words text-lg font-bold text-ink sm:col-span-1 sm:col-start-2">{record.title}</h3>
