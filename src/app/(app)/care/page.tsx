@@ -196,7 +196,7 @@ export default async function CarePage({
                 </div>
                 {canMutateSelectedPet ? (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                    <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
                     <form action={createPetFeedingRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                     <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -263,7 +263,7 @@ export default async function CarePage({
                 </div>
                 {canMutateSelectedPet ? (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                    <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
                     <form action={createPetWaterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                     <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -343,7 +343,7 @@ export default async function CarePage({
                   </div>
                   {canMutateSelectedPet ? (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                      <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
                       <form action={createPetWalkRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -420,7 +420,7 @@ export default async function CarePage({
                   </div>
                   {canMutateSelectedPet ? (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                      <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
                       <form action={createPetLitterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
