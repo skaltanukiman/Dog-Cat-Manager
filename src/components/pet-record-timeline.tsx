@@ -283,11 +283,13 @@ export function PetRecordTimeline({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${typeStyle.badge}`}><TypeIcon type={record.recordType} />{PET_RECORD_TYPE_LABELS[record.recordType]}</span>
-                        {relatedPets.map((pet) => <Link key={pet.id} href={petRecordsUrl({ scope: "pet", includeScope: true, petId: pet.id, includeInactive: includeInactive || !pet.isActive })} scroll={false} className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-inset ring-violet-200"><PawPrint className="h-3.5 w-3.5" aria-hidden />{pet.name}（{speciesLabel[pet.species]}）</Link>)}
-                        {record.memoryDetail?.isFavorite ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"><Star className="h-3.5 w-3.5 fill-current" aria-hidden />お気に入り</span> : null}
                       </div>
                       <h3 className="mt-2 text-lg font-bold text-ink">{record.title}</h3>
                       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{record.recordDate.replaceAll("-", "/")}</span>{record.recordTime ? <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" aria-hidden />{record.recordTime}</span> : null}<span className="inline-flex items-center gap-1"><UserRound className="h-3.5 w-3.5" aria-hidden />{record.createdByLabel}</span></div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {relatedPets.map((pet) => <Link key={pet.id} href={petRecordsUrl({ scope: "pet", includeScope: true, petId: pet.id, includeInactive: includeInactive || !pet.isActive })} scroll={false} className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-inset ring-violet-200"><PawPrint className="h-3.5 w-3.5 shrink-0" aria-hidden /><span className="min-w-0 break-words">{pet.name}（{speciesLabel[pet.species]}）</span></Link>)}
+                        {record.memoryDetail?.isFavorite ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"><Star className="h-3.5 w-3.5 fill-current" aria-hidden />お気に入り</span> : null}
+                      </div>
                     </div>
                     {editable ? <form action={deletePetRecord} onSubmit={confirmDelete}><MutationContextFields record={record} viewScope={scope} returnPetId={returnPetId} includeInactive={includeInactive} returnFilters={returnFilters} /><button type="submit" className="inline-flex h-9 items-center gap-1 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" aria-hidden />削除</button></form> : null}
                   </div>
