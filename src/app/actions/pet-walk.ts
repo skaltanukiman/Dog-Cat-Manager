@@ -44,6 +44,7 @@ function submittedCareDate(formData: FormData) {
 
 function petWalkRedirect(petId: string, status: string, formData: FormData): never {
   const params = new URLSearchParams({ status });
+  params.set("careSection", "walk");
   if (petId) params.set("petId", petId);
   const careDate = submittedCareDate(formData);
   if (careDate) params.set("date", careDate);

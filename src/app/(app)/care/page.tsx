@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ClipboardCheck, Droplets, Footprints, Utensils } from "lucide-react";
+import { ChevronDown, ClipboardCheck, Droplets, Footprints, Utensils } from "lucide-react";
+import type { ReactNode } from "react";
 
 import {
   createPetFeedingRecord,
@@ -29,6 +30,8 @@ import { getPetCarePageData } from "@/lib/pet-care-queries";
 export const dynamic = "force-dynamic";
 
 const SPECIES_LABELS = { DOG: "犬", CAT: "猫" } as const;
+const CARE_SECTIONS = ["feeding", "water", "walk", "litter"] as const;
+type CareSection = (typeof CARE_SECTIONS)[number];
 
 function getParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -36,6 +39,14 @@ function getParam(value: string | string[] | undefined) {
 
 function creatorName(value: string | null | undefined) {
   return value?.trim() || "記録者不明";
+}
+
+function getCareSection(value: string | undefined): CareSection | null {
+  return CARE_SECTIONS.find((section) => section === value) ?? null;
+}
+
+function careSummary(count: number, details: string[]) {
+  return count === 0 ? "記録なし" : [`${count}件`, ...details].join(" ｜ ");
 }
 
 function MutationHiddenFields({
@@ -66,6 +77,31 @@ function CareHistoryHeading({ count }: { count: number }) {
   );
 }
 
+function CareDisclosureSummary({
+  title,
+  summary,
+  icon,
+  className
+}: {
+  title: string;
+  summary: string;
+  icon: ReactNode;
+  className: string;
+}) {
+  return (
+    <summary className={`flex min-h-16 cursor-pointer list-none items-start gap-3 border-l-4 px-4 py-3 hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 [&::-webkit-details-marker]:hidden ${className}`}>
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        {icon}
+        <div className="min-w-0">
+          <h3 className="text-lg font-bold text-ink">{title}</h3>
+          <p className="text-sm text-slate-600">{summary}</p>
+        </div>
+      </div>
+      <ChevronDown className="mt-1 h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden />
+    </summary>
+  );
+}
+
 export default async function CarePage({
   searchParams
 }: {
@@ -75,10 +111,12 @@ export default async function CarePage({
     status?: string | string[];
     errorId?: string | string[];
     includeInactive?: string | string[];
+    careSection?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const includeInactive = getParam(params.includeInactive) === "1";
+  const expandedCareSection = getCareSection(getParam(params.careSection));
   const now = new Date();
   const {
     context,
@@ -108,6 +146,35 @@ export default async function CarePage({
   if (selectedPet) todayQuery.set("petId", selectedPet.id);
   if (includeInactive) todayQuery.set("includeInactive", "1");
   const todayHref = todayQuery.size > 0 ? `/care?${todayQuery.toString()}` : "/care";
+  const latestFeedingRecord = feedingRecords[feedingRecords.length - 1];
+  const latestWaterRecord = waterRecords[waterRecords.length - 1];
+  const latestWalkRecord = walkRecords[walkRecords.length - 1];
+  const latestLitterRecord = litterRecords[litterRecords.length - 1];
+  const feedingSummary = careSummary(
+    feedingRecords.length,
+    latestFeedingRecord ? [`最終 ${formatTimeJst(latestFeedingRecord.fedAt)}`] : []
+  );
+  const waterSummary = careSummary(
+    waterRecords.length,
+    latestWaterRecord
+      ? [`最終 ${formatTimeJst(latestWaterRecord.caredAt)}`, PET_WATER_ACTION_LABELS[latestWaterRecord.action]]
+      : []
+  );
+  const walkSummary = careSummary(
+    walkRecords.length,
+    latestWalkRecord
+      ? [
+          `最終 ${formatTimeJst(latestWalkRecord.startedAt)}`,
+          ...(latestWalkRecord.durationMinutes === null ? [] : [`${latestWalkRecord.durationMinutes}分`])
+        ]
+      : []
+  );
+  const litterSummary = careSummary(
+    litterRecords.length,
+    latestLitterRecord
+      ? [`最終 ${formatTimeJst(latestLitterRecord.occurredAt)}`, PET_LITTER_ACTION_LABELS[latestLitterRecord.action]]
+      : []
+  );
 
   return (
     <div className="space-y-6">
@@ -188,12 +255,16 @@ export default async function CarePage({
                 </p>
               ) : null}
 
-              <div className="space-y-10">
-              <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
-                <div className="rounded-r-md border-l-4 border-accent bg-accent/5 px-4 py-3">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Utensils className="h-5 w-5 text-accent" aria-hidden />食事</h3>
-                  <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
-                </div>
+              <div className="space-y-4">
+              <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "feeding"}>
+                <CareDisclosureSummary
+                  title="食事"
+                  summary={feedingSummary}
+                  icon={<Utensils className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />}
+                  className="border-accent bg-accent/5"
+                />
+                <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+                <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
                 {canMutateSelectedPet ? (
                   <form action={createPetFeedingRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                     <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
@@ -213,7 +284,7 @@ export default async function CarePage({
                     </div>
                   </form>
                 ) : null}
-                <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                <div className="space-y-3">
                   <CareHistoryHeading count={feedingRecords.length} />
                 {feedingRecords.length === 0 ? (
                   <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">食事記録はありません。</p>
@@ -254,13 +325,18 @@ export default async function CarePage({
                   </div>
                 )}
                 </div>
-              </section>
-
-              <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
-                <div className="rounded-r-md border-l-4 border-brand bg-brand/5 px-4 py-3">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Droplets className="h-5 w-5 text-brand" aria-hidden />水</h3>
-                  <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 </div>
+              </details>
+
+              <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "water"}>
+                <CareDisclosureSummary
+                  title="水"
+                  summary={waterSummary}
+                  icon={<Droplets className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />}
+                  className="border-brand bg-brand/5"
+                />
+                <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+                <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 {canMutateSelectedPet ? (
                   <form action={createPetWaterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                     <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
@@ -285,7 +361,7 @@ export default async function CarePage({
                     </div>
                   </form>
                 ) : null}
-                <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                <div className="space-y-3">
                   <CareHistoryHeading count={waterRecords.length} />
                 {waterRecords.length === 0 ? (
                   <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">水の記録はありません。</p>
@@ -333,14 +409,19 @@ export default async function CarePage({
                   </div>
                 )}
                 </div>
-              </section>
+                </div>
+              </details>
 
               {selectedPet.species === "DOG" ? (
-                <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
-                  <div className="rounded-r-md border-l-4 border-care-walk bg-care-walk/5 px-4 py-3">
-                    <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Footprints className="h-5 w-5 text-care-walk" aria-hidden />散歩</h3>
-                    <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
-                  </div>
+                <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "walk"}>
+                  <CareDisclosureSummary
+                    title="散歩"
+                    summary={walkSummary}
+                    icon={<Footprints className="mt-0.5 h-5 w-5 shrink-0 text-care-walk" aria-hidden />}
+                    className="border-care-walk bg-care-walk/5"
+                  />
+                  <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+                  <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
                   {canMutateSelectedPet ? (
                     <form action={createPetWalkRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                       <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
@@ -362,7 +443,7 @@ export default async function CarePage({
                       </div>
                     </form>
                   ) : null}
-                  <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                  <div className="space-y-3">
                     <CareHistoryHeading count={walkRecords.length} />
                   {walkRecords.length === 0 ? (
                     <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">散歩記録はありません。</p>
@@ -409,15 +490,20 @@ export default async function CarePage({
                     </div>
                   )}
                   </div>
-                </section>
+                  </div>
+                </details>
               ) : null}
 
               {selectedPet.species === "CAT" ? (
-                <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
-                  <div className="rounded-r-md border-l-4 border-care-litter bg-care-litter/5 px-4 py-3">
-                    <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><ClipboardCheck className="h-5 w-5 text-care-litter" aria-hidden />猫トイレ</h3>
-                    <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
-                  </div>
+                <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "litter"}>
+                  <CareDisclosureSummary
+                    title="猫トイレ"
+                    summary={litterSummary}
+                    icon={<ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0 text-care-litter" aria-hidden />}
+                    className="border-care-litter bg-care-litter/5"
+                  />
+                  <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+                  <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
                   {canMutateSelectedPet ? (
                     <form action={createPetLitterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                       <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
@@ -444,7 +530,7 @@ export default async function CarePage({
                       </div>
                     </form>
                   ) : null}
-                  <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                  <div className="space-y-3">
                     <CareHistoryHeading count={litterRecords.length} />
                   {litterRecords.length === 0 ? (
                     <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">猫トイレ記録はありません。</p>
@@ -494,7 +580,8 @@ export default async function CarePage({
                     </div>
                   )}
                   </div>
-                </section>
+                  </div>
+                </details>
               ) : null}
               </div>
             </div>

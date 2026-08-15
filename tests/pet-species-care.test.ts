@@ -132,8 +132,8 @@ test("species固有queryはDOGならWalk、CATならLitterだけをpetId+recordD
 
 test("/careはDOGに散歩、CATに猫トイレを条件表示し共通Care UIを維持する", async () => {
   const page = await source("src/app/(app)/care/page.tsx");
-  assert.match(page, /selectedPet\.species === "DOG"[\s\S]*>散歩</);
-  assert.match(page, /selectedPet\.species === "CAT"[\s\S]*>猫トイレ</);
+  assert.match(page, /selectedPet\.species === "DOG"[\s\S]*title="散歩"/);
+  assert.match(page, /selectedPet\.species === "CAT"[\s\S]*title="猫トイレ"/);
   assert.match(page, /action=\{createPetWalkRecord\}/);
   assert.match(page, /action=\{updatePetWalkRecord\}/);
   assert.match(page, /action=\{deletePetWalkRecord\}/);

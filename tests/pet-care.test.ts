@@ -137,16 +137,34 @@ test("/careはPet選択・画像・お世話日・食事・水・閲覧専用状
   assert.match(page, /SPECIES_LABELS\[pet\.species\]/);
   assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
   assert.match(page, /<PetSpeciesBadge species=\{selectedPet\.species\} \/>/);
-  assert.match(page, /<Utensils className="h-5 w-5 text-accent"/);
-  assert.match(page, /<Droplets className="h-5 w-5 text-brand"/);
-  assert.match(page, /<Footprints className="h-5 w-5 text-care-walk"/);
-  assert.match(page, /<ClipboardCheck className="h-5 w-5 text-care-litter"/);
+  assert.match(page, /<Utensils className="[^"]*text-accent"/);
+  assert.match(page, /<Droplets className="[^"]*text-brand"/);
+  assert.match(page, /<Footprints className="[^"]*text-care-walk"/);
+  assert.match(page, /<ClipboardCheck className="[^"]*text-care-litter"/);
   assert.match(page, /<PetThumbnail/);
   assert.match(page, /name="date"/);
   assert.match(page, /name="fedAt"/);
   assert.match(page, /name="caredAt"/);
   assert.match(page, /canMutateSelectedPet/);
   assert.match(page, /max=\{maxDateTime\}/);
+});
+
+test("/careは独立Disclosureとallowlist済みのmutation後開状態を提供する", async () => {
+  const page = await source("src/app/(app)/care/page.tsx");
+  assert.equal((page.match(/<details/g) ?? []).length, 4);
+  assert.match(page, /const CARE_SECTIONS = \["feeding", "water", "walk", "litter"\] as const/);
+  assert.match(page, /<CareDisclosureSummary/);
+  assert.match(page, /記録なし/);
+  assert.doesNotMatch(page, /^"use client"/);
+  for (const [path, careSection] of [
+    ["src/app/actions/pet-feeding.ts", "feeding"],
+    ["src/app/actions/pet-water.ts", "water"],
+    ["src/app/actions/pet-walk.ts", "walk"],
+    ["src/app/actions/pet-litter.ts", "litter"]
+  ]) {
+    const actions = await source(path);
+    assert.match(actions, new RegExp(`params\\.set\\("careSection", "${careSection}"\\)`));
+  }
 });
 
 test("主要ナビは5項目を維持してPet Care導線を表示する", async () => {
