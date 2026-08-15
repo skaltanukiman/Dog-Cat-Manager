@@ -178,8 +178,9 @@ export default async function CarePage({
                 </p>
               ) : null}
 
+              <div className="space-y-10">
               <section className="space-y-4">
-                <div>
+                <div className="rounded-r-md border-l-4 border-accent bg-accent/5 px-4 py-3">
                   <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Utensils className="h-5 w-5 text-accent" aria-hidden />食事</h3>
                   <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
                 </div>
@@ -240,7 +241,7 @@ export default async function CarePage({
               </section>
 
               <section className="space-y-4">
-                <div>
+                <div className="rounded-r-md border-l-4 border-brand bg-brand/5 px-4 py-3">
                   <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Droplets className="h-5 w-5 text-brand" aria-hidden />水</h3>
                   <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 </div>
@@ -314,7 +315,7 @@ export default async function CarePage({
 
               {selectedPet.species === "DOG" ? (
                 <section className="space-y-4">
-                  <div>
+                  <div className="rounded-r-md border-l-4 border-care-walk bg-care-walk/5 px-4 py-3">
                     <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Footprints className="h-5 w-5 text-care-walk" aria-hidden />散歩</h3>
                     <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
                   </div>
@@ -385,7 +386,7 @@ export default async function CarePage({
 
               {selectedPet.species === "CAT" ? (
                 <section className="space-y-4">
-                  <div>
+                  <div className="rounded-r-md border-l-4 border-care-litter bg-care-litter/5 px-4 py-3">
                     <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><ClipboardCheck className="h-5 w-5 text-care-litter" aria-hidden />猫トイレ</h3>
                     <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
                   </div>
@@ -461,6 +462,7 @@ export default async function CarePage({
                   )}
                 </section>
               ) : null}
+              </div>
             </div>
           )}
         </>
