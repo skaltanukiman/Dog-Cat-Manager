@@ -189,15 +189,15 @@ export default async function CarePage({
               ) : null}
 
               <div className="space-y-10">
-              <section className="space-y-4">
+              <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
                 <div className="rounded-r-md border-l-4 border-accent bg-accent/5 px-4 py-3">
                   <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Utensils className="h-5 w-5 text-accent" aria-hidden />食事</h3>
                   <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
                 </div>
                 {canMutateSelectedPet ? (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
-                    <form action={createPetFeedingRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+                  <form action={createPetFeedingRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                    <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
+                    <div className="grid gap-4 p-5 md:grid-cols-2">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                     <label className="grid gap-1 text-sm font-medium text-slate-700">
                       日時
@@ -210,8 +210,8 @@ export default async function CarePage({
                     <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2">
                       登録
                     </button>
-                    </form>
-                  </div>
+                    </div>
+                  </form>
                 ) : null}
                 <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
                   <CareHistoryHeading count={feedingRecords.length} />
@@ -256,15 +256,15 @@ export default async function CarePage({
                 </div>
               </section>
 
-              <section className="space-y-4">
+              <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
                 <div className="rounded-r-md border-l-4 border-brand bg-brand/5 px-4 py-3">
                   <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Droplets className="h-5 w-5 text-brand" aria-hidden />水</h3>
                   <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 </div>
                 {canMutateSelectedPet ? (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
-                    <form action={createPetWaterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
+                  <form action={createPetWaterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                    <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
+                    <div className="grid gap-4 p-5 md:grid-cols-3">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                     <label className="grid gap-1 text-sm font-medium text-slate-700">
                       日時
@@ -282,8 +282,8 @@ export default async function CarePage({
                       <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="容器も洗浄" />
                     </label>
                     <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
-                    </form>
-                  </div>
+                    </div>
+                  </form>
                 ) : null}
                 <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
                   <CareHistoryHeading count={waterRecords.length} />
@@ -336,15 +336,15 @@ export default async function CarePage({
               </section>
 
               {selectedPet.species === "DOG" ? (
-                <section className="space-y-4">
+                <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
                   <div className="rounded-r-md border-l-4 border-care-walk bg-care-walk/5 px-4 py-3">
                     <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Footprints className="h-5 w-5 text-care-walk" aria-hidden />散歩</h3>
                     <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
                   </div>
                   {canMutateSelectedPet ? (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
-                      <form action={createPetWalkRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
+                    <form action={createPetWalkRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                      <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
+                      <div className="grid gap-4 p-5 md:grid-cols-3">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         開始日時
@@ -359,8 +359,8 @@ export default async function CarePage({
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="公園まで" />
                       </label>
                       <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
-                      </form>
-                    </div>
+                      </div>
+                    </form>
                   ) : null}
                   <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
                     <CareHistoryHeading count={walkRecords.length} />
@@ -413,15 +413,15 @@ export default async function CarePage({
               ) : null}
 
               {selectedPet.species === "CAT" ? (
-                <section className="space-y-4">
+                <section className="space-y-4 rounded-lg bg-white/40 p-3 sm:p-4">
                   <div className="rounded-r-md border-l-4 border-care-litter bg-care-litter/5 px-4 py-3">
                     <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><ClipboardCheck className="h-5 w-5 text-care-litter" aria-hidden />猫トイレ</h3>
                     <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
                   </div>
                   {canMutateSelectedPet ? (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-slate-700">記録の追加</h4>
-                      <form action={createPetLitterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
+                    <form action={createPetLitterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                      <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
+                      <div className="grid gap-4 p-5 md:grid-cols-3">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         日時
@@ -441,8 +441,8 @@ export default async function CarePage({
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="普通" />
                       </label>
                       <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
-                      </form>
-                    </div>
+                      </div>
+                    </form>
                   ) : null}
                   <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
                     <CareHistoryHeading count={litterRecords.length} />
