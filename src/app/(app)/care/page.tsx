@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, ClipboardCheck, Droplets, Footprints, Utensils } from "lucide-react";
+import { ClipboardCheck, Droplets, Footprints, Utensils } from "lucide-react";
 import type { ReactNode } from "react";
 
 import {
@@ -12,6 +12,7 @@ import { createPetWalkRecord, deletePetWalkRecord, updatePetWalkRecord } from "@
 import { createPetWaterRecord, deletePetWaterRecord, updatePetWaterRecord } from "@/app/actions/pet-water";
 import { AutoSubmitInput } from "@/components/auto-submit-input";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { CareDisclosure } from "@/components/care-disclosure";
 import { EmptyState } from "@/components/empty-state";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { PetThumbnail } from "@/components/pet-thumbnail";
@@ -77,28 +78,23 @@ function CareHistoryHeading({ count }: { count: number }) {
   );
 }
 
-function CareDisclosureSummary({
+function CareDisclosureHeader({
   title,
   summary,
-  icon,
-  className
+  icon
 }: {
   title: string;
   summary: string;
   icon: ReactNode;
-  className: string;
 }) {
   return (
-    <summary className={`flex min-h-16 cursor-pointer list-none items-start gap-3 border-l-4 px-4 py-3 hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 [&::-webkit-details-marker]:hidden ${className}`}>
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        {icon}
-        <div className="min-w-0">
-          <h3 className="text-lg font-bold text-ink">{title}</h3>
-          <p className="text-sm text-slate-600">{summary}</p>
-        </div>
+    <div className="flex min-w-0 flex-1 items-start gap-3">
+      {icon}
+      <div className="min-w-0">
+        <span className="block text-lg font-bold text-ink">{title}</span>
+        <span className="block text-sm text-slate-600">{summary}</span>
       </div>
-      <ChevronDown className="mt-1 h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden />
-    </summary>
+    </div>
   );
 }
 
@@ -256,14 +252,13 @@ export default async function CarePage({
               ) : null}
 
               <div className="space-y-4">
-              <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "feeding"}>
-                <CareDisclosureSummary
-                  title="食事"
-                  summary={feedingSummary}
-                  icon={<Utensils className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />}
-                  className="border-accent bg-accent/5"
-                />
-                <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+              <CareDisclosure
+                key={`feeding-${selectedPet.id}-${getParam(params.date) ?? ""}-${expandedCareSection ?? ""}`}
+                defaultOpen={expandedCareSection === "feeding"}
+                header={<CareDisclosureHeader title="食事" summary={feedingSummary} icon={<Utensils className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />} />}
+                headerClassName="border-accent bg-accent/5"
+              >
+                <div className="space-y-6 px-3 py-4 sm:px-4">
                 <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
                 {canMutateSelectedPet ? (
                   <form action={createPetFeedingRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
@@ -326,16 +321,15 @@ export default async function CarePage({
                 )}
                 </div>
                 </div>
-              </details>
+              </CareDisclosure>
 
-              <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "water"}>
-                <CareDisclosureSummary
-                  title="水"
-                  summary={waterSummary}
-                  icon={<Droplets className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />}
-                  className="border-brand bg-brand/5"
-                />
-                <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+              <CareDisclosure
+                key={`water-${selectedPet.id}-${getParam(params.date) ?? ""}-${expandedCareSection ?? ""}`}
+                defaultOpen={expandedCareSection === "water"}
+                header={<CareDisclosureHeader title="水" summary={waterSummary} icon={<Droplets className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />} />}
+                headerClassName="border-brand bg-brand/5"
+              >
+                <div className="space-y-6 px-3 py-4 sm:px-4">
                 <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 {canMutateSelectedPet ? (
                   <form action={createPetWaterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
@@ -410,17 +404,16 @@ export default async function CarePage({
                 )}
                 </div>
                 </div>
-              </details>
+              </CareDisclosure>
 
               {selectedPet.species === "DOG" ? (
-                <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "walk"}>
-                  <CareDisclosureSummary
-                    title="散歩"
-                    summary={walkSummary}
-                    icon={<Footprints className="mt-0.5 h-5 w-5 shrink-0 text-care-walk" aria-hidden />}
-                    className="border-care-walk bg-care-walk/5"
-                  />
-                  <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+                <CareDisclosure
+                  key={`walk-${selectedPet.id}-${getParam(params.date) ?? ""}-${expandedCareSection ?? ""}`}
+                  defaultOpen={expandedCareSection === "walk"}
+                  header={<CareDisclosureHeader title="散歩" summary={walkSummary} icon={<Footprints className="mt-0.5 h-5 w-5 shrink-0 text-care-walk" aria-hidden />} />}
+                  headerClassName="border-care-walk bg-care-walk/5"
+                >
+                  <div className="space-y-6 px-3 py-4 sm:px-4">
                   <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
                   {canMutateSelectedPet ? (
                     <form action={createPetWalkRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
@@ -491,18 +484,17 @@ export default async function CarePage({
                   )}
                   </div>
                   </div>
-                </details>
+                </CareDisclosure>
               ) : null}
 
               {selectedPet.species === "CAT" ? (
-                <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white/40" open={expandedCareSection === "litter"}>
-                  <CareDisclosureSummary
-                    title="猫トイレ"
-                    summary={litterSummary}
-                    icon={<ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0 text-care-litter" aria-hidden />}
-                    className="border-care-litter bg-care-litter/5"
-                  />
-                  <div className="space-y-6 border-t border-slate-200 px-3 py-4 sm:px-4">
+                <CareDisclosure
+                  key={`litter-${selectedPet.id}-${getParam(params.date) ?? ""}-${expandedCareSection ?? ""}`}
+                  defaultOpen={expandedCareSection === "litter"}
+                  header={<CareDisclosureHeader title="猫トイレ" summary={litterSummary} icon={<ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0 text-care-litter" aria-hidden />} />}
+                  headerClassName="border-care-litter bg-care-litter/5"
+                >
+                  <div className="space-y-6 px-3 py-4 sm:px-4">
                   <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
                   {canMutateSelectedPet ? (
                     <form action={createPetLitterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
@@ -581,7 +573,7 @@ export default async function CarePage({
                   )}
                   </div>
                   </div>
-                </details>
+                </CareDisclosure>
               ) : null}
               </div>
             </div>

@@ -151,11 +151,19 @@ test("/careはPet選択・画像・お世話日・食事・水・閲覧専用状
 
 test("/careは独立Disclosureとallowlist済みのmutation後開状態を提供する", async () => {
   const page = await source("src/app/(app)/care/page.tsx");
-  assert.equal((page.match(/<details/g) ?? []).length, 4);
+  const disclosure = await source("src/components/care-disclosure.tsx");
+  assert.equal((page.match(/defaultOpen=\{/g) ?? []).length, 4);
   assert.match(page, /const CARE_SECTIONS = \["feeding", "water", "walk", "litter"\] as const/);
-  assert.match(page, /<CareDisclosureSummary/);
+  assert.match(page, /<CareDisclosureHeader/);
   assert.match(page, /記録なし/);
   assert.doesNotMatch(page, /^"use client"/);
+  assert.match(disclosure, /^"use client"/);
+  assert.match(disclosure, /aria-expanded=\{open\}/);
+  assert.match(disclosure, /aria-controls=\{contentId\}/);
+  assert.match(disclosure, /inert=\{!open\}/);
+  assert.match(disclosure, /grid-rows-\[0fr\]/);
+  assert.match(disclosure, /grid-rows-\[1fr\]/);
+  assert.match(disclosure, /motion-reduce:transition-none/);
   for (const [path, careSection] of [
     ["src/app/actions/pet-feeding.ts", "feeding"],
     ["src/app/actions/pet-water.ts", "water"],

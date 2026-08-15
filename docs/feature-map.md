@@ -63,6 +63,7 @@
 ## Pet Care
 
 - **画面:** `/care`。全Pet共通の食事・水、DOGの散歩、CATの猫トイレを履歴として扱う。
+- **UI:** `src/components/care-disclosure.tsx`が各Care種類の独立した開閉状態と本文アニメーションを管理する。
 - **Action:** `src/app/actions/pet-feeding.ts`、`pet-water.ts`、`pet-walk.ts`、`pet-litter.ts`。
 - **query / 日付:** `src/lib/pet-care-queries.ts`、`src/lib/pet-care.ts`、`src/lib/care-day.ts`。
 - **Prisma:** `PetFeedingRecord`、`PetWaterRecord`、`PetWalkRecord`、`PetLitterRecord`。`Household.careDayStartMinutes`を全Care種別で共有する。
