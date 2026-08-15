@@ -180,7 +180,7 @@ export default async function RecordsPage({
               <section className="grid gap-4">
                 <div className="grid gap-3">
                   <h2 className="text-xl font-bold text-ink">{scope === "household" ? "共有グループ全体のタイムライン" : "共通タイムライン"}</h2>
-                  <nav className="max-w-full overflow-x-auto overscroll-x-contain" aria-label="記録種類の切り替え">
+                  <nav className="record-filter-scroll max-w-full overflow-x-auto overscroll-x-contain pb-2" aria-label="記録種類の切り替え">
                     <div className="flex w-max flex-nowrap gap-2 whitespace-nowrap">
                       {typeTabs.map((tab) => <Link key={tab.value} href={petRecordsUrl({ ...currentFilters, type: tab.value, favoriteOnly: (tab.value === "all" || tab.value === "memory") && currentFilters.favoriteOnly, page: 1 })} scroll={false} aria-current={filters.type === tab.value ? "page" : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold ${filters.type === tab.value ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-700 hover:border-brand hover:text-brand"}`}>{tab.label}</Link>)}
                     </div>
