@@ -190,25 +190,12 @@ a {
   min-width: 18rem;
   text-align: left;
 }
-/* Recordsの種類フィルターだけ、横スクロール可能なことを自然に示す。 */
+/* Recordsの種類フィルターだけ、ネイティブbarを隠して専用indicatorを表示する。 */
 .record-filter-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(62, 111, 142, 0.55) transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .record-filter-scroll::-webkit-scrollbar {
-  height: 5px;
-}
-
-.record-filter-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.record-filter-scroll::-webkit-scrollbar-thumb {
-  background: rgba(62, 111, 142, 0.55);
-  border-radius: 9999px;
-}
-
-.record-filter-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(62, 111, 142, 0.75);
+  display: none;
 }

@@ -752,19 +752,25 @@ test("共通タイムラインの記録種類フィルターは1行の横スク�
   const timelineSection = page.slice(page.indexOf('<section className="grid gap-4">'));
 
   const globals = source("src/app/globals.css");
+  const scroller = source("src/components/record-type-filter-scroller.tsx");
 
-  assert.match(timelineSection, /<div className="grid gap-3">[\s\S]*?<h2[\s\S]*?<nav className="record-filter-scroll max-w-full overflow-x-auto overscroll-x-contain pb-2" aria-label="記録種類の切り替え">/);
-  assert.match(timelineSection, /<div className="flex w-max flex-nowrap gap-2 whitespace-nowrap">/);
+  assert.match(timelineSection, /<div className="grid gap-3">[\s\S]*?<h2[\s\S]*?<nav className="min-w-0 max-w-full" aria-label="記録種類の切り替え">[\s\S]*?<RecordTypeFilterScroller>/);
   assert.doesNotMatch(timelineSection, /flex-wrap|sm:flex-row|sm:items-end|sm:justify-between/);
   assert.match(timelineSection, /typeTabs\.map\(\(tab\) => <Link/);
   assert.match(timelineSection, /scroll=\{false\}/);
   assert.match(timelineSection, /aria-current=\{filters\.type === tab\.value \? "page" : undefined\}/);
   assert.match(timelineSection, /favoriteOnly: \(tab\.value === "all" \|\| tab\.value === "memory"\) && currentFilters\.favoriteOnly, page: 1/);
-  assert.match(globals, /\.record-filter-scroll \{[\s\S]*?scrollbar-width: thin;[\s\S]*?scrollbar-color: rgba\(62, 111, 142, 0\.55\) transparent;/);
-  assert.match(globals, /\.record-filter-scroll::\-webkit-scrollbar \{[\s\S]*?height: 5px;/);
-  assert.match(globals, /\.record-filter-scroll::\-webkit-scrollbar-track \{[\s\S]*?background: transparent;/);
-  assert.match(globals, /\.record-filter-scroll::\-webkit-scrollbar-thumb \{[\s\S]*?background: rgba\(62, 111, 142, 0\.55\);[\s\S]*?border-radius: 9999px;/);
-  assert.match(globals, /\.record-filter-scroll::\-webkit-scrollbar-thumb:hover \{[\s\S]*?background: rgba\(62, 111, 142, 0\.75\);/);
+  assert.match(globals, /\.record-filter-scroll \{[\s\S]*?scrollbar-width: none;/);
+  assert.match(globals, /\.record-filter-scroll::\-webkit-scrollbar \{[\s\S]*?display: none;/);
+  assert.doesNotMatch(globals, /record-filter-scroll::\-webkit-scrollbar-(?:track|thumb)|scrollbar-color: rgba\(62, 111, 142/);
+  assert.match(scroller, /"use client";/);
+  assert.match(scroller, /<div className="min-w-0 max-w-full">[\s\S]*?record-filter-scroll min-w-0 max-w-full overflow-x-auto overscroll-x-contain/);
+  assert.match(scroller, /ResizeObserver\(updateIndicator\)[\s\S]*?observe\(scrollContainer\)[\s\S]*?observe\(content\)/);
+  assert.match(scroller, /scrollWidth <= clientWidth \+ 1/);
+  assert.match(scroller, /clientWidth \* \(clientWidth \/ scrollWidth\)/);
+  assert.match(scroller, /scrollLeft \/ maxScroll\) \* thumbTravel/);
+  assert.match(scroller, /aria-hidden="true"/);
+  assert.match(scroller, /removeEventListener\("scroll", updateIndicator\)/);
 });
 
 test("Pet記録の更新・削除後も安全に正規化した絞り込みとページを維持する", () => {

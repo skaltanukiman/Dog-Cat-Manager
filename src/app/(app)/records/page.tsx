@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PaginationLayout } from "@/components/pagination";
 import { PetRecordCreateForms } from "@/components/pet-record-create-forms";
 import { PetRecordTimeline } from "@/components/pet-record-timeline";
+import { RecordTypeFilterScroller } from "@/components/record-type-filter-scroller";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { PetThumbnail } from "@/components/pet-thumbnail";
 import { RecordKeywordInput } from "@/components/record-keyword-input";
@@ -180,10 +181,10 @@ export default async function RecordsPage({
               <section className="grid gap-4">
                 <div className="grid gap-3">
                   <h2 className="text-xl font-bold text-ink">{scope === "household" ? "共有グループ全体のタイムライン" : "共通タイムライン"}</h2>
-                  <nav className="record-filter-scroll max-w-full overflow-x-auto overscroll-x-contain pb-2" aria-label="記録種類の切り替え">
-                    <div className="flex w-max flex-nowrap gap-2 whitespace-nowrap">
+                  <nav className="min-w-0 max-w-full" aria-label="記録種類の切り替え">
+                    <RecordTypeFilterScroller>
                       {typeTabs.map((tab) => <Link key={tab.value} href={petRecordsUrl({ ...currentFilters, type: tab.value, favoriteOnly: (tab.value === "all" || tab.value === "memory") && currentFilters.favoriteOnly, page: 1 })} scroll={false} aria-current={filters.type === tab.value ? "page" : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold ${filters.type === tab.value ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-700 hover:border-brand hover:text-brand"}`}>{tab.label}</Link>)}
-                    </div>
+                    </RecordTypeFilterScroller>
                   </nav>
                 </div>
                 <PaginationLayout ariaLabel="記録一覧のページ移動" pagination={data.pagination} visibleCount={data.records.length} buildHref={buildRecordsPageHref} scroll={false} preserveScroll />
