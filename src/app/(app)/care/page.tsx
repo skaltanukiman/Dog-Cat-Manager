@@ -56,6 +56,16 @@ function MutationHiddenFields({
   );
 }
 
+function CareHistoryHeading({ count }: { count: number }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <h4 className="shrink-0 text-sm font-semibold text-slate-700">記録履歴</h4>
+      <span className="shrink-0 text-xs text-slate-500">{count}件</span>
+      <span className="h-px min-w-0 flex-1 bg-slate-200" aria-hidden />
+    </div>
+  );
+}
+
 export default async function CarePage({
   searchParams
 }: {
@@ -185,7 +195,9 @@ export default async function CarePage({
                   <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
                 </div>
                 {canMutateSelectedPet ? (
-                  <form action={createPetFeedingRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                    <form action={createPetFeedingRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                     <label className="grid gap-1 text-sm font-medium text-slate-700">
                       日時
@@ -198,8 +210,11 @@ export default async function CarePage({
                     <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2">
                       登録
                     </button>
-                  </form>
+                    </form>
+                  </div>
                 ) : null}
+                <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                  <CareHistoryHeading count={feedingRecords.length} />
                 {feedingRecords.length === 0 ? (
                   <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">食事記録はありません。</p>
                 ) : (
@@ -238,6 +253,7 @@ export default async function CarePage({
                     ))}
                   </div>
                 )}
+                </div>
               </section>
 
               <section className="space-y-4">
@@ -246,7 +262,9 @@ export default async function CarePage({
                   <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 </div>
                 {canMutateSelectedPet ? (
-                  <form action={createPetWaterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                    <form action={createPetWaterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                     <label className="grid gap-1 text-sm font-medium text-slate-700">
                       日時
@@ -264,8 +282,11 @@ export default async function CarePage({
                       <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="容器も洗浄" />
                     </label>
                     <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
-                  </form>
+                    </form>
+                  </div>
                 ) : null}
+                <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                  <CareHistoryHeading count={waterRecords.length} />
                 {waterRecords.length === 0 ? (
                   <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">水の記録はありません。</p>
                 ) : (
@@ -311,6 +332,7 @@ export default async function CarePage({
                     ))}
                   </div>
                 )}
+                </div>
               </section>
 
               {selectedPet.species === "DOG" ? (
@@ -320,7 +342,9 @@ export default async function CarePage({
                     <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
                   </div>
                   {canMutateSelectedPet ? (
-                    <form action={createPetWalkRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                      <form action={createPetWalkRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         開始日時
@@ -335,8 +359,11 @@ export default async function CarePage({
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="公園まで" />
                       </label>
                       <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
-                    </form>
+                      </form>
+                    </div>
                   ) : null}
+                  <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                    <CareHistoryHeading count={walkRecords.length} />
                   {walkRecords.length === 0 ? (
                     <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">散歩記録はありません。</p>
                   ) : (
@@ -381,6 +408,7 @@ export default async function CarePage({
                       ))}
                     </div>
                   )}
+                  </div>
                 </section>
               ) : null}
 
@@ -391,7 +419,9 @@ export default async function CarePage({
                     <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
                   </div>
                   {canMutateSelectedPet ? (
-                    <form action={createPetLitterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-slate-700">新しく記録</h4>
+                      <form action={createPetLitterRecord} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         日時
@@ -411,8 +441,11 @@ export default async function CarePage({
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="普通" />
                       </label>
                       <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
-                    </form>
+                      </form>
+                    </div>
                   ) : null}
+                  <div className={canMutateSelectedPet ? "space-y-3 pt-2" : "space-y-3"}>
+                    <CareHistoryHeading count={litterRecords.length} />
                   {litterRecords.length === 0 ? (
                     <p className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">猫トイレ記録はありません。</p>
                   ) : (
@@ -460,6 +493,7 @@ export default async function CarePage({
                       ))}
                     </div>
                   )}
+                  </div>
                 </section>
               ) : null}
               </div>
