@@ -59,6 +59,7 @@ test("保存確定時だけ現在値を Dirty 基準として再設定する", (
   }
 
   assert.match(dashboardForm, /savedDashboardSettings[\s\S]*?setSelectedIds/);
+  assert.match(dashboardForm, /recordTimelineDefaultScope[\s\S]*?defaultChecked/);
   assert.match(careDayForm, /savedCareDayStartMinutes[\s\S]*?setSavedMinutes/);
 });
 

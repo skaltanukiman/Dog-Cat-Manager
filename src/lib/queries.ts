@@ -5,6 +5,7 @@ import {
   normalizeDashboardBoardCount,
   pickDashboardPets
 } from "@/lib/dashboard-settings";
+import { normalizePetRecordScope } from "@/lib/pet-records";
 import { prisma } from "@/lib/prisma";
 
 function summarizePetCareRecords<T extends { petId: string }>(records: T[]) {
@@ -145,6 +146,7 @@ export async function getDashboardSettingsPageData() {
     })
   ]);
   const boardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
+  const recordTimelineDefaultScope = normalizePetRecordScope(setting?.recordTimelineDefaultScope);
   const selectedIds = setting?.dashboardPets.map((entry) => entry.petId) ?? [];
   // 設定画面の初期表示でも、ダッシュボードと同じ補完ルールで選択状態を作る。
   const selectedPetIds = pickDashboardPets(pets, boardCount, selectedIds).map((pet) => pet.id);
@@ -152,6 +154,7 @@ export async function getDashboardSettingsPageData() {
   return {
     user: context.user,
     boardCount,
+    recordTimelineDefaultScope,
     careDayStartMinutes: normalizeCareDayStartMinutes(context.household.careDayStartMinutes),
     canManageCareDaySettings: canManageCareDaySettings(context.membership.role),
     pets,

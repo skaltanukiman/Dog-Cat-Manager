@@ -6,14 +6,15 @@ import {
   buildPetRecordListWhere,
   buildPetRecordScopeWhere,
   collectPetRecordTagSuggestions,
-  normalizePetRecordScope,
   PET_RECORD_PAGE_SIZE,
+  resolvePetRecordScope,
   type PetRecordTypeFilter
 } from "@/lib/pet-records";
 
 export type PetRecordPageFilters = {
   selectedPetId?: string;
   includeInactive: boolean;
+  hasScopeParam: boolean;
   scopeParam?: string;
   recordType: PetRecordTypeFilter;
   from: string;
@@ -29,7 +30,7 @@ export type PetRecordPageFilters = {
  */
 export async function getPetRecordsPageData(filters: PetRecordPageFilters) {
   const context = await getRequiredHouseholdContext();
-  const [allPets, savedMemoryTagRows] = await Promise.all([
+  const [allPets, setting, savedMemoryTagRows] = await Promise.all([
     prisma.pet.findMany({
       where: { householdId: context.household.id },
       orderBy: [{ isActive: "desc" }, { createdAt: "asc" }, { id: "asc" }],
@@ -41,6 +42,10 @@ export async function getPetRecordsPageData(filters: PetRecordPageFilters) {
         profileImageFileName: true,
         createdAt: true
       }
+    }),
+    prisma.appSetting.findUnique({
+      where: { userId_householdId: { userId: context.user.id, householdId: context.household.id } },
+      select: { recordTimelineDefaultScope: true }
     }),
     prisma.savedMemoryTag.findMany({
       where: { householdId: context.household.id },
@@ -54,7 +59,11 @@ export async function getPetRecordsPageData(filters: PetRecordPageFilters) {
     pets.find((pet) => pet.isActive) ??
     pets[0] ??
     null;
-  const scope = normalizePetRecordScope(filters.scopeParam);
+  const scope = resolvePetRecordScope({
+    hasScopeParam: filters.hasScopeParam,
+    scopeParam: filters.scopeParam,
+    defaultScope: setting?.recordTimelineDefaultScope
+  });
   const savedMemoryTags = savedMemoryTagRows.map((tag) => tag.name);
 
   if (!selectedPet) {

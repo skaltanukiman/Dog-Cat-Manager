@@ -6,6 +6,7 @@ import { useActionState, useEffect, useLayoutEffect, useMemo, useRef, useState }
 
 import { saveSettings } from "@/app/actions/settings";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
+import { DisplaySettingsSection } from "@/components/display-settings-section";
 import {
   commitFormDirtyState,
   requestFormDirtyReevaluation
@@ -31,6 +32,7 @@ import {
 } from "@/lib/dashboard-settings";
 import { normalizeSearchText } from "@/lib/search";
 import { getDashboardOrderScrollTop } from "@/lib/dashboard-order-scroll";
+import type { PetRecordScope } from "@/lib/pet-records";
 import {
   INITIAL_SETTINGS_SAVE_STATE,
   isCommittedSettingsSave
@@ -48,6 +50,7 @@ type DashboardSettingsFormProps = {
   name?: string | null;
   email?: string | null;
   boardCount: number;
+  recordTimelineDefaultScope: PetRecordScope;
   pets: PetOption[];
   selectedPetIds: string[];
 };
@@ -85,6 +88,7 @@ export function DashboardSettingsForm({
   name,
   email,
   boardCount,
+  recordTimelineDefaultScope,
   pets,
   selectedPetIds
 }: DashboardSettingsFormProps) {
@@ -173,6 +177,14 @@ export function DashboardSettingsForm({
         if (boardCountControl instanceof HTMLInputElement) {
           boardCountControl.value = String(savedSettings.dashboardBoardCount);
           boardCountControl.defaultValue = boardCountControl.value;
+        }
+        const scopeControls = form.elements.namedItem("recordTimelineDefaultScope");
+        const scopeRadios = scopeControls instanceof RadioNodeList ? Array.from(scopeControls) : [scopeControls];
+        for (const control of scopeRadios) {
+          if (control instanceof HTMLInputElement) {
+            control.checked = control.value === savedSettings.recordTimelineDefaultScope;
+            control.defaultChecked = control.checked;
+          }
         }
       }
 
@@ -529,6 +541,12 @@ export function DashboardSettingsForm({
         className="space-y-6"
       >
         <ProfileSettingsFields name={name} email={email} />
+
+        <DisplaySettingsSection
+          recordTimelineDefaultScope={recordTimelineDefaultScope}
+          savedSettings={saveState.savedDashboardSettings}
+          savedSubmissionId={saveState.submissionId}
+        />
 
         <section
           aria-labelledby="dashboard-settings-heading"

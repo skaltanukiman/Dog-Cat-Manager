@@ -8,6 +8,7 @@ import {
   normalizeDashboardBoardCount,
   pickDashboardPets
 } from "@/lib/dashboard-settings";
+import { normalizePetRecordScope } from "@/lib/pet-records";
 import { prisma } from "@/lib/prisma";
 import {
   getRealtimeActorId,
@@ -41,14 +42,16 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
     }
     const dashboardResult = dashboardSettingsSchema.safeParse({
       dashboardBoardCount: formData.get("dashboardBoardCount"),
+      recordTimelineDefaultScope: formData.get("recordTimelineDefaultScope"),
       petIds: formData.getAll("petIds")
     });
     if (!dashboardResult.success) return createSettingsSaveState(previousState, "invalid");
 
-    const { dashboardBoardCount } = dashboardResult.data;
+    const { dashboardBoardCount, recordTimelineDefaultScope } = dashboardResult.data;
     const selectedPetIds = dashboardResult.data.petIds;
     const savedDashboardSettings = {
       dashboardBoardCount,
+      recordTimelineDefaultScope,
       petIds: selectedPetIds
     };
     const [user, pets, setting] = await Promise.all([
@@ -84,27 +87,33 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
     }
 
     const currentBoardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
+    const currentRecordTimelineDefaultScope = normalizePetRecordScope(
+      setting?.recordTimelineDefaultScope
+    );
     const currentSelectedPetIds = pickDashboardPets(
       pets,
       currentBoardCount,
       setting?.dashboardPets.map((entry) => entry.petId) ?? []
     ).map((pet) => pet.id);
-    const { profileChanged, dashboardChanged } = getSettingsChanges(
+    const { profileChanged, dashboardChanged, recordTimelineDefaultScopeChanged } = getSettingsChanges(
       {
         name: user.name ?? "",
         dashboardBoardCount: currentBoardCount,
+        recordTimelineDefaultScope: currentRecordTimelineDefaultScope,
         petIds: currentSelectedPetIds
       },
       {
         name: profileResult.data.name,
         dashboardBoardCount,
+        recordTimelineDefaultScope,
         petIds: selectedPetIds
       }
     );
 
     if (
       !profileChanged &&
-      !dashboardChanged
+      !dashboardChanged &&
+      !recordTimelineDefaultScopeChanged
     ) {
       return createSettingsSaveState(previousState, "unchanged", {
         savedName: profileResult.data.name,
@@ -118,21 +127,25 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
         await tx.user.update({ where: { id: context.user.id }, data: { name: profileResult.data.name } });
       }
 
-      if (dashboardChanged) {
+      if (dashboardChanged || recordTimelineDefaultScopeChanged) {
         const setting = await tx.appSetting.upsert({
           where: { userId_householdId: { userId: context.user.id, householdId: context.household.id } },
           update: {
-            dashboardBoardCount
+            dashboardBoardCount,
+            recordTimelineDefaultScope
           },
           create: {
             userId: context.user.id,
             householdId: context.household.id,
-            dashboardBoardCount
+            dashboardBoardCount,
+            recordTimelineDefaultScope
           }
         });
-        await tx.dashboardPet.deleteMany({ where: { settingId: setting.id } });
-        for (const [index, petId] of selectedPetIds.entries()) {
-          await tx.dashboardPet.create({ data: { settingId: setting.id, petId, sortOrder: index } });
+        if (dashboardChanged) {
+          await tx.dashboardPet.deleteMany({ where: { settingId: setting.id } });
+          for (const [index, petId] of selectedPetIds.entries()) {
+            await tx.dashboardPet.create({ data: { settingId: setting.id, petId, sortOrder: index } });
+          }
         }
       }
       // 表示名は全所属Householdに現れるため、個人用ダッシュボード設定と異なり全所属先へ通知する。
@@ -158,6 +171,7 @@ export async function saveSettings(previousState: SettingsSaveState, formData: F
     revalidatePathsSafely(
       [
         { path: "/", type: "layout" },
+        { path: "/records" },
         { path: "/settings" },
         { path: "/settings/members" },
         { path: "/weights" },

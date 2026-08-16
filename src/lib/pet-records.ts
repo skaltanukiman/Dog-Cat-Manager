@@ -21,7 +21,7 @@ import { normalizeTagStorageValue } from "@/lib/tags";
 export const PET_RECORD_PAGE_SIZE = 20;
 export const PET_RECORD_SCOPES = ["pet", "household"] as const;
 export type PetRecordScope = (typeof PET_RECORD_SCOPES)[number];
-export const DEFAULT_PET_RECORD_SCOPE: PetRecordScope = "pet";
+export const DEFAULT_PET_RECORD_SCOPE: PetRecordScope = "household";
 export type PetRecordCreateKind = "health" | "medical" | "medication" | "vaccination" | "memory";
 
 export const PET_RECORD_TYPE_LABELS: Record<PetRecordType, string> = {
@@ -96,7 +96,20 @@ export type PetRecordsUrlOptions = {
 };
 
 export function normalizePetRecordScope(value?: string | null): PetRecordScope {
-  return value === "household" ? "household" : DEFAULT_PET_RECORD_SCOPE;
+  return value === "pet" || value === "household" ? value : DEFAULT_PET_RECORD_SCOPE;
+}
+
+/** URLにscopeが明示された場合だけ保存設定より優先し、どちらの不正値も共通fallbackへ正規化する。 */
+export function resolvePetRecordScope({
+  hasScopeParam,
+  scopeParam,
+  defaultScope
+}: {
+  hasScopeParam: boolean;
+  scopeParam?: string;
+  defaultScope?: string | null;
+}): PetRecordScope {
+  return normalizePetRecordScope(hasScopeParam ? scopeParam : defaultScope);
 }
 
 export function petRecordsUrl(options: PetRecordsUrlOptions = {}) {

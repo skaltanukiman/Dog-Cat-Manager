@@ -12,6 +12,7 @@ import {
   MAX_WALK_DISTANCE_METERS,
   PET_CARE_MEMO_MAX_LENGTH
 } from "@/lib/pet-care";
+import { PET_RECORD_SCOPES } from "@/lib/pet-records";
 
 export const idSchema = z.string().min(1);
 
@@ -214,6 +215,7 @@ export const deletePetLitterRecordSchema = z.object({
 
 export const dashboardSettingsSchema = z.object({
   dashboardBoardCount: z.coerce.number().int().min(MIN_DASHBOARD_BOARD_COUNT).max(MAX_DASHBOARD_BOARD_COUNT),
+  recordTimelineDefaultScope: z.enum(PET_RECORD_SCOPES),
   petIds: z
     .array(idSchema)
     .refine((ids) => new Set(ids).size === ids.length, { message: "Pet IDが重複しています。" })

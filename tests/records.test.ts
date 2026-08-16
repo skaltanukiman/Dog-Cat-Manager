@@ -44,11 +44,13 @@ import {
   buildPetVaccinationSearchText,
   collectPetRecordTagSuggestions,
   filterToPetRecordType,
+  DEFAULT_PET_RECORD_SCOPE,
   normalizePetRecordScope,
   normalizePetRecordTypeFilter,
   parsePetRecordSearchTerms,
   PET_RECORD_PAGE_SIZE,
-  petRecordsUrl
+  petRecordsUrl,
+  resolvePetRecordScope
 } from "../src/lib/pet-records";
 import { MAX_STORED_IMAGE_SIZE_BYTES } from "../src/lib/image-constraints";
 import { normalizeTagStorageValue } from "../src/lib/tags";
@@ -227,11 +229,11 @@ test("Pet Records検索textは5種類の入力とMemory tag・関連Pet名を含
 });
 
 test("Pet Records filterは5種類・Pet/Household scope・20件ページングを正規化する", () => {
+  assert.equal(DEFAULT_PET_RECORD_SCOPE, "household");
   assert.equal(normalizePetRecordScope("pet"), "pet");
   assert.equal(normalizePetRecordScope("household"), "household");
-  assert.equal(normalizePetRecordScope("invalid"), "pet");
-  assert.equal(normalizePetRecordScope("invalid"), "pet");
-  assert.equal(normalizePetRecordScope(undefined), "pet");
+  assert.equal(normalizePetRecordScope("invalid"), "household");
+  assert.equal(normalizePetRecordScope(undefined), "household");
   for (const [input, expected] of [
     ["health", "HEALTH"], ["medical", "MEDICAL"], ["medication", "MEDICATION"],
     ["vaccination", "VACCINATION"], ["memory", "MEMORY"]
@@ -242,6 +244,21 @@ test("Pet Records filterは5種類・Pet/Household scope・20件ページング�
   assert.equal(normalizePetRecordTypeFilter("invalid"), "all");
   assert.equal(filterToPetRecordType("all"), undefined);
   assert.equal(PET_RECORD_PAGE_SIZE, 20);
+});
+
+test("Pet Records scopeはURL指定、保存設定、household fallbackの順で解決する", () => {
+  assert.equal(resolvePetRecordScope({ hasScopeParam: false, defaultScope: "household" }), "household");
+  assert.equal(resolvePetRecordScope({ hasScopeParam: false, defaultScope: "pet" }), "pet");
+  assert.equal(
+    resolvePetRecordScope({ hasScopeParam: true, scopeParam: "pet", defaultScope: "household" }),
+    "pet"
+  );
+  assert.equal(
+    resolvePetRecordScope({ hasScopeParam: true, scopeParam: "household", defaultScope: "pet" }),
+    "household"
+  );
+  assert.equal(resolvePetRecordScope({ hasScopeParam: false }), "household");
+  assert.equal(resolvePetRecordScope({ hasScopeParam: false, defaultScope: "invalid" }), "household");
 });
 
 test("Pet scopeは非Memoryをbase petId、Memoryを中間関連で絞り、常にHousehold境界を含む", () => {
@@ -512,7 +529,8 @@ test("Pet Records queryはPet候補・Household境界・scope・filter・安定�
   const query = source("src/lib/pet-record-queries.ts");
   assert.match(query, /where: \{ householdId: context\.household\.id \}/);
   assert.match(query, /filters\.includeInactive \? allPets : allPets\.filter\(\(pet\) => pet\.isActive\)/);
-  assert.match(query, /normalizePetRecordScope\(filters\.scopeParam\)/);
+  assert.match(query, /select: \{ recordTimelineDefaultScope: true \}/);
+  assert.match(query, /resolvePetRecordScope\(\{[\s\S]*hasScopeParam: filters\.hasScopeParam[\s\S]*defaultScope: setting\?\.recordTimelineDefaultScope/);
   assert.match(query, /buildPetRecordListWhere\(\{[\s\S]*householdId: context\.household\.id[\s\S]*selectedPetId: selectedPet\.id/);
   assert.match(query, /prisma\.petRecord\.count\(\{ where \}\)/);
   assert.match(query, /prisma\.petRecord\.findMany\(\{[\s\S]*where,/);
@@ -807,7 +825,8 @@ test("/recordsはPet selector・species・管理終了切替・2 scope・6種類
   const page = source("src/app/(app)/records/page.tsx");
   const query = source("src/lib/pet-record-queries.ts");
   assert.match(page, /scopeParam: getParam\(params\.scope\)/);
-  assert.match(query, /normalizePetRecordScope\(filters\.scopeParam\)/);
+  assert.match(page, /const hasScopeParam = params\.scope !== undefined/);
+  assert.match(query, /resolvePetRecordScope\(/);
   assert.match(page, /タイムラインの表示範囲/);
   assert.match(page, /scope: "pet", label: "選択中のPet"/);
   assert.match(page, /scope: "household", label: "共有グループ全体"/);

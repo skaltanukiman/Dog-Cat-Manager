@@ -103,6 +103,7 @@ test("dashboard schemaはPet IDの重複と表示数範囲を拒否する", () =
   assert.equal(
     dashboardSettingsSchema.safeParse({
       dashboardBoardCount: "2",
+      recordTimelineDefaultScope: "household",
       petIds: ["pet-1", "pet-1"]
     }).success,
     false
@@ -110,24 +111,27 @@ test("dashboard schemaはPet IDの重複と表示数範囲を拒否する", () =
   assert.equal(
     dashboardSettingsSchema.safeParse({
       dashboardBoardCount: "2",
+      recordTimelineDefaultScope: "household",
       petIds: ["pet-1", "pet-2"]
     }).success,
     true
   );
 });
 
-test("設定フォームとActionはPet選択・並び順だけを保存する", () => {
+test("設定フォームとActionはPet選択・並び順と記録画面scopeを保存する", () => {
   const form = source("src/components/dashboard-settings-form.tsx");
   const action = source("src/app/actions/settings.ts");
   const query = source("src/lib/queries.ts");
 
   assert.match(form, /name="dashboardBoardCount"/);
   assert.match(form, /name="petIds"/);
+  assert.match(form, /DisplaySettingsSection/);
   assert.match(form, /moveDashboardPetId/);
   assert.match(form, /getDashboardPetRemovalPosition/);
   assert.match(action, /getDashboardPetSelectionError/);
   assert.match(action, /tx\.dashboardPet\.deleteMany/);
   assert.match(action, /tx\.dashboardPet\.create/);
+  assert.match(action, /recordTimelineDefaultScope/);
   assert.match(query, /dashboardPets/);
   assert.doesNotMatch([form, action, query].join("\n"), /tokens truncated/);
 });

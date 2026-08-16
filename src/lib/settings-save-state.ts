@@ -17,6 +17,7 @@ export type SettingsSaveState = {
   savedCareDayStartMinutes?: number;
   savedDashboardSettings?: {
     dashboardBoardCount: number;
+    recordTimelineDefaultScope: "pet" | "household";
     petIds: string[];
   };
 };

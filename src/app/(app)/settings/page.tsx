@@ -20,6 +20,7 @@ export default async function SettingsPage({
   const {
     user,
     boardCount,
+    recordTimelineDefaultScope,
     careDayStartMinutes,
     canManageCareDaySettings,
     pets,
@@ -41,6 +42,7 @@ export default async function SettingsPage({
         name={user.name}
         email={user.email}
         boardCount={boardCount}
+        recordTimelineDefaultScope={recordTimelineDefaultScope}
         pets={pets}
         selectedPetIds={selectedPetIds}
       />

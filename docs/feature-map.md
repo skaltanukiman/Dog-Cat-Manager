@@ -72,7 +72,7 @@
 
 ## Pet Records
 
-- **画面:** `/records`。健康、通院、投薬、ワクチン、思い出をPetまたはHousehold scopeで検索・ページングする。
+- **画面:** `/records`。健康、通院、投薬、ワクチン、思い出をPetまたはHousehold scopeで検索・ページングする。URLにscopeがなければ現在のユーザー・Householdの設定を使い、設定未作成・不正値では共有グループ全体を初期表示する。URL指定は設定より優先する。
 - **Action:** `src/app/actions/pet-health-records.ts`、`pet-medical-records.ts`、`pet-medication-records.ts`、`pet-vaccination-records.ts`、`pet-memory-records.ts`、共通`pet-records.ts`。
 - **query / schema:** `src/lib/pet-record-queries.ts`、`pet-record-mutations.ts`、`pet-record-schemas.ts`、`pet-records.ts`。
 - **UI:** `src/components/pet-record-create-forms.tsx`、`pet-record-timeline.tsx`、`src/lib/pet-record-style.ts`、`memory-pet-selector.tsx`、`memory-tag-input.tsx`、`record-image-field.tsx`。
@@ -82,10 +82,10 @@
 
 ## 設定
 
-- **画面:** `/settings`。プロフィール、Pet Dashboard表示数・対象・順序、お世話日の切り替え時刻、問い合わせ・アカウント削除導線を持つ。
+- **画面:** `/settings`。プロフィール、記録画面の初期表示（選択中のPet / 共有グループ全体）、Pet Dashboard表示数・対象・順序、お世話日の切り替え時刻、問い合わせ・アカウント削除導線を持つ。
 - **Action:** `src/app/actions/settings.ts`、`src/app/actions/care-day-settings.ts`。
-- **状態管理:** `src/lib/settings-diff.ts`、`settings-save-state.ts`、`src/components/dashboard-settings-form.tsx`、`care-day-settings-form.tsx`。
-- **Prisma:** `AppSetting.dashboardBoardCount`、`DashboardPet`、`Household.careDayStartMinutes`。
+- **状態管理:** `src/lib/settings-diff.ts`、`settings-save-state.ts`、`src/components/dashboard-settings-form.tsx`、`display-settings-section.tsx`、`care-day-settings-form.tsx`。記録画面scopeだけの変更は`DashboardPet`を再作成しない。
+- **Prisma:** `AppSetting.dashboardBoardCount`、`AppSetting.recordTimelineDefaultScope`（DB default・アプリfallbackとも`household`）、`DashboardPet`、`Household.careDayStartMinutes`。
 - **テスト:** `tests/settings.test.ts`、`settings-save-behavior.test.ts`、`dashboard-settings.test.ts`、`care-day-settings.test.ts`。
 
 ## アカウント削除

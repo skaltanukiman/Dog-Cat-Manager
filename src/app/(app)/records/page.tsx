@@ -55,8 +55,10 @@ export default async function RecordsPage({
   const recordType = normalizePetRecordTypeFilter(getParam(params.type));
   const favoriteOnly =
     getParam(params.favorite) === "1" && (recordType === "all" || recordType === "memory");
+  const hasScopeParam = params.scope !== undefined;
   const filters = {
     petId: getParam(params.petId) ?? "",
+    hasScopeParam,
     scopeParam: getParam(params.scope),
     type: recordType,
     from,
@@ -68,6 +70,7 @@ export default async function RecordsPage({
   const data = await getPetRecordsPageData({
     selectedPetId: filters.petId,
     includeInactive,
+    hasScopeParam: filters.hasScopeParam,
     scopeParam: filters.scopeParam,
     recordType: filters.type,
     from: filters.from,
