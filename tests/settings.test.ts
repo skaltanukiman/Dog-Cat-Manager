@@ -69,9 +69,11 @@ test("設定カードは固定ボタン回避用と通常用の余白を用途�
   ];
 
   assert.match(layout, /py-5 pl-5 pr-24 sm:pr-24 xl:p-5/);
+  assert.match(layout, /SETTINGS_CARD_SCROLL_SAFE_CONTENT_EXPAND = "-mr-11 sm:mr-0"/);
   assert.match(layout, /SETTINGS_CARD_STANDARD_PADDING = "p-5"/);
   for (const source of scrollSafeSources) {
     assert.match(source, /SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING/);
+    assert.match(source, /SETTINGS_CARD_SCROLL_SAFE_CONTENT_EXPAND/);
   }
   for (const source of standardSources) {
     assert.match(source, /SETTINGS_CARD_STANDARD_PADDING/);

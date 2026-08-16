@@ -11,7 +11,10 @@ import {
   requestFormDirtyReevaluation
 } from "@/components/form-dirty-state";
 import { ProfileSettingsFields } from "@/components/profile-settings-form";
-import { SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING } from "@/components/settings-layout";
+import {
+  SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING,
+  SETTINGS_CARD_SCROLL_SAFE_CONTENT_EXPAND
+} from "@/components/settings-layout";
 import { SettingsScrollToSaveButton } from "@/components/settings-scroll-to-save-button";
 import { StatusMessage } from "@/components/status-message";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -530,8 +533,9 @@ export function DashboardSettingsForm({
         <section
           aria-labelledby="dashboard-settings-heading"
           data-settings-section="dashboard"
-          className={`space-y-5 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING}`}
+          className={`rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING}`}
         >
+          <div className={`space-y-5 ${SETTINGS_CARD_SCROLL_SAFE_CONTENT_EXPAND}`}>
           <header className="space-y-1">
             <div className="flex items-center gap-2">
               <LayoutDashboard className="h-5 w-5 text-brand" aria-hidden />
@@ -606,7 +610,7 @@ export function DashboardSettingsForm({
             ) : (
               <ol
                 ref={orderListRef}
-                className="-mr-11 flex max-h-[var(--dashboard-order-max-height)] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain [--dashboard-order-max-height:min(55vh,28rem)] supports-[height:1dvh]:[--dashboard-order-max-height:min(55dvh,28rem)] sm:mr-0 sm:max-h-none sm:overflow-visible sm:overscroll-auto"
+                className="flex max-h-[var(--dashboard-order-max-height)] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain [--dashboard-order-max-height:min(55vh,28rem)] supports-[height:1dvh]:[--dashboard-order-max-height:min(55dvh,28rem)] sm:max-h-none sm:overflow-visible sm:overscroll-auto"
                 aria-describedby="dashboard-pet-order-help"
                 onDragOver={handleOrderListDragOver}
                 onDragLeave={handleOrderListDragLeave}
@@ -857,6 +861,7 @@ export function DashboardSettingsForm({
           </>
         )}
           </section>
+          </div>
         </section>
 
         <div id="dashboard-settings-save" className="scroll-mt-24">
@@ -869,7 +874,7 @@ export function DashboardSettingsForm({
               <StatusMessage status={saveState.status} errorId={saveState.errorId} />
             </div>
           ) : null}
-          <div className="flex justify-end pr-16 sm:pr-20 xl:pr-0">
+          <div className="flex justify-end">
             <DirtySubmitButton
               disabled={!canSave || isSaving}
               className="inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300"
