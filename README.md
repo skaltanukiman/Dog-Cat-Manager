@@ -1,1331 +1,417 @@
-# Hamster Manager Browser
+# Dog & Cat Manager
 
-Google スプレッドシートと GAS で管理していたハムスターの衛生管理・体重管理に、健康・通院・思い出の時系列記録を加え、VPS 上で運用しやすい Web アプリとして作り直したものです。
+Dog & Cat Manager は、犬・猫のプロフィールと日々の飼育記録をまとめて管理する Web アプリです。複数のペットを登録し、体重、お世話、健康・通院・投薬・ワクチン・思い出の記録を一か所で確認できます。
 
-Next.js アプリと PostgreSQL を Docker Compose で分離して動かします。Google アカウントでログインし、ユーザーが所属する Household 単位でハムスター、衛生記録、体重記録、健康・通院・思い出記録を管理します。招待されたユーザーは招待リンクから同じ Household に参加できます。VPS ホスト側の Nginx から Next.js コンテナへリバースプロキシする運用、または Tailscale などの VPN 経由で利用する運用を想定しています。既存の PM2 管理アプリとは別管理にします。
+データは Household（共有グループ）単位で分離され、家族など複数の Google アカウントで共有できます。Household ごとの権限に応じて閲覧・編集・メンバー管理を制御し、複数の Household に参加している場合は操作対象を切り替えられます。
+
+アプリケーションは Next.js App Router、Prisma、PostgreSQL で構成されています。Pet プロフィール画像と思い出画像は DB ではなくサーバーのファイルシステムへ保存し、Docker Compose では PostgreSQL、ログ、画像を永続化します。
 
 ## 主な機能
 
-### 認証・共有
+- **Pet Dashboard**: 管理中の犬・猫と当日のお世話状況を一覧表示。表示数、対象 Pet、並び順をユーザー・Household ごとに設定
+- **Pet プロフィール**: 犬・猫の名前、犬種・猫種、性別、誕生日、迎え入れ日、メモ、プロフィール画像を管理。管理終了後も既存履歴を保持
+- **体重**: Pet ごとに日別の体重とメモを記録し、グラフと履歴で推移を確認
+- **Care**: 全 Pet 共通の食事・水、犬専用の散歩、猫専用の猫トイレを履歴として記録。Household ごとにお世話日の切り替え時刻を設定
+- **Records**: 健康、通院、投薬、ワクチン、思い出を記録。Pet または Household 全体を対象に検索・絞り込み・ページング
+- **思い出と画像**: 複数 Pet を一つの思い出へ関連付け、タグ、お気に入り、複数画像を保存
+- **Household 共有**: 招待リンク、メンバー権限、Household 切り替え、退出・所有権移譲・削除、共有グループの操作履歴
+- **認証**: Auth.js と Google OAuth によるログイン、DB セッション、利用停止ユーザーのログイン・既存セッション拒否
+- **設定**: ユーザープロフィール、Records の初期表示範囲、Dashboard、お世話日の切り替え時刻、アカウント削除
+- **サポート**: 利用者からの問い合わせ作成・履歴・返信と、管理者による検索・担当・ステータス・返信管理
+- **アプリ全体管理**: ユーザー、利用状態、アプリ全体権限、Household、招待、問い合わせの管理
+- **リアルタイム更新**: Household と問い合わせの変更を SSE で反映し、revision polling で取りこぼしを補完
+- **PWA メタデータ**: ホーム画面追加用の Web App Manifest とアイコン
 
-- Auth.js / NextAuth と Google OAuth によるログイン
-- 未ログイン時は `/login` へリダイレクト
-- 初回ログイン時に個人用 Household を自動作成。同時アクセス時も同じユーザーに個人用 Household が重複作成されないよう直列化
-- 複数の Household に所属している場合は、ヘッダーの「操作対象」で現在の共有を切り替え
-- ハムスター、衛生記録、体重記録、健康・通院・思い出記録、ダッシュボード設定を Household / ユーザー単位で分離
-- `/settings/members` で現在の Household のメンバー一覧を表示
-- OWNER / ADMIN は招待リンクを作成可能
-- 招待リンクを開いたユーザーは Google ログイン後に同じ Household へ MEMBER として参加
-- OWNER は VIEWER / MEMBER / ADMIN の権限切り替えが可能
-- ADMIN は VIEWER / MEMBER の共有参加を解除可能
-- OWNER は自分自身と最後の OWNER を除き、共有メンバーの参加を解除可能
-- 設定画面から自分のアカウントを完全削除可能。単独所有グループはデータ・画像ごと削除し、共有グループは必要に応じて所有権を明示移譲して退出
+## 主要画面
 
-Household単位の権限は次のとおりです。`User.appRole` のアプリ全体権限とは別に判定し、アプリ全体の管理者でもHousehold内では所属ロールに従います。
+通常画面は Google ログインが必要です。`/login`、招待受け入れ、Auth.js の callback、health API だけが公開されています。
 
-| Household権限 | 共有データ閲覧 | ハムスター・衛生・体重・記録の登録／更新／削除 | 体重CSV | 招待リンク | メンバー解除 | メンバー権限変更 | 自分のプロフィール／ダッシュボード設定 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| OWNER（オーナー） | 可 | 可 | エクスポート／インポート可 | 作成可 | 自分自身・最後のOWNERを除き可 | VIEWER／MEMBER／ADMIN間で可 | 可 |
-| ADMIN（管理者） | 可 | 可 | エクスポート／インポート可 | 作成可 | VIEWER／MEMBERのみ可 | 不可 | 可 |
-| MEMBER（メンバー） | 可 | 可 | エクスポート／インポート可 | 不可 | 不可 | 不可 | 可 |
-| VIEWER（閲覧者） | 可 | 不可 | エクスポートのみ可 | 不可 | 不可 | 不可 | 可 |
-
-### アプリ全体管理
-
-- `User.appRole` でアプリ全体権限を管理
-- `ADMIN` / `SUPER_ADMIN` は `/admin` からユーザー、共有、招待状態を確認可能
-- `SUPER_ADMIN` は `/admin` からユーザーのアプリ全体権限を変更可能
-- `SUPER_ADMIN` は `/admin/users` からユーザーを利用停止・利用停止解除可能。停止してもアカウント、共有グループ、ハムスター、飼育記録は削除しない
-- 自分自身の降格と最後の `SUPER_ADMIN` の降格は不可
-- 初期管理者は Google ログイン後に CLI スクリプトで付与
-
-### 共有グループの操作履歴
-
-共有グループでは、現在所属している `OWNER` / `ADMIN` / `MEMBER` / `VIEWER` が「誰が・いつ・何を操作したか」を確認できます。`/settings/members` には最新5件だけを表示し、「すべての履歴を見る」から `/settings/members/activity` へ移動できます。一覧は新しい順の20件ページングで、「すべて」「飼育記録」「メンバー」「グループ設定」をDB側で絞り込みます。
-
-第一段階の対象は、共有グループ名、招待リンク作成・無効化・参加、権限変更・参加解除・退出・所有権移譲を伴う退出、ハムスター登録・削除、体重登録・更新・削除・一括削除・アプリ版/GAS版CSVインポート、衛生管理の月保存です。体重一括削除、CSVインポート、衛生管理は1操作につき1件の要約だけを保存します。
-
-第二段階では、健康記録・通院記録・思い出記録の作成・更新・削除、プロフィール画像の登録・差し替え・削除、ハムスターの管理中・管理外切り替えを追加しました。すべて既存の `CARE_RECORD`（飼育記録）カテゴリーへ表示します。健康・通院・思い出は対象レコードID、ハムスター名snapshot、記録日だけを保存し、入力内容・タイトル・本文・タグ・医療情報は複製しません。プロフィール画像は追加・差し替え・削除の種別だけを保存し、ファイル名・パス・MIME・サイズ等は保存しません。思い出の写真操作は思い出記録の作成または更新1件へまとめ、画像専用履歴は作りません。
-
-表示文章そのものではなく、イベント種別、カテゴリー、操作時点の操作者名・対象名、表示に必要な最小限の詳細を `HouseholdActivity` に保存します。名前未設定時は「名前未設定」とし、メールアドレスは代用しません。招待token/URL、Cookie、Session、OAuth token、Authorization header、CSV本文・ファイル名、フォーム全体、掃除メモ、ハムスターメモ、健康・通院・思い出の内容、画像ファイル情報は保存しません。業務更新・操作履歴・Household revisionは同一transactionで確定し、変更なし・検証失敗・権限不足・競合・DB失敗時には履歴を作りません。画像ファイルの旧参照削除は既存どおりDB commit後に実行し、失敗時は確定済みのDB更新・履歴・revisionを成功として警告ログへ残します。
-
-ハムスタープロフィールの名前・メモ・誕生日・お迎え日の編集、思い出画像専用イベント、保存済みタグ候補の操作、項目単位の詳細差分、履歴の手動削除・CSV出力・通知・過去履歴生成は引き続き対象外です。
-
-Household削除時は履歴もCascade削除されます。アカウント削除時は `actorUserId` を `SetNull` にし、当時の `actorNameSnapshot` は残ります。既存の `writeHouseholdAuditLog` とサーバーログは障害調査・内部監査・errorId追跡用として維持し、利用者向け操作履歴とは役割を分けています。
-
-### 共通 UI
-
-- 登録、保存、更新などの通常メッセージは数秒後にアニメーションして自然に非表示
-- エラーメッセージは自動で消さず、右端の閉じるボタンで非表示
-- 想定外例外は内部情報を表示せず、日本語の汎用メッセージとログ照合用エラーIDを表示
-- Server Action のDB更新と Household revision 更新は同一トランザクションで確定し、SSE配信失敗は保存結果へ影響させない
-- 変更がない保存・更新は DB 更新を行わず、「変更はありません。」を表示
-- ハムスター一覧、衛生管理、体重履歴の保存ボタンは、編集が入るまで非活性
-- 同じ Household のデータが他の画面で更新された場合は SSE 通知または 4 秒ごとの revision チェックで検知し、未保存の入力がなければ画面を自動再取得
-- 未保存の入力がある場合は自動再取得せず、「他のユーザーが更新しました。」通知から手動で再読み込み可能
-- 更新 revision と更新元のタブ・ユーザーを DB に保持し、更新した画面自身には他ユーザー更新通知を表示しない
-- SSEとrevision確認が連続して失敗し、一定時間同期できない場合だけ同期停止警告を表示し、回復時に自動解除
-
-### ダッシュボード
-
-- 設定画面で選択したハムスターのカードを表示
-- 表示ボード数は 1〜30 件で設定可能
-- 表示対象数を超えるハムスターがいる場合は、表示するハムスターを選択可能
-- 当日の食事（未実施 / 実施済み）と水替え（未交換 / 交換済み）をカード全体の操作で切り替え
-- 最新体重を表示
-- トイレ掃除、砂場掃除、床材全交換、ハウス掃除ごとの最新状態を表示
-- 掃除日は「経過日数」と「日付」をクリックまたはタッチで切り替え可能
-- 管理中 / 管理外の状態をカード上に表示
-- 長いメモは省略表示し、クリックまたはタッチで全文をモーダル表示
-- メモや未記録の有無でカード高さが大きく崩れないように調整
-- プロフィール画像を名前・メモと最新情報の間へサムネイル表示。未登録・読込失敗時は同じ大きさのプレースホルダーを表示
-
-### ハムスター管理
-
-- ハムスターの登録、編集、削除
-- 名前、メモ、誕生日、お迎え日を管理
-- JPEG / PNG / WebP のプロフィール画像を登録・差し替え・削除（元画像10MB以内、512px正方形のWebPへ変換し、保存画像は2MB以下）
-- 名前は 15 文字以内
-- メモは 2000 文字以内
-- 誕生日、お迎え日は未来日入力不可
-- 同名登録時はハムスター登録用のエラーメッセージを表示
-- 管理中 / 管理外を切り替え可能
-- 管理外のハムスターはプロフィール編集、衛生記録、体重記録をロック
-- 管理外でもハムスター自体の削除と、管理中への復活は可能
-- 一覧は表示対象を「登録順」「名前」から選択可能
-- 並び順は「昇順」「降順」から選択可能
-- 登録時は反映が分かりやすいよう、登録順 / 降順へ切り替え
-- ハムスター名のリアルタイム検索に対応
-- 検索は NFKC 正規化、小文字化、カタカナをひらがなへ寄せて比較
-  - 例: `しろ` で `シロ` がヒット
-  - 例: `シロ` で `しろ` がヒット
-- 一覧は 20 件ごとにページング
-- ページ移動は「最初へ」「前へ」「次へ」「最後へ」に対応
-- 削除対象のチェックボックスは常時表示
-- 1 件以上選択すると、選択アクションバーに「全選択」「全解除」「削除」を表示
-- 削除前に確認ダイアログを表示
-- 編集保存は変更がある場合のみ実行
-- 未保存の編集がある状態で他画面へ移動しようとすると確認モーダルを表示
-
-### 健康・通院・思い出記録
-
-- `/records` で最初に対象ハムスターを選び、設定済みのコンボボックス式／プルダウン式を利用
-- 「体調を記録」「通院を記録」「思い出を追加」の種類別フォームを用意し、不要な項目を同時表示しない
-- 体調記録は総合状態、食欲、活動量、便、尿、複数症状、メモに加え、チェックした場合だけ任意時刻を保存・編集。当日の時刻は保存ボタン押下後のサーバー側JST現在時刻と比較し、未来時刻を拒否
-- 通院記録は通院理由だけを内容必須とし、病院名、診断、検査、治療、処方薬、投薬方法、次回予定日、診察費、メモは任意。診察費は0円以上の整数
-- 思い出記録はタイトル、内容、自由タグ、お気に入り、写真1枚を保存。タグは「、」またはカンマ区切りで最大20件。保存時は全角英数字・記号等を半角へ正規化し、英字の大文字小文字は別タグとして保持する。「入力したタグを保存して再利用する」を選ぶと、各タグをHousehold共通の候補として個別保存し、次回以降は候補ボタンから入力可能。保存候補は選択モーダルから複数件をまとめて削除でき、削除しても登録済みの思い出記録に付いたタグは残る
-- 体調・通院・思い出の作成エラーはフォーム内へ表示し、画面位置と入力内容を保持。思い出写真の元画像10MB上限とMIME形式は送信前にも検証する
-- JPEG / PNG / WebP の思い出写真を元画像10MB以内で受け付け、縦横比を維持した長辺1920px以内のWebPへ変換。品質・解像度を段階調整して保存画像を2MB以下にし、認証と現在のHousehold所属を確認する `/api/records/[id]/image` だけから配信
-- 3種類を記録日の新しい順で同じタイムラインへ表示。同日内は時刻ありを時刻の降順、次に時刻なし、同条件は作成日時とIDの降順で安定ソート
-- 種類、期間、キーワード、お気に入りでDB側絞り込み。通常キーワードはタイトル、メモ、症状、通院内容、薬、思い出本文を、`#タグ` は思い出タグだけを対象とし、20件ずつページング。検索時は通常キーワード・`#タグ`とも大文字小文字と全角半角の差を吸収する
-- 健康・通院・思い出の日付は暦日として保存し、未来日は不可。次回通院予定日だけ未来日を許可
-- OWNER / ADMIN / MEMBER は登録・編集・削除可能。VIEWER は閲覧、検索、絞り込み、ページ移動のみ可能で、Server Actionでも更新を拒否
-- 管理外ハムスターの健康・通院記録は既存記録の閲覧だけ可能。思い出記録は管理状態に関係なく登録・編集・削除可能
-- 更新とHousehold revisionを同一トランザクションで確定し、既存のSSE・revision poll・未保存変更ガードを利用
-- 思い出削除、画像差し替え、ハムスター削除では不要になった画像を削除。DB更新後のファイル削除失敗は警告ログへ残す
-
-### 衛生管理
-
-- ハムスターと年月を選択して、月別の掃除記録を入力
-- 掃除項目のチェックボックスとメモは、変更後に「保存」を押した時点でまとめて反映し、同じ共有を開いている画面へ通知
-- ハムスターまたは年月を変更すると即時切り替え
-- 管理外ハムスターは通常プルダウンに表示せず、「管理外も含む」チェック時のみ候補に表示
-- ハムスター選択 UI は設定画面で以下を切り替え可能
-  - コンボボックス式
-  - プルダウン式
-- 初期表示ではハムスターを自動選択せず、選択後に入力表を表示
-- 日別に以下を保存
-  - トイレ掃除
-  - 砂場掃除
-  - 床材一部交換
-  - 床材全交換
-  - ハウス掃除
-  - メモ
-- PC / タブレット幅では表形式で入力
-- スマホ幅では日別カード形式で入力
-- スマホ幅では年月項目の下に日付フィルターを表示し、該当日だけに絞り込み可能
-- 今日の日付は背景色で強調
-  - 表形式では「今日」文言は表示しない
-  - スマホのカード形式では「今日」バッジを表示
-- 未来日は入力不可
-- 管理外のハムスターは入力・保存不可
-- スマホ幅ではチェックボックスまたはメモの変更後に画面右下へ固定保存ボタンを表示
-- 保存は変更がある場合のみ実行
-- 未保存の編集がある状態で他画面へ移動しようとすると確認モーダルを表示
-
-### 体重管理
-
-- ハムスターを選択して体重を登録
-- 管理外ハムスターは通常プルダウンに表示せず、「管理外も含む」チェック時のみ候補に表示
-- 日付と体重(g)を保存
-- 未来日は入力不可
-- 体重は 1〜500g、0.1g 単位で入力可能
-- 同じハムスター・同じ測定日の体重登録は、重複エラーとして表示
-- 管理外のハムスターは登録・編集・削除不可
-- 折れ線グラフで体重推移を表示
-- 履歴は DB 側で絞り込み・ソート・ページング
-- 履歴は 20 件ごとにページング
-- グラフは現在の表示条件に一致する全体の体重推移を表示し、ページング中の一覧ページだけには限定しない
-- 表示フィルター
-  - 全件
-  - 月ごと
-- 月ごとの候補は体重記録日に存在する年月から自動作成
-- 「全件」表示時は対象月の選択を非表示
-- ソート対象
-  - 登録順
-  - 日付
-  - 体重
-- 並び順
-  - 昇順
-  - 降順
-- 初期表示は日付 / 降順
-- 体重登録後は反映が分かりやすいよう、登録順 / 降順へ切り替え
-- ページ移動は「最初へ」「前へ」「次へ」「最後へ」に対応
-- 削除対象のチェックボックスは常時表示
-- 1 件以上選択すると、選択アクションバーに「全選択」「全解除」「削除」を表示
-- 削除前に確認ダイアログを表示
-- 履歴編集の保存は変更がある場合のみ実行
-- 未保存の編集がある状態で他画面へ移動しようとすると確認モーダルを表示
-
-### 体重 CSV エクスポート
-
-- `/weights/export` から体重記録を CSV ダウンロード
-- ハムスター指定、年月指定で絞り込み可能
-- 既定ではデータ行の先頭へ、連携用識別列 `app_id`（`hamster-manager-browser`）、`record_type`（`weight_record`）、`schema_version`（`1`）、既存更新用の `record_id` を出力。閲覧用では4列をまとめて除外可能
-- `date`（測定日）、`hamster`（ハムスター名）、`weight_g`（体重）、`created_at`（登録日時）、`updated_at`（更新日時）から出力列を選択可能（初期値は全列）
-- 登録日時・更新日時は UTC（初期値）または JST（日本標準時・UTC+09:00）の ISO 8601 形式を選択可能
-- 測定日は時刻を持たないためタイムゾーン変換せず、UTC／JSTを変更しても日付を維持
-- 既存URLのように列・タイムゾーン指定がない場合は、互換性のため全データ列・UTCとして出力
-- 旧 `/export` は `/weights/export` へリダイレクト
-- 体重管理画面から CSV エクスポート画面へ移動可能
-
-### 体重 CSV インポート
-
-- `/weights/import` でアプリ版CSVの一括編集とGAS版からのデータ移行を選択
-- `/weights/import/app`
-  - このアプリが出力したCSV専用
-  - `record_id` がある行は既存記録を更新し、空欄の行は新規登録
-  - `date`、`hamster`、`weight_g` を一括編集可能。Excelの `YYYY/MM/DD` 形式も受け付ける
-  - 出力元識別、スキーマバージョン、`record_id` のHousehold所属をサーバー側で検証
-  - エラーが1件でもある場合は全件未反映。新規・更新とrevision更新は同一トランザクションで確定
-  - CSVによる削除には対応しない
-- `/weights/import/gas`
-  - GAS 版で出力した体重管理 CSV を新規移行
-  - 同じハムスター・同じ測定日の既存記録は更新せずスキップ
-- UTF-8、ヘッダー行あり、カンマ区切り CSV に対応
-- GAS版の必須列
-  - `date`
-  - `hamster`
-  - `weight`
-- 想定列
-  - `id`
-  - `date`
-  - `hamster`
-  - `weight`
-  - `unit`
-  - `create_date`
-  - `update_date`
-- `id` は GAS 側の管理 ID として扱い、アプリ側 DB の ID には使わない
-- `hamster` は既存ハムスター名と照合
-- 未登録のハムスター名、管理外ハムスター、日付不正、体重不正はエラーとして表示
-- CSVは2MB・10,000行まで。体重は通常登録と同じく0より大きく500g以下、未来日は不可
-- 取り込み後に新規登録件数、更新件数、スキップ件数、エラー件数、エラー詳細を表示
-- 体重管理画面へ戻るボタンあり
-
-### 設定
-
-- ログイン中ユーザーの表示名を変更
-  - 自動生成された個人用 Household 名にも反映
-  - 表示名は 50 文字以内
-- ダッシュボードの表示ボード数を設定
-- 表示ボード数の上限は 30 件
-- ダッシュボードに表示するハムスターを選択
-- 表示対象ハムスターの検索に対応
-- 検索はハムスター一覧と同様に、ひらがな / カタカナを相互に一致
-- ハムスター選択方式を切り替え
-  - コンボボックス式
-  - プルダウン式（新規ユーザーの初期値）
-- 保存ボタンまでスクロールする固定ボタンあり
-- 狭い画面でもメイン UI と固定ボタンが被りにくいように余白を調整
+| URL | 役割 |
+| --- | --- |
+| `/` | Pet Dashboard と当日のお世話状況 |
+| `/pets` | Pet プロフィールの登録・編集・管理終了 |
+| `/care` | 食事、水、散歩、猫トイレの記録 |
+| `/records` | 健康、通院、投薬、ワクチン、思い出の記録・検索 |
+| `/weights` | 体重の登録、グラフ、履歴 |
+| `/settings` | プロフィール、Records、Dashboard、お世話日の設定 |
+| `/settings/members` | Household 名、招待、メンバー権限、退出・削除、操作履歴 |
+| `/contact` | 問い合わせの作成と履歴 |
+| `/admin` | アプリ全体の管理トップ、招待一覧 |
+| `/admin/users` | ユーザー、利用状態、アプリ全体権限の管理 |
+| `/admin/households` | Household と所属メンバーの確認 |
+| `/admin/inquiries` | 問い合わせ管理 |
 
 ## 技術スタック
 
-- Next.js
-- TypeScript
-- Prisma
-- PostgreSQL
-- Auth.js / NextAuth
-- Tailwind CSS
-- Recharts
-- Zod
-- Docker
-- Docker Compose
+| 分類 | 技術 |
+| --- | --- |
+| Runtime | Node.js 22 |
+| Web | Next.js 16.2.9、React 19.2.7、TypeScript 5.9.3 |
+| UI | Tailwind CSS 3.4.19、Lucide React、Recharts 3.9.0 |
+| Database | PostgreSQL 16、Prisma 6.19.3 |
+| Authentication | Auth.js 5.0.0-beta.31、Google OAuth、Prisma Adapter |
+| Image | Sharp 0.34.0、WebP 変換、ローカルファイル保存 |
+| Logging | Winston 3.19.0、日次ローテーション、JSON Lines |
+| Infrastructure | Docker、Docker Compose、Next.js standalone output |
+| Validation / Test | Zod、ESLint 9、Node.js test runner + `tsx` |
 
-## 画面構成
+依存関係の正確なバージョン範囲は [`package.json`](package.json) と [`package-lock.json`](package-lock.json) を参照してください。
 
-- `/`
-  - ダッシュボード
-- `/login`
-  - Google ログイン
-- `/hamsters`
-  - ハムスター管理
-- `/records`
-  - 健康・通院・思い出の登録と共通タイムライン
-- `/cleaning`
-  - 衛生管理
-- `/weights`
-  - 体重管理
-- `/weights/export`
-  - 体重 CSV エクスポート
-- `/weights/import`
-  - 体重 CSV インポート
-- `/export`
-  - `/weights/export` へリダイレクト
-- `/settings`
-  - 設定
-- `/settings/members`
-  - 共有・メンバー管理、招待リンク作成、メンバー参加解除
-- `/invitations/accept`
-  - 招待リンク承認
-- `/admin`
-  - アプリ全体管理者向けのユーザー、共有、招待状態確認
-
-## DB 設計
-
-### `hamsters`
-
-- `id`
-- `householdId`
-- `name`
-- `memo`
-- `profileImageFileName`
-- `birthDate`
-- `adoptionDate`
-- `isActive`
-- `createdAt`
-- `updatedAt`
-
-`householdId` は所属 Household です。ログイン中ユーザーが所属していない Household のハムスターは参照・編集できません。
-
-`name` は Household 内でユニークです。別 Household であれば同じ名前のハムスターを登録できます。
-
-`isActive` は管理状態です。`false` のハムスターは管理外として扱い、プロフィール編集、衛生記録、体重記録をロックします。ハムスター自体の削除と、管理中への復活は可能です。
-
-### `cleaning_records`
-
-- `id`
-- `hamsterId`
-- `recordDate`
-- `toiletCleaned`
-- `bathCleaned`
-- `flooringPartCleaned`
-- `flooringAllCleaned`
-- `houseCleaned`
-- `memo`
-- `createdAt`
-- `updatedAt`
-
-`hamsterId` と `recordDate` の組み合わせはユニークです。衛生管理表は、ハムスターごとに 1 日 1 行として保存します。
-
-### `feeding_records` / `water_replacement_records`
-
-- 共通: `id`、`hamsterId`、`recordDate`、`createdByUserId`、`createdAt`、`updatedAt`
-- `feeding_records`: `fedAt`
-- `water_replacement_records`: `replacedAt`
-
-どちらも `hamsterId` と `recordDate` の組み合わせはユニークです。ダッシュボードで未実施へ戻した場合は当日レコードを削除し、JSTの日付が変わると新しい日の未実施状態になります。ハムスター削除時はCascade、操作者削除時は参照だけをSetNullにします。
-
-### `weight_records`
-
-- `id`
-- `hamsterId`
-- `recordDate`
-- `weightG`
-- `createdAt`
-- `updatedAt`
-
-`hamsterId` と `recordDate` の組み合わせはユニークです。体重履歴は、ハムスターごとに 1 日 1 件として保存します。
-
-### `hamster_records` / 種類別詳細 / `memory_record_images`
-
-- `hamster_records`: `hamsterId`、`recordType`、`recordDate`、健康記録だけが使用する任意の `recordTimeMinutes`、`title`、`memo`、`searchText`、`createdByUserId`、作成・更新日時を持つ共通タイムライン親
-- `health_record_details`: 総合状態、食欲、活動量、便、尿、複数症状
-- `medical_visit_details`: 病院名、理由、診断、検査、治療、薬、投薬方法、次回予定日、診察費
-- `memory_record_details`: 大文字小文字を保持する表示用の自由タグ、大文字小文字・全角半角を吸収する検索専用タグ、お気に入り
-- `memory_record_images`: 思い出画像のサーバー生成ファイル名と表示順。初回実装は1記録1枚だが、別テーブルのため複数画像へ拡張可能
-- `saved_memory_tags`: Household内で再利用する思い出タグ。全角英数字・記号等を半角へ正規化した名前で重複を防止し、大文字小文字は区別
-
-親記録と詳細・画像メタデータはCascadeで削除します。`searchText` は入力項目から生成した検索専用テキストで、PostgreSQL `pg_trgm` のGINインデックスを使用します。別HouseholdのハムスターIDを指定した取得・更新はサーバー側の所属条件で拒否します。
-
-### `app_settings`
-
-- `id`
-- `userId`
-- `householdId`
-- `dashboardBoardCount`
-- `hamsterSelectorMode`
-- `createdAt`
-- `updatedAt`
-
-設定は `userId` と `householdId` の組み合わせで 1 レコードです。同じ Household を共有していても、ダッシュボード表示数、ハムスター選択方式、表示対象ハムスターはユーザーごとに保存します。
-
-`dashboardBoardCount` はダッシュボードの表示ボード数です。
-
-`hamsterSelectorMode` は、ハムスター選択 UI をコンボボックス式にするか、プルダウン式にするかを保存します。新規ユーザーの初期値はプルダウン式です。
-
-### `dashboard_hamsters`
-
-- `id`
-- `settingId`
-- `hamsterId`
-- `sortOrder`
-- `createdAt`
-- `updatedAt`
-
-ダッシュボードの表示対象ハムスターと表示順を保存します。
-
-### `users` / `accounts` / `sessions` / `verification_tokens`
-
-Auth.js / NextAuth の Prisma Adapter が使用する認証テーブルです。Google OAuth のユーザー、アカウント連携、DB セッションを PostgreSQL に保存します。
-
-`users.appRole` はアプリ全体権限です。`USER`、`ADMIN`、`SUPER_ADMIN` を持ちます。共有単位の `OWNER` / `ADMIN` / `MEMBER` / `VIEWER` とは別の権限です。
-
-`users.accessStatus` はアプリの利用状態で、`ACTIVE` / `SUSPENDED` を持ちます。停止中は停止日時・実行者・内部向け理由を現在状態として保持し、既存Sessionをすべて削除します。停止・解除は `user_access_actions` に別途保存するため、解除時に現在の停止情報をクリアしても操作履歴は残ります。履歴のユーザー参照はアカウント削除時に `SetNull` となり、操作時のID・表示名snapshotを維持します。
-
-Auth.js のGoogleログイン callbackは既存のGoogleアカウントIDとメールを照合して停止中ユーザーのログインを拒否し、同じGoogleアカウントから別ユーザーとして再作成されることを防ぎます。DB Session取得時と共通認証コンテキストでも利用状態を確認します。ユーザー向けには一般化した停止案内だけを表示し、内部向け理由は表示しません。
-
-### アカウント削除
-
-`/settings` の「アカウントの削除」から「削除内容を確認する」で `/settings/account/delete` へ進むと、処理件数の要約と所属グループごとの扱いを確認して自分のアカウントを削除できます。メンバー1人・対象ユーザーがOWNER・OWNER数1人のグループはHouseholdのCascadeで全データを削除し、DB commit後にハムスター画像と思い出画像のHouseholdディレクトリを削除します。ほかのメンバーがいるグループは共有データを残して本人のmembershipと個人設定だけを削除し、本人が唯一OWNERの場合は同じグループの別メンバーを移譲先として明示選択する必要があります。
-
-削除処理はユーザー単位lockの後、Household ID順にHousehold単位lockを取得し、画面表示後の状態変更と移譲先所属をDBで再確認します。全グループの処理とUser削除は1 transactionで行い、`Account`、`Session`、`HouseholdMember`、`AppSetting`、`DashboardHamster`はCascadeで削除します。共有グループ内の記録・招待・保存タグは残し、削除ユーザーの作成者参照は既存の`SetNull`に従います。最後の`SUPER_ADMIN`は削除できません。成功後はHousehold CookieとAuth.js Session Cookieを削除してログイン画面へ移動し、`account_deleted`監査ログを記録します。
-
-### `households`
-
-- `id`
-- `name`
-- `createdAt`
-- `updatedAt`
-- `realtimeRevision`
-- `realtimeActorClientId`
-- `realtimeActorUserId`
-
-共有の単位です。新規ログインユーザーに Household がない場合は、`{ユーザー名}のハムスター管理` という個人用 Household を自動作成します。初回表示の並行処理で同じ個人用 Household が二重作成されないよう、ユーザー単位で作成処理を直列化します。
-
-`realtimeRevision` は Household 単位の更新ごとに増える revision です。ポーリング時も更新元を正しく判定できるよう、最新更新の `realtimeActorClientId` と `realtimeActorUserId` も同じ行に保存します。
-
-### `household_members`
-
-- `id`
-- `householdId`
-- `userId`
-- `role`
-- `createdAt`
-- `updatedAt`
-
-ユーザーと Household の参加関係です。`role` は `OWNER`、`ADMIN`、`MEMBER`、`VIEWER` です。招待参加時は従来どおり `MEMBER` で作成し、必要な場合だけ参加後に OWNER が `VIEWER` へ変更します。
-
-### `household_activities`
-
-- `HouseholdActivityEvent` と `HouseholdActivityCategory` による型安全なイベント・カテゴリー
-- `actorNameSnapshot` / `targetNameSnapshot` で、ユーザー名変更やユーザー・ハムスター削除後も当時の表示名を保持
-- `details` は日付、体重、件数、権限変更前後など表示に必要な最小限だけをJSON保存
-- `(householdId, createdAt, id)` と `(householdId, category, createdAt, id)` の索引で安定順ページングとカテゴリー絞り込みを支援
-- Household参照は `onDelete: Cascade`、User参照は `onDelete: SetNull`
-
-### `household_invitations`
-
-- `id`
-- `householdId`
-- `tokenHash`
-- `expiresAt`
-- `acceptedAt`
-- `createdAt`
-
-招待リンクの管理テーブルです。招待トークンは作成直後のAction stateと受諾画面のメモリ内でのみ平文として扱い、DB には SHA-256 ハッシュを保存します。共有URLではトークンを `#token=...` のフラグメントへ格納するため、HTTPリクエストやアクセスログのクエリには含まれません。未ログイン時はGoogle OAuthの往復中だけ同じタブの `sessionStorage` に保持し、ログイン後に読み出して削除します。
-
-## 環境変数ファイル
-
-実際に使う `.env` 系ファイルは Git 管理しません。用途に応じて example ファイルをコピーして作成します。
+## アーキテクチャ概要
 
 ```text
-.env.example
-.env.development.example
-.env.production.example
+Browser / PWA
+  ├─ Google OAuth ── Auth.js ── DB Session
+  └─ Next.js App Router
+       ├─ Server Components / Server Actions / Route Handlers
+       ├─ Prisma ── PostgreSQL
+       ├─ Sharp ── uploads/pets
+       │          └─ uploads/pet-records
+       └─ Winston ── logs
 ```
 
-Docker Compose は `ENV_FILE` で読み込む env ファイルを切り替えられます。指定しない場合は `.env` を読み込みます。
+- `Household` が共有データと認可の境界です。
+- DB の timestamp は UTC で保存し、利用者向け画面では JST で表示します。
+- 誕生日、迎え入れ日、測定日、記録日のような時刻を持たない日付は暦日のまま扱います。
+- Pet Care だけは、Household に設定した JST の日替わり時刻をお世話日の境界に使用します。
+- Pet プロフィール画像と思い出画像は Household ごとのディレクトリへ WebP で保存し、認証・Household 認可付き API から配信します。
+
+## 必要なもの
+
+ホスト上で開発サーバーを実行する場合:
+
+- Node.js 22
+- npm
+- PostgreSQL 16、または DB だけを起動する Docker Compose 環境
+- Google OAuth クライアント
+
+アプリと DB を Docker で実行する場合:
+
+- Docker Engine または Docker Desktop
+- Docker Compose v2
+- Google OAuth クライアント
+
+## ローカル開発環境のセットアップ
+
+### 1. リポジトリと依存関係
 
 ```bash
-ENV_FILE=.env.development docker compose up -d
-ENV_FILE=.env.production docker compose up -d
+git clone https://github.com/skaltanukiman/Dog-Cat-Manager.git
+cd Dog-Cat-Manager
+npm ci
+```
+
+### 2. 環境ファイル
+
+開発用の例を `.env` へコピーします。
+
+```bash
+cp .env.development.example .env
 ```
 
 PowerShell の場合:
 
 ```powershell
-$env:ENV_FILE=".env.development"
-docker compose up -d
-```
-
-`$env:ENV_FILE` は PowerShell の現在のセッションだけに効きます。毎回指定したくない場合は、開発 PC では `.env.development.example` を `.env` にコピーして使うのが簡単です。
-
-```powershell
 Copy-Item .env.development.example .env
 ```
 
-VPS 本番では `.env.production.example` を `.env` にコピーして、本番用の強いパスワードへ変更する運用でも構いません。
+少なくとも `AUTH_SECRET`、`AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET` を設定してください。ホストから `npm run dev` を実行する場合は、`.env` の次の値も変更します。
+
+```dotenv
+DATABASE_URL="postgresql://dog_cat_user:dev_password@localhost:5434/dog_cat_manager_dev?schema=public"
+AUTH_URL="http://localhost:3000"
+LOG_DIR="./logs"
+PET_IMAGE_DIR="./uploads/pets"
+PET_RECORD_IMAGE_DIR="./uploads/pet-records"
+```
+
+Google OAuth クライアントには、開発サーバーに合わせて次の redirect URI を登録します。
+
+```text
+http://localhost:3000/api/auth/callback/google
+```
+
+### 3. PostgreSQL
+
+既存の PostgreSQL 16 を使用するか、Docker Compose で DB だけを起動します。
+
+```bash
+docker compose up -d db
+```
+
+Compose の PostgreSQL はホストの `127.0.0.1:5434` へ公開されます。ホストから実行する Prisma と Next.js は `localhost:5434`、Compose 内の `app` は `db:5432` を使用します。
+
+### 4. Prisma と開発サーバー
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+npm run dev
+```
+
+起動後、`http://localhost:3000` を開きます。`prisma:migrate` は接続先 DB を変更するため、実行前に `DATABASE_URL` を確認してください。
+
+## 環境変数
+
+実値は `.env` にだけ保存し、secret をリポジトリへ commit しないでください。用途別のひな形は次の 3 ファイルです。
+
+- [`.env.example`](.env.example): 標準構成
+- [`.env.development.example`](.env.development.example): 開発 DB 用
+- [`.env.production.example`](.env.production.example): 本番用の例
+
+### アプリケーションと認証
+
+| 変数 | 必須 | 用途 |
+| --- | --- | --- |
+| `DATABASE_URL` | 必須 | Prisma が接続する PostgreSQL URL。Compose 内は `db:5432`、ホストからは通常 `localhost:5434` |
+| `AUTH_SECRET` | 必須 | Auth.js が使用する十分に強い秘密値 |
+| `AUTH_GOOGLE_ID` | 必須 | Google OAuth Client ID |
+| `AUTH_GOOGLE_SECRET` | 必須 | Google OAuth Client Secret |
+| `AUTH_URL` | 必須 | アプリの外部 URL。redirect URI、招待リンク、Cookie の secure 判定に使用 |
+| `AUTH_TRUST_HOST` | example で設定 | `true`。Auth.js の host 信頼設定を明示 |
+
+`AUTH_SECRET` には十分に強いランダム値を使用し、共有・公開しないでください。本番の `AUTH_URL` は実際の HTTPS URL に変更します。
+
+### PostgreSQL コンテナ
+
+| 変数 | 必須 | 用途 |
+| --- | --- | --- |
+| `POSTGRES_DB` | Compose 利用時 | 作成する DB 名 |
+| `POSTGRES_USER` | Compose 利用時 | PostgreSQL ユーザー |
+| `POSTGRES_PASSWORD` | Compose 利用時 | PostgreSQL パスワード。本番では例示値を必ず変更 |
+
+`POSTGRES_*` と `DATABASE_URL` の DB 名、ユーザー、パスワードを一致させてください。
+
+### ログ、画像、保守
+
+| 変数 | 必須 | 用途 |
+| --- | --- | --- |
+| `LOG_LEVEL` | 任意 | ログレベル。example は開発 `debug`、標準・本番 `info` |
+| `LOG_DIR` | 任意 | ログ保存先。未指定時は `./logs`、Compose では `/app/logs` |
+| `LOG_RETENTION_DAYS` | 任意 | ログ保持日数。example は `14` |
+| `LOG_MAX_FILE_SIZE_MB` | 任意 | ログファイルの最大サイズ。example は `20` |
+| `HOUSEHOLD_ACTIVITY_RETENTION_DAYS` | 保守 CLI 利用時 | Household 操作履歴の保持日数。example は `90` |
+| `PET_IMAGE_DIR` | 任意 | Pet プロフィール画像の保存 root。未指定時は `./uploads/pets` |
+| `PET_RECORD_IMAGE_DIR` | 任意 | 思い出画像の保存 root。未指定時は `./uploads/pet-records` |
+
+seed / UI fixture 専用の override 変数は [開発・運用ドキュメント](docs/development-and-operations.md) を参照してください。
+
+## Docker Compose での起動
+
+### 1. 環境ファイルを準備
+
+開発用途:
+
+```bash
+cp .env.development.example .env
+```
+
+本番相当:
 
 ```bash
 cp .env.production.example .env
 ```
 
-## env の値の考え方
+`.env` の secret、DB パスワード、`AUTH_URL` を実環境に合わせます。Compose 内では `DATABASE_URL` のホストを `db`、ポートを `5432` のまま使用します。
 
-Docker Compose 内で Next.js コンテナから PostgreSQL コンテナへ接続する場合、`DATABASE_URL` のホスト名は `db` です。
-
-```env
-DATABASE_URL="postgresql://hamster_user:dev_password@db:5432/hamster_manager_dev?schema=public"
-
-POSTGRES_DB="hamster_manager_dev"
-POSTGRES_USER="hamster_user"
-POSTGRES_PASSWORD="dev_password"
-```
-
-対応関係:
+Google OAuth の redirect URI は、Compose の開発 URL なら次の値です。
 
 ```text
-DATABASE_URL のユーザー名 = POSTGRES_USER
-DATABASE_URL のパスワード = POSTGRES_PASSWORD
-DATABASE_URL のDB名       = POSTGRES_DB
-DATABASE_URL のホスト     = db
-DATABASE_URL のポート     = 5432
+http://localhost:3002/api/auth/callback/google
 ```
 
-ホスト PC 上で `npm run dev` を実行し、DB だけ Docker Compose で動かす場合は、`DATABASE_URL` のホストを `localhost`、ポートを `5433` にします。`docker-compose.yml` では PostgreSQL を `127.0.0.1:5433` に公開しています。
+### 2. ビルド・起動
 
-```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5433/hamster_manager_dev?schema=public"
-
-POSTGRES_DB="hamster_manager_dev"
-POSTGRES_USER="hamster_user"
-POSTGRES_PASSWORD="dev_password"
-```
-
-Auth.js / Google OAuth 用の環境変数も設定します。秘密情報は `.env.example` では空欄のままにし、実際の `.env` 系ファイルだけに値を入れます。`AUTH_URL` は秘密情報ではないため、example ファイルには用途ごとの例を記載しています。
-
-```env
-AUTH_SECRET=
-AUTH_GOOGLE_ID=
-AUTH_GOOGLE_SECRET=
-AUTH_URL="http://localhost:3001"
-AUTH_TRUST_HOST=true
-
-LOG_LEVEL=debug
-LOG_DIR=/app/logs
-LOG_RETENTION_DAYS=14
-LOG_MAX_FILE_SIZE_MB=20
-
-HOUSEHOLD_ACTIVITY_RETENTION_DAYS=90
-
-HAMSTER_IMAGE_DIR=/app/uploads/hamsters
-RECORD_IMAGE_DIR=/app/uploads/records
-```
-
-`HAMSTER_IMAGE_DIR` は変換済みプロフィール画像の保存ルートです。Docker Composeでは `/app/uploads/hamsters` を使用します。ホストPCで直接 `npm run dev` を実行する場合は `HAMSTER_IMAGE_DIR=./uploads/hamsters` に変更できます。DBには絶対パスや画像本体ではなく、サーバー生成のUUID形式ファイル名だけを保存します。
-
-`RECORD_IMAGE_DIR` は変換済み思い出画像の保存ルートです。Docker Composeの既存 `./uploads:/app/uploads` バインドマウント内に `/app/uploads/records` として保存します。ホストPCで直接起動する場合は `RECORD_IMAGE_DIR=./uploads/records` に変更できます。DBには画像本体や絶対パスを保存しません。
-
-`AUTH_SECRET` は 32 文字以上の十分にランダムな文字列にしてください。Auth.js v5 では `AUTH_URL` は多くの場合リクエストヘッダーから推定されますが、このアプリでは OAuth の戻り先と招待URLの生成元を固定するため、開発・本番とも実際にブラウザから開くURLを明示します。旧 NextAuth の `NEXTAUTH_URL` ではなく、現行の Auth.js 仕様に合わせて `AUTH_URL` を使います。
-
-Google Cloud Console の OAuth クライアントには、利用するURLごとに承認済みリダイレクト URI を登録します。
-
-```text
-http://localhost:3000/api/auth/callback/google
-http://localhost:3001/api/auth/callback/google
-https://your-domain.example/api/auth/callback/google
-```
-
-ホスト PC の `npm run dev` は通常 `http://localhost:3000`、Docker Compose はホスト側 `http://localhost:3001` です。本番では実際の HTTPS ドメインを登録してください。
-
-## ローカル開発
-
-Windows の PowerShell 例です。
-
-### 1. 依存関係をインストール
-
-```powershell
-npm install
-```
-
-### 2. 開発用 `.env` を作成
-
-ホスト PC で `npm run dev` する場合:
-
-```powershell
-Copy-Item .env.development.example .env
-```
-
-その後、`.env` の `DATABASE_URL` を `localhost:5433` に変更します。
-
-```env
-DATABASE_URL="postgresql://hamster_user:dev_password@localhost:5433/hamster_manager_dev?schema=public"
-```
-
-Google ログインを使うため、同じ `.env` に `AUTH_SECRET`、`AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、必要に応じて `AUTH_URL` を設定します。ホスト PC で `npm run dev` する場合の `AUTH_URL` 例は次の通りです。
-
-```env
-AUTH_URL="http://localhost:3000"
-```
-
-### 3. PostgreSQL コンテナだけ起動
-
-```powershell
-docker compose up -d db
-```
-
-### 4. Prisma migrate を実行
-
-開発中は `migrate dev` を使います。
-
-```powershell
-npx prisma migrate dev
-```
-
-サンプルデータを入れる場合:
-
-```powershell
-npx prisma db seed
-```
-
-管理画面のページング確認用に、既存データを削除せずユーザー・共有を25件ずつ追加する場合:
-
-```powershell
-npm run seed:admin-pagination
-```
-
-このseedは再実行可能です。各共有にメンバーとハムスターを1件、奇数番の共有には有効な招待、偶数番のユーザーにはセッションを作成します。
-
-### 5. Next.js を起動
-
-```powershell
-npm run dev
-```
-
-ブラウザで開きます。
-
-```text
-http://localhost:3000
-```
-
-## Docker Compose で app と db をまとめて起動
-
-Docker コンテナだけで動作確認したい場合の手順です。この場合、`DATABASE_URL` のホストは `db:5432` のままで使います。
-
-```powershell
-Copy-Item .env.development.example .env
-docker compose build
-docker compose up -d
-docker compose exec app npx prisma db seed
+```bash
+docker compose up -d --build --wait --wait-timeout 120
 docker compose logs -f app
 ```
 
-app コンテナは起動時に `prisma migrate deploy` を実行し、成功してから Next.js を起動します。未適用 migration がある状態で新しい app だけが起動し、DB 列不足で画面が壊れることを防ぎます。
+- アプリ: `http://127.0.0.1:3002`
+- PostgreSQL: `127.0.0.1:5434`
+- health check: `http://127.0.0.1:3002/api/health`
 
-Docker Compose でブラウザから `http://localhost:3001` を開く場合は、`.env` の `AUTH_URL` も必要に応じて次の値にします。
+アプリコンテナは起動時に `prisma migrate deploy` を実行します。migration が失敗した場合、アプリは起動しません。
 
-```env
-AUTH_URL="http://localhost:3001"
-```
+### 3. 停止
 
-ブラウザで開きます。
-
-```text
-http://localhost:3001
-```
-
-app のホスト側ポートは `127.0.0.1` のみに公開します。そのため、このPC自身のブラウザからはアクセスできますが、同じLANのスマートフォンや別PCから `PCのIPアドレス:3001` へ直接アクセスすることはできません。スマートフォン実機確認が必要な場合は、信頼できる開発ネットワーク内に限って開発用Compose設定で一時的に公開し、確認後はループバック限定へ戻してください。
-
-ポートは次の対応です。
-
-```text
-Next.js ホスト側:     127.0.0.1:3001
-Next.js コンテナ側:   3000
-PostgreSQL ホスト側:  127.0.0.1:5433
-PostgreSQL コンテナ側: 5432
-```
-
-PostgreSQL は Docker volume に永続化されます。
-
-```text
-hamster_manager_pgdata
-```
-
-通常の停止では DB データは消えません。
-
-プロフィール画像と思い出画像は `./uploads:/app/uploads` のバインドマウントへ保存されます。`docker compose down`、再ビルド、再作成後もホスト側の `uploads` を削除しない限り残ります。`uploads` は `.dockerignore` に含め、既存画像をDockerビルドコンテキストへ送信しません。
-
-```powershell
+```bash
 docker compose down
 ```
 
-DB データも削除したい場合だけ `-v` を付けます。開発 DB を初期化したい時以外は使わないでください。
+`docker compose down` では DB volume とホスト側のログ・画像は残ります。`docker compose down -v` は PostgreSQL volume を削除するため、必要なデータがある環境では実行しないでください。
 
-```powershell
-docker compose down -v
-```
+### 永続化先
 
-## サーバーログ
+| データ | 保存先 |
+| --- | --- |
+| PostgreSQL | Docker volume `dog_cat_manager_pgdata` |
+| アプリログ | ホストの `./logs` |
+| Pet プロフィール画像 | ホストの `./uploads/pets` |
+| 思い出画像 | ホストの `./uploads/pet-records` |
 
-想定外例外やリアルタイム通知失敗など、開発者が原因調査に必要とするサーバーログを JSON Lines 形式で記録します。利用者の画面に表示された `errorId` は、Dockerログとファイルログの両方に同じ値で記録されます。
-
-出力先は次の2か所です。
-
-- Docker標準出力・標準エラー: `debug` / `info` は標準出力、`warn` / `error` は標準エラー
-- ログファイル: VPS側 `./logs`、コンテナ側 `/app/logs`
-
-Docker Composeでは次のバインドマウントを使用します。
-
-```text
-./logs:/app/logs
-```
-
-ログファイル名は `application-YYYY-MM-DD.log` です。同じ日に最大サイズへ達した場合は連番ファイルへローテーションします。デフォルトは1ファイル20MB、保存期間14日で、コンテナ再起動・再作成・`docker compose down` 後もVPS側のファイルは残ります。
-
-設定可能な環境変数:
-
-```env
-LOG_LEVEL=info
-LOG_DIR=/app/logs
-LOG_RETENTION_DAYS=14
-LOG_MAX_FILE_SIZE_MB=20
-```
-
-- 開発環境の `LOG_LEVEL` 推奨値は `debug`、本番環境は `info`
-- `LOG_DIR` のDocker向け既定値は `/app/logs`
-- 保存日数と最大サイズが不正な場合は、安全な既定値へ戻して警告を標準エラーへ出力
-- ホストPCで直接 `npm run dev` する場合は、必要に応じて `LOG_DIR=./logs` を指定
-
-### ログディレクトリの作成と権限
-
-Windows開発環境:
-
-```powershell
-New-Item -ItemType Directory -Force logs
-```
-
-VPSではappコンテナの非rootユーザー（UID/GID 1001）が書き込めるよう、初回起動前に次を実行します。
+Linux ホストでは、非 root のアプリユーザー（UID/GID `1001`）が `logs` と `uploads` へ書き込めるよう権限を設定してください。
 
 ```bash
-mkdir -p logs
-sudo chown 1001:1001 logs
-chmod 750 logs
+mkdir -p logs uploads/pets uploads/pet-records
+sudo chown -R 1001:1001 logs uploads
+chmod 750 logs uploads uploads/pets uploads/pet-records
 ```
 
-`chmod 777`は使用しません。ディレクトリが存在しない場合はDocker Composeが作成することがありますが、root所有になってファイル出力できない可能性があるため、VPSでは事前作成を推奨します。権限不備やファイル出力障害があってもアプリは停止せず、ファイルtransportを無効化して標準エラーへ警告します。
+## Prisma / Database
 
-### Docker標準出力の確認
+Prisma schema は [`prisma/schema.prisma`](prisma/schema.prisma)、migration は [`prisma/migrations/`](prisma/migrations/) で管理しています。
 
 ```bash
-docker compose logs app
-docker compose logs -f app
-docker compose logs --tail=100 app
-```
-
-### VPS上のログファイル確認
-
-```bash
-ls -lh logs
-tail -n 100 logs/application-$(date +%Y-%m-%d).log
-```
-
-### コンテナ内からの確認
-
-```bash
-docker compose exec app sh -lc 'ls -lh /app/logs'
-docker compose exec app sh -lc 'tail -n 100 /app/logs/application-$(date +%Y-%m-%d).log'
-```
-
-### errorIdによる検索
-
-```bash
-grep "対象のerrorId" logs/*.log
-grep "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" logs/*.log
-```
-
-`jq`が利用できる場合:
-
-```bash
-grep "対象のerrorId" logs/*.log | jq
-```
-
-ログ動作の確認用CLIは、意図的なテスト例外を1件だけ記録し、マスキングと二重出力を確認します。
-
-```bash
-docker compose exec app npm run log:smoke
-```
-
-ログには内部IDだけを限定的に記録し、氏名、メールアドレス、Cookie、セッション、Authorizationヘッダー、OAuthトークン、招待トークン、APIキー、DBパスワード、環境変数、CSV本文、フォーム全体は記録しません。ログファイルは `.gitignore` の `logs/` と `*.log` によりGit管理対象外です。
-
-### 開発環境の自動起動スクリプト
-
-Windows 開発環境では、開発用の Docker Compose 起動フローをまとめたスクリプトを使えます。
-
-基本的には `start-dev.bat` から起動する想定です。
-
-```bat
-start-dev.bat
-```
-
-`start-dev.bat` は文字コードを UTF-8 に切り替えたうえで、同じフォルダにある `start-dev.ps1` を PowerShell で実行します。
-
-```bat
-powershell.exe -NoExit -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-dev.ps1"
-```
-
-主な指定の意味:
-
-- `-ExecutionPolicy Bypass`: `.ps1` や `npm.ps1` などが実行ポリシーでブロックされる環境向けに、この起動中だけ制限を回避します。
-- `-File`: 実行する PowerShell スクリプトファイルを指定します。
-- `%~dp0start-dev.ps1`: `.bat` と同じフォルダにある `start-dev.ps1` を指定します。
-- `-NoExit`: 実行後も PowerShell ウィンドウを閉じず、エラー内容を確認しやすくします。
-
-`-ExecutionPolicy Bypass` はスクリプト実行制限への対策です。Docker Desktop が未インストール、`.env.development` が存在しない、ポートが使用中、`docker-compose.yml` が不正といったエラーを回避するものではありません。自分で管理している開発用スクリプトに対して使ってください。
-
-PowerShell から直接起動したい場合:
-
-```powershell
-.\start-dev.ps1
-```
-
-`start-dev.ps1` は次の処理をまとめて行います。
-
-- スクリプトがあるリポジトリルートへ移動
-- Docker Desktop を起動
-- Docker が利用可能になるまで待機
-- `ENV_FILE` に `.env.development` を設定
-- `docker compose up -d app` で app と依存するコンテナを起動
-- `http://localhost:3001` をブラウザで開く
-
-初回起動前に `.env.development.example` をコピーして `.env.development` を作成してください。Prisma migrate や seed は自動実行しないため、初回セットアップ時やスキーマ変更時は必要に応じて別途実行します。
-
-## Prisma コマンド
-
-`package.json` には次のスクリプトがあります。
-
-```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm run migrate:assign-owner -- --email example@gmail.com
-npm run prisma:migrate
-npm run prisma:deploy
+# Prisma Client を生成
 npm run prisma:generate
-npm run prisma:seed
+
+# 開発 DB に migration を適用し、schema 変更時は migration を作成
+npm run prisma:migrate
+
+# 既存 migration を本番・CIへ適用
+npm run prisma:deploy
+
+# schema の整形・検証
+npx prisma format
+npx prisma validate
 ```
 
-使い分け:
+`prisma migrate dev`、`prisma migrate deploy`、`prisma db push`、`prisma migrate reset` は接続先 DB を変更します。実行前に `DATABASE_URL`、バックアップ、生成 SQL を確認してください。
 
-```text
-開発中のスキーマ変更: npm run prisma:migrate
-本番反映:             npm run prisma:deploy
-Prisma Client生成:    npm run prisma:generate
-seed投入:             npm run prisma:seed
-既存データ割り当て:    npm run migrate:assign-owner -- --email example@gmail.com
-```
+DB と `uploads/pets`、`uploads/pet-records` は相互参照するため、バックアップと復元では同じ時点の一組として扱います。
 
-Docker Compose 上で実行する例:
+## 開発用コマンド
+
+### 日常的に使用するコマンド
+
+| コマンド | 内容 |
+| --- | --- |
+| `npm run dev` | Next.js 開発サーバーを起動 |
+| `npm run build` | production build を作成 |
+| `npm run start` | build 済みアプリを起動 |
+| `npm run lint` | ESLint を実行 |
+| `npm run typecheck` | Next.js の型生成後に TypeScript を検査 |
+| `npm test` | `tests/**/*.test.ts(x)` を実行 |
+| `npm run prisma:generate` | Prisma Client を生成 |
+| `npm run prisma:migrate` | 開発用 migration を適用・作成 |
+| `npm run prisma:deploy` | 既存 migration を適用 |
+| `npm run log:smoke` | JSON Lines ログの smoke test |
+
+### 保守コマンド
+
+書き込み前に `--dry-run` で対象件数を確認できます。
 
 ```bash
-docker compose exec app npx prisma migrate deploy
-docker compose exec app npx prisma db seed
+npm run invitations:cleanup -- --dry-run
+npm run household-activities:cleanup -- --dry-run
+npm run contact-inquiries:auto-close -- --dry-run
 ```
 
-## 匿名サンプル閲覧モード
+実行時は `--dry-run` を外します。
 
-Googleログインなしで、架空のサンプルデータだけを読み取り専用で確認できます。
+- `invitations:cleanup`: 使用済み・期限切れの招待を保持期間に従って削除
+- `household-activities:cleanup`: `HOUSEHOLD_ACTIVITY_RETENTION_DAYS` より古い操作履歴を削除
+- `contact-inquiries:auto-close`: 対応済みから 7 日経過した問い合わせを終了へ移行
 
-デモHouseholdには9体（管理中6体・管理外3体）のハムスターを用意しています。個体ごとに異なる体重推移、衛生管理、健康・通院・思い出記録を表示するため、一覧の検索・並び替え・状態絞り込みや、各画面のハムスター切り替えを確認できます。
-
-- `/demo`: ダッシュボード
-- `/demo/hamsters`: ハムスター一覧、新規登録UI、各プロフィールの画像登録・変更・削除UIプレビュー
-- `/demo/records`: 健康・通院・思い出記録とタブ切り替え可能な登録UIプレビュー
-- `/demo/cleaning`: 衛生管理
-- `/demo/weights`: 体重登録UIプレビュー・グラフ・履歴
-
-登録UIプレビューは通常利用時の入力項目を紹介するための表示です。ハムスター一覧では、各デモ用静的画像とともに、対応形式・容量、ファイル選択、登録済み画像の削除、保存の流れを操作不可で確認できます。タブ切り替えや画像の拡大などの閲覧操作を除き、入力欄、画像選択、削除、登録・保存ボタンは無効化されています。デモ画面およびプレビューは更新用Server Actionや更新APIを参照しないため、匿名状態からデータを変更することはできません。CSV入出力、設定・共有・管理・問い合わせ・アカウント操作は表示せず、通常画面と既存の更新Action/APIは引き続きGoogleログインとHousehold権限を必要とします。
-
-### デモデータの投入・更新
-
-デモ専用seedは、通常の`prisma db seed`とは独立しています。
+本番で定期実行する場合は、稼働中の `app` コンテナ内で同じ release、環境ファイル、DB 接続先を使用します。
 
 ```bash
-npm run seed:demo
+docker compose exec -T app npm run invitations:cleanup -- --dry-run
 ```
 
-`Household.isDemo = true`かつ固定`demoSlug = "public-sample"`のHouseholdだけをtransaction内で再構築します。固定IDを持つ9体のハムスターと関連記録を同じ順序で再作成し、名称だけで対象を選びません。通常Household、User、Account、Session、HouseholdMemberには触れず、同じコマンドを複数回実行してもデモデータは重複しません。日付は実行時のJST暦日を基準に生成されるため、再実行すると最近のサンプル記録へ更新されます。
+## 権限
 
-デモ用プロフィール・記録画像はアップロード領域を使わず、次に配置します。
+Household 内の権限と、アプリ全体の管理権限は別の概念です。
 
-```text
-public/demo/hamsters/
-public/demo/records/
-```
+### Household 内の権限
 
-画像を更新する場合は、`src/lib/public-demo.ts`の固定IDと静的パスの対応を維持しながら、上記ファイルを差し替えて再ビルドしてください。画像の差し替えだけならseedの再実行は不要です。
+| ロール | 主な権限 |
+| --- | --- |
+| `OWNER` | 共有データの閲覧・編集、招待、メンバー解除、ロール変更、Household 名・お世話日設定、所有権移譲・削除 |
+| `ADMIN` | 共有データの閲覧・編集、招待、`MEMBER` / `VIEWER` の解除、お世話日設定 |
+| `MEMBER` | 共有データの閲覧・編集 |
+| `VIEWER` | 共有データの閲覧のみ |
 
-### Docker Compose本番環境への反映
+### アプリ全体の権限
 
-現在のDockerfileはappコンテナ起動時に`npx prisma migrate deploy`を実行し、`prisma/`、`package.json`、`node_modules`、`public/`、seedが参照する`src/lib/`をrunnerへコピーします。そのため、既存DBと通常利用データを保持したまま次の順で反映できます。
+| ロール | 主な権限 |
+| --- | --- |
+| `USER` | 通常利用 |
+| `ADMIN` | `/admin`、ユーザー・Household・招待・問い合わせの閲覧と問い合わせ対応 |
+| `SUPER_ADMIN` | `ADMIN` の権限に加え、他ユーザーのアプリ全体ロールと利用停止・解除を管理 |
+
+初期管理者を設定するには、対象の Google アカウントで一度ログインして `User` を作成してから CLI を実行します。
 
 ```bash
-git pull
-docker compose build
-docker compose up -d --wait --wait-timeout 120
-docker compose exec app npx prisma migrate deploy
-docker compose exec app npm run seed:demo
-docker compose logs --tail=100 app
+npm run admin:grant -- --email user@example.com --role SUPER_ADMIN
 ```
 
-`docker compose up`時にもmigrationは適用されますが、上の明示コマンドは適用済み確認として安全に再実行できます。Docker外で実行する場合は、`DATABASE_URL`が実際のPostgreSQLへ到達できる環境で次を実行します。
+`--role` は `ADMIN` または `SUPER_ADMIN` を指定できます。省略時は `SUPER_ADMIN` です。通常ユーザーへ戻す場合:
 
 ```bash
-npx prisma migrate deploy
-npm run seed:demo
+npm run admin:revoke -- --email user@example.com
 ```
 
-デモHouseholdが未投入または見つからない場合、匿名画面は通常Householdへフォールバックせず「現在、サンプルデータを準備中です。」と表示します。
+自分自身や最後の利用可能な `SUPER_ADMIN` を降格・利用停止する操作は拒否されます。
 
-開発中に DB コンテナだけ起動してホスト側から実行する場合:
+## テストと品質確認
 
-```bash
-npx prisma migrate dev
-npx prisma db seed
-```
-
-## 継続的インテグレーション（GitHub Actions）
-
-`.github/workflows/ci.yml` は、`main` 向けPull Request、`main` へのpush、手動実行で、Prisma Client生成、スキーマ検証、空のPostgreSQL 16への既存migration適用、ESLint、TypeScript型チェック、自動テスト、Next.js本番ビルドを順に実行します。CIでは固定のダミー認証情報と一時ディレクトリを使用し、本番のSecretsや外部OAuth接続は必要ありません。
-
-ローカルで同等の検証を行う場合は、検証用PostgreSQLへ `DATABASE_URL` を設定して次を実行します。
+変更範囲に応じて、次を実行します。CI では PostgreSQL 16 に migration を適用してから lint、typecheck、test、build を実行します。
 
 ```bash
-npm ci
 npm run prisma:generate
 npx prisma validate
 npm run prisma:deploy
 npm run lint
 npm run typecheck
-npm run test
+npm test
 npm run build
+git diff --check
 ```
 
-CIが失敗した場合は、GitHub Actionsの `Quality, Tests, Build & Migrations` ジョブで最初に失敗したstepを確認し、同じコマンドをローカルで再実行してください。migrationの失敗時は、空のPostgreSQL 16へ全migrationを順に適用できるかも確認します。
-
-## アプリとして追加する
-
-本番環境のアプリへ HTTPS でアクセスし、Google ログインを完了してから、利用する端末で次の操作を行います。ブラウザやOSのバージョンによってメニュー名が多少異なる場合があります。
-
-### Android
-
-1. Chromeでアプリを開きます。
-2. 右上のメニューから「ホーム画面に追加」または「アプリをインストール」を選びます。
-3. 表示名を確認して追加します。
-
-### iPhone / iPad
-
-1. Safariでアプリを開きます。
-2. 共有ボタンを押し、「ホーム画面に追加」を選びます。
-3. 表示名を確認して「追加」を押します。
-
-### PC
-
-1. ChromeまたはMicrosoft Edgeでアプリを開きます。
-2. アドレスバーのインストールアイコン、またはブラウザのメニューにある「アプリをインストール」を選びます。
-3. 確認画面でインストールを実行します。
-
-追加後は独立したアプリウィンドウまたはホーム画面のアイコンから起動できます。今回はService Workerとオフラインキャッシュを実装していないため、起動と利用にはネットワーク接続が必要です。オフライン編集とプッシュ通知にも対応していません。
-
-## 初回ログインと共有
-
-初回 Google ログイン時に、そのユーザーがどの Household にも所属していなければ個人用 Household を自動作成します。以降のハムスター登録、衛生記録、体重記録は現在の Household に紐づきます。
-
-複数の Household に所属している場合は、ヘッダーの「操作対象」で現在の Household を切り替えます。選択結果は `hamster_current_household` cookie に保存します。cookie がない場合は、招待参加した共有中 Household を優先し、それもなければ最初の membership を操作対象にします。
-
-共有メンバーを招待する手順:
-
-1. OWNER または ADMIN のユーザーでログインします。
-2. `/settings/members` を開きます。
-3. 「招待リンクを作成」を押します。
-4. 表示されたリンクを招待相手へ共有します。
-5. 招待相手がリンクを開き、Google ログイン後に「この共有に参加する」を押すと MEMBER として参加します。
-
-招待リンクは作成から 7 日間有効です。一度承認されたリンクは再利用できません。メール送信は行わず、画面に表示されたリンクを手動で共有します。
-
-### 招待データの定期整理
-
-使用済みの招待は受諾から90日後、未使用の期限切れ招待は期限から30日後に削除します。有効な招待は削除しません。手動実行は次のコマンドです。
-
-```powershell
-docker compose exec -T app npm run invitations:cleanup
-```
-
-正常終了時は削除件数を標準出力とアプリケーションログへ記録します。失敗時は `errorId` 付きでログへ記録し、コマンドを失敗終了します。
-
-削除せず対象件数だけ確認する場合は、先に次を実行します。
-
-```powershell
-docker compose exec -T app npm run invitations:cleanup -- --dry-run
-```
-
-VPSでは、リポジトリの実際の配置先へ読み替えたうえで、`crontab -e` に次のような日次実行を登録します。時刻はVPSのタイムゾーン基準です。
-
-```cron
-0 3 * * * cd /home/USER/apps/hamster-manager-browser && /usr/bin/docker compose exec -T app npm run invitations:cleanup
-```
-
-登録後は次で内容を確認できます。
-
-```bash
-crontab -l
-```
-
-クリーンアップはアプリコンテナが起動している場合に実行できます。cron登録前に、まず `--dry-run` で対象件数とログを確認してください。
-
-### 共有グループ操作履歴の定期整理
-
-`HouseholdActivity` の初期保持期間は90日です。保持日数は `.env` の次の環境変数を正の整数へ変更するだけで調整できます。未設定、空文字、0、負数、小数、数値以外の場合、クリーンアップはエラー内容と `errorId` をサーバーログ・標準エラーへ出力して異常終了し、暗黙的な90日への置き換えは行いません。この検証はクリーンアップ実行時だけ行うため、値が不正でもアプリケーション本体の起動には影響しません。
-
-```env
-HOUSEHOLD_ACTIVITY_RETENTION_DAYS=90
-```
-
-Docker Composeの `env_file` はコンテナ作成時に反映されます。`.env` を変更した後は、次のようにappコンテナを再作成してからクリーンアップを実行してください。
-
-```bash
-docker compose up -d --force-recreate app
-```
-
-通常実行では対象件数を確認してから、実行時刻から保持日数を引いた基準日時より古い全Householdの履歴を削除します。`createdAt` が基準日時と完全に一致する履歴は削除しません。対象件数、実削除件数、保持日数、基準日時は標準出力とサーバーログへ記録します。この内部保守処理自体は操作履歴へ追加せず、Household revisionの更新やSSE通知も行いません。
-
-```bash
-docker compose exec -T app npm run household-activities:cleanup
-```
-
-DBを変更せず対象件数だけ確認する場合:
-
-```bash
-docker compose exec -T app npm run household-activities:cleanup -- --dry-run
-```
-
-この実装をデプロイしただけでは定期実行されません。本番VPSで `crontab -e` を開き、リポジトリの配置先とDockerコマンドのパスを実環境へ読み替えて、毎日深夜0時に1回実行するcronを登録してください。
-
-```cron
-0 0 * * * cd /home/USER/apps/hamster-manager-browser && /usr/bin/docker compose exec -T app npm run household-activities:cleanup
-```
-
-cronには対話用TTYを割り当てない `-T` が必要です。またcronの `PATH` はログインシェルより狭いため、`command -v docker` で確認した `/usr/bin/docker` などの絶対パスを使うことを推奨します。Compose v1を使用する環境では、同様に確認した `/usr/local/bin/docker-compose` などの絶対パスで `docker-compose exec -T` を指定してください。登録後は `crontab -l` で確認し、最初に `--dry-run` を手動実行して環境変数、対象件数、ログを確認してください。
-
-OWNER は `/settings/members` から VIEWER / MEMBER / ADMIN の権限を切り替えられます。ADMIN は招待リンク作成と VIEWER / MEMBER の共有参加解除ができます。OWNER は自分自身と最後の OWNER を除き、共有メンバーの参加を解除できます。VIEWER はメンバー一覧を閲覧できますが、招待・解除・権限変更はできません。
-
-## アプリ全体管理者
-
-初期管理者を作る場合は、管理者にしたい Google アカウントで一度ログインし、`users` レコードを作成してから CLI で権限を付与します。
-
-```powershell
-npm run admin:grant -- --email example@gmail.com --role SUPER_ADMIN
-```
-
-`--role` は `ADMIN` または `SUPER_ADMIN` を指定できます。省略時は `SUPER_ADMIN` です。権限を外す場合は次を使います。
-
-```powershell
-npm run admin:revoke -- --email example@gmail.com
-```
-
-管理画面は次のURLに分かれています。いずれも `ADMIN` または `SUPER_ADMIN` だけがアクセスできます。
-
-- `/admin`: 全体件数、新しいユーザー・共有のプレビュー、招待リンクの状態
-- `/admin/users`: ユーザー一覧、利用状態、利用停止・解除、アプリ全体権限（1ページ20件のDB側ページング）
-- `/admin/households`: Household / 共有、メンバー状態（1ページ20件のDB側ページング）
-
-`SUPER_ADMIN` は `/admin/users` から他ユーザーの `appRole` を変更し、理由を記録して利用停止・解除できます。停止処理は対象状態の再確認、最後の利用中 `SUPER_ADMIN` の判定、状態更新、全Session削除、操作履歴作成を同一transactionで行います。権限変更と停止・解除は同じPostgreSQL advisory transaction lockで直列化します。自分自身の降格・利用停止と、最後の利用中 `SUPER_ADMIN` の降格・利用停止はできません。
-
-## 既存データ移行
-
-認証導入前の既存ハムスターは `householdId` が未設定のまま残る可能性があります。開発 DB や本番 DB をリセットせずに移行する場合は、まず管理者にしたい Google アカウントで一度ログインして `users` レコードを作成します。その後、次のコマンドで未割り当てハムスターと旧ダッシュボード設定を、そのユーザーの最初の Household に割り当てます。
-
-```powershell
-npm run migrate:assign-owner -- --email example@gmail.com
-```
-
-ホスト PC から実行する場合は、`DATABASE_URL` が `localhost:5433` を向くようにしてから実行してください。Docker Compose の app コンテナ内で実行する場合は、`DATABASE_URL` は `db:5432` のままで構いません。
-
-## VPS デプロイ手順
-
-前提:
-
-- Ubuntu
-- Docker
-- Docker Compose
-- Nginx は必要に応じて VPS ホスト側に配置
-- このアプリは PM2 では管理しない
-- 既存の Node.js / PM2 アプリとはポートとプロセス管理を分ける
-
-### 1. 専用ユーザーでリポジトリを clone
-
-アプリごとに Linux ユーザーを分けたい場合の例です。
-
-```bash
-sudo adduser hamster
-sudo usermod -aG docker hamster
-```
-
-一度ログアウトして、`hamster` ユーザーで入り直します。
-
-```bash
-ssh hamster@your-vps-host
-```
-
-配置例:
-
-```bash
-mkdir -p ~/apps
-cd ~/apps
-git clone https://github.com/skaltanukiman/Hamster-Manager-Browser.git hamster-manager-browser
-cd hamster-manager-browser
-```
-
-### 2. 本番用 `.env` を作成
-
-```bash
-cp .env.production.example .env
-nano .env
-```
-
-`POSTGRES_PASSWORD` は必ず強い値に変更します。`DATABASE_URL` 側のユーザー名、パスワード、DB 名は `POSTGRES_USER`、`POSTGRES_PASSWORD`、`POSTGRES_DB` と合わせます。
-
-```env
-DATABASE_URL="postgresql://hamster_user:change_me_to_a_strong_password@db:5432/hamster_manager?schema=public"
-
-POSTGRES_DB="hamster_manager"
-POSTGRES_USER="hamster_user"
-POSTGRES_PASSWORD="change_me_to_a_strong_password"
-```
-
-Docker Compose 内では app から db へ接続するため、VPS 本番でも `DATABASE_URL` のホストは `db` のままです。
-
-`.env` の `AUTH_URL` は `.env.production.example` の例示値から、実際のHTTPSドメインへ必ず変更します。
-
-### 3. ビルドと起動
-
-```bash
-mkdir -p logs uploads/hamsters uploads/records
-sudo chown -R 1001:1001 logs uploads
-chmod 750 logs uploads uploads/hamsters uploads/records
-docker compose build
-docker compose up -d --wait --wait-timeout 120
-```
-
-### 4. Prisma migrate を反映
-
-本番では `migrate deploy` を使います。
-
-```bash
-docker compose exec app npx prisma migrate deploy
-```
-
-プロフィール画像列は migration `20260712090000_add_hamster_profile_image`、健康・通院・思い出記録は migration `20260715120000_add_hamster_records`、保存済み思い出タグは migration `20260716160000_add_saved_memory_tags`、既存タグの幅正規化と大小文字を区別する保存キーへの移行は migration `20260716190000_normalize_memory_tag_width_preserve_case`、大小文字を吸収するタグ検索配列は migration `20260716210000_add_memory_record_search_tags`、健康記録の任意時刻は migration `20260717120000_add_health_record_time`、操作履歴の全Household向け日時検索インデックスは migration `20260722090000_add_household_activity_created_at_index` で追加されます。appコンテナ起動時にも `prisma migrate deploy` が実行されるため、更新時はログで適用成功を確認してください。
-
-必要なら seed を投入します。
-
-```bash
-docker compose exec app npx prisma db seed
-```
-
-### 5. ログ確認
-
-```bash
-docker compose logs app
-docker compose logs -f app
-docker compose logs --tail=100 app
-docker compose logs -f db
-tail -n 100 logs/application-$(date +%Y-%m-%d).log
-```
-
-### 6. 再起動・停止
-
-```bash
-docker compose restart app
-docker compose down
-```
-
-`docker compose down` では PostgreSQL の volume とホスト側 `uploads` は残ります。`docker compose down -v` は DB データを削除するため、本番では使わないでください。`uploads` を手動削除すると画像は復元できません。
-
-## アプリ更新手順
-
-VPS 上で更新する例です。
-
-```bash
-cd ~/apps/hamster-manager-browser
-git pull
-docker compose build
-docker compose up -d --wait --wait-timeout 120
-docker compose logs -f app
-```
-
-`--wait` はDBとappが `healthy` になるまで待機し、120秒以内に正常化しなければコマンドを失敗させます。デプロイ後は次でも状態を確認できます。
-
-```bash
-curl --fail http://127.0.0.1:3001/api/health
-```
-
-Docker Compose v1 の `docker-compose` で `KeyError: 'ContainerConfig'` が出る場合は、壊れた作成途中コンテナを削除するか、可能なら Compose v2 の `docker compose` を使ってください。
-
-## Nginx リバースプロキシ設定例
-
-Nginx は VPS ホスト側に置き、`127.0.0.1:3001` で待ち受ける Docker 上の Next.js アプリへ転送します。app ポートは外部インターフェースへ公開しないため、インターネットからは Nginx と HTTPS を経由してアクセスします。
-
-```nginx
-server {
-    server_name hamster.example.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-設定反映:
-
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-HTTPS 化する場合は Certbot などで証明書を発行します。
-
-## Tailscale 経由で個人利用する場合
-
-個人用で外出先のスマホから使うだけなら、アプリをインターネット全体へ公開せず、Tailscale 経由で VPS にアクセスする運用もできます。
-
-標準のCompose設定ではappを `127.0.0.1:3001` のみに公開するため、Tailscale IP とポート `3001` へ直接アクセスはできません。Tailscale経由で利用する場合も、VPS上のNginxを経由させるか、開発・個人利用専用のCompose設定で公開先をTailscale IPへ限定してください。
+## ディレクトリ構成
 
 ```text
-https://<tailscaleで到達できるホスト名>
+src/
+├─ app/
+│  ├─ (app)/              # 画面とレイアウト
+│  ├─ actions/            # Server Actions
+│  └─ api/                # Auth、health、画像、リアルタイム API
+├─ components/            # UI コンポーネント
+├─ lib/                   # 認可、DB query、日付、画像、ログなど
+└─ auth.ts                # Auth.js 設定
+
+prisma/
+├─ schema.prisma
+└─ migrations/
+
+scripts/                  # 定期保守・診断 CLI
+tests/                    # Node.js test runner のテスト
+docs/                     # 設計、機能マップ、開発・運用資料
+public/                   # PWA アイコンなどの静的ファイル
 ```
 
-Tailscale側のアクセス制御に加えて、OSのファイアウォールでも不要なインターフェースから `3001` へ到達できないようにしてください。
+## デプロイ
 
-## 既存アプリとの同居時の注意
+現在の production image は Node.js 22 Alpine 上で Next.js standalone server を非 root ユーザーとして実行します。Compose のアプリポートは VPS ホストの `127.0.0.1:3002` にだけ公開されるため、外部公開時は HTTPS を終端する Nginx などの reverse proxy から転送してください。
 
-- このアプリは Docker Compose で管理し、PM2 には登録しません。
-- App コンテナ名は `hamster-manager-web` です。
-- DB コンテナ名は `hamster-manager-db` です。
-- App のホスト側ポートは `127.0.0.1:3001` に限定しています。既存アプリと衝突する場合は `docker-compose.yml` の `127.0.0.1:3001:3000` を変更してください。
-- PostgreSQL の DB 名、ユーザー名、パスワードはこのアプリ専用にします。
-- `.env` はこのアプリ専用にします。
-- Docker コンテナ内の Node.js を使うため、VPS ホスト側の Node.js バージョンには依存しません。
-- PostgreSQL のホスト公開は `127.0.0.1:5433` に限定しています。
-
-## DB・プロフィール画像・思い出画像のバックアップ
-
-PostgreSQL のデータは Docker volume `hamster_manager_pgdata` に永続化されます。VPS 本番では、定期バックアップと VPS 外への退避を検討してください。
-
-プロフィール画像と思い出画像はDBではなくホスト側 `uploads/hamsters`、`uploads/records` にあります。DBバックアップだけでは画像を復元できないため、DBダンプと同じ世代の `uploads` ディレクトリも必ずバックアップしてください。
-
-バックアップ例:
+基本的な更新手順:
 
 ```bash
-docker compose exec db pg_dump -U hamster_user hamster_manager > backup.sql
-tar czf hamster-uploads.tar.gz uploads
-```
-
-リストア例:
-
-```bash
-docker compose exec -T db psql -U hamster_user hamster_manager < backup.sql
-```
-
-`.env` で DB 名やユーザー名を変更している場合は、コマンド内の `hamster_user` と `hamster_manager` も実際の値に合わせてください。
-
-## 食事・水替えのWebプッシュ通知
-
-通知はWeb標準のService Worker、Push API、Notifications API、VAPIDを使用します。HTTPS（開発用localhostを除く）が必須です。アプリ全体のオフラインキャッシュは行いません。
-
-### VAPID鍵と環境変数
-
-秘密鍵をGitへ追加せず、本番VPSの`.env`だけに保存してください。鍵は次で生成できます。
-
-```bash
-npx web-push generate-vapid-keys
-```
-
-生成結果を次の環境変数へ設定します。`WEB_PUSH_SUBJECT`には運用者が管理する`mailto:` URIまたはHTTPS URLを指定します。実在値をREADMEやexampleファイルへ書かないでください。
-
-```env
-WEB_PUSH_VAPID_PUBLIC_KEY=
-WEB_PUSH_VAPID_PRIVATE_KEY=
-WEB_PUSH_SUBJECT=
-```
-
-鍵を変更すると既存購読を利用できなくなるため、原則として同じ鍵を継続利用します。変更時は利用者が各端末で一度解除し、再度有効にしてください。
-
-### 利用者の操作
-
-1. PWAへログインし、対象の共有グループへ切り替えて`設定`を開きます。
-2. 食事・水替えそれぞれの通知ON/OFF、完了期限、何分前に通知するかを保存します。初期値は食事22:00、水替え21:00、各30分前で、既存ユーザーはOFFです。
-3. 通知を受け取る端末ごとに`この端末で通知を有効にする`を押し、ブラウザーの許可を選びます。ページ表示だけで許可ダイアログが出ることはありません。
-
-AndroidではChrome系ブラウザーでPWAをインストールして操作します。iPhone/iPadではSafariの共有メニューからホーム画面へ追加し、追加したPWAを起動してから有効化してください。通常のSafariタブからはiOSのWebプッシュを有効化できません。拒否後は自動再要求しないため、OSまたはブラウザー設定から通知を許可してから再操作します。
-
-停止する場合は、対象共有グループの食事・水替え通知をOFFにします。特定端末だけ止める場合は、その端末で`この端末の通知を解除する`を押します。同じUserのPCとスマートフォンは別購読として管理されます。
-
-### VPS cron
-
-本番イメージには`src/lib`、`scripts`、`tsconfig.json`、実行時依存をコピーするため、CLIをappコンテナ内で実行できます。VPSのcrontabへ次を追加します。`/path/to/Hamster-Manager-Browser`は実際の配置先へ必ず書き換えてください。
-
-```cron
-* * * * * cd /path/to/Hamster-Manager-Browser && docker compose exec -T app npm run notifications:dispatch
-```
-
-手動実行と終了コードの確認例:
-
-```bash
-docker compose exec -T app npm run notifications:dispatch
-echo $?
-docker compose logs --since=10m app
-```
-
-予定時刻との完全一致ではなく、予定時刻から60分以内の未送信分を処理します。同じUser・Household・JST対象日・予定時刻はDB一意制約で1件だけ予約し、2分リース後にクラッシュ回復できます。一時失敗は5分後に最大3回再試行します。404/410を返した無効な購読だけ自動削除し、その他の一時失敗では削除しません。一部端末が成功した場合、成功端末への重複を防ぐため配信全体は成功扱いです。
-
-### 動作確認とトラブルシュート
-
-実端末では、テスト用Householdの管理中ハムスターについて当日の食事または水替えを未実施にし、期限と事前分数から算出される予定時刻を現在時刻の直前に設定してCLIを実行します。通知が届いたこと、タップで既存PWAが`/`へ移動して前面化すること、実施済みへ変更してからCLIを実行すると送信されないことを確認してください。本番の個人データや鍵をテストログへ貼り付けないでください。
-
-届かない場合は次を確認します。
-
-- HTTPS証明書、PWAインストール、端末・ブラウザーの通知許可
-- 設定画面の端末状態が`通知有効`で、対象Householdの通知がONか
-- 対象が管理中で、JST当日の`FeedingRecord` / `WaterReplacementRecord`が本当に未登録か
-- VAPID 3環境変数、cron、appコンテナの時刻、`docker compose logs`の件数・errorId
-- iOSではホーム画面から起動したPWAか、省電力・集中モードなどOS側制限がないか
-
-Service Worker更新後はブラウザーの更新検出に時間差があるため、PWAを完全に閉じて再起動し、必要ならブラウザーのサイトデータまたはService Worker登録状態を確認します。サイトデータ消去は端末購読も失うため、その後は設定画面から再登録してください。
-
-### デプロイとロールバック
-
-通常どおりDBとuploadsをバックアップし、環境変数を設定してからイメージを再構築します。起動時の`prisma migrate deploy`で通知設定、端末購読、配信履歴のmigrationが適用されます。起動後にhealthcheck、CLI手動実行、cronの順で確認します。
-
-```bash
+git pull
 docker compose build app
 docker compose up -d --wait --wait-timeout 120
-docker compose exec -T app npm run notifications:dispatch
+docker compose logs --tail=100 app
+curl --fail http://127.0.0.1:3002/api/health
 ```
 
-アプリだけを旧版へ戻しても追加テーブル・列は旧版から参照されないため、まずcronを停止して旧イメージへ戻せます。DBまで戻す場合は、先にバックアップを確保し、通知cronを停止し、旧アプリへ切り替えてから通知テーブル・enum・AppSetting追加列を慎重に削除してください。購読・配信履歴は失われ、再デプロイ後に端末の再登録が必要になる可能性があります。
+更新前に PostgreSQL、`uploads/pets`、`uploads/pet-records`、本番の secret 管理設定をバックアップしてください。DB migration の適用結果、Google ログイン、主要画面、認証付き画像、Household 境界、health check、ログを確認します。
+
+公開ドメイン、reverse proxy、scheduler、バックアップ先はリポジトリで固定していません。実環境の運用方針に合わせて構成してください。
+
+## 関連ドキュメント
+
+- [機能マップ](docs/feature-map.md): 画面、Action / API、データアクセス、テストの対応
+- [設計方針](docs/dog-cat-manager-design.md): Pet、Care、Records、認可、日付、リアルタイム、画像の設計
+- [開発・運用](docs/development-and-operations.md): migration、ログ、保守 CLI、fixture、バックアップなどの詳細
