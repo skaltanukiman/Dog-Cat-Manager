@@ -63,7 +63,7 @@ test("設定カードは固定ボタン回避用の余白とxlでの解除タイ
     readSource("src/components/account-delete-entry-form.tsx")
   ];
 
-  assert.match(layout, /py-5 pl-5 pr-16 sm:pr-20 xl:p-5/);
+  assert.match(layout, /py-5 pl-5 pr-24 sm:pr-24 xl:p-5/);
   for (const source of sources) {
     assert.match(source, /SETTINGS_CARD_RESPONSIVE_PADDING/);
   }
