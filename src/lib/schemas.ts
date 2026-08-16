@@ -58,7 +58,7 @@ const nullablePastOrTodayDateInputSchema = nullableDateInputSchema.refine(
 );
 
 export const createPetSchema = z.object({
-  name: z.string().trim().min(1).max(50),
+  name: z.string().trim().min(1).max(15),
   species: z.enum(["DOG", "CAT"]),
   breed: nullableBreedSchema,
   sex: z.enum(["MALE", "FEMALE", "UNKNOWN"]),

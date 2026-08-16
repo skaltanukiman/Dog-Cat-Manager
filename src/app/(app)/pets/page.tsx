@@ -52,7 +52,7 @@ export default async function PetsPage({
           <form action={createPet} data-dirty-watch className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               名前
-              <input className="h-10" name="name" required maxLength={50} placeholder="例: こむぎ" />
+              <input className="h-10" name="name" required maxLength={15} placeholder="例: こむぎ" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               種類
@@ -144,7 +144,7 @@ export default async function PetsPage({
                   <input type="hidden" name="id" value={pet.id} />
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     名前
-                    <input className="h-10" name="name" required maxLength={50} defaultValue={pet.name} readOnly={!canEdit} />
+                    <input className="h-10" name="name" required maxLength={15} defaultValue={pet.name} readOnly={!canEdit} />
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     種類

@@ -39,7 +39,7 @@ const messages: Record<string, string> = {
   petWalkDurationInvalid: "散歩時間は1分以上1440分以下の整数で入力してください。",
   petWalkDistanceInvalid: "散歩距離は0.01km単位の正の値で入力してください。",
   petDuplicate: "同じ名前のPetがこの共有グループに既に登録されています。",
-  petNameTooLong: "名前は50文字以内で入力してください。",
+  petNameTooLong: "名前は15文字以内で入力してください。",
   petBreedTooLong: "品種は100文字以内で入力してください。",
   profileNameTooLong: "表示名は50文字以内で入力してください。",
   householdNameTooLong: "共有グループ名は50文字以内で入力してください。",

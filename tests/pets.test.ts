@@ -26,6 +26,17 @@ test("DOGとCATだけをPetとして登録入力に使用できる", () => {
   assert.equal(createPetSchema.safeParse({ ...validPet, species: "BIRD" }).success, false);
 });
 
+test("Pet名は新規登録・更新ともに1文字以上15文字以下を許可する", () => {
+  const maxLengthName = "あ".repeat(15);
+  const tooLongName = "あ".repeat(16);
+
+  assert.equal(createPetSchema.safeParse({ ...validPet, name: maxLengthName }).success, true);
+  assert.equal(createPetSchema.safeParse({ ...validPet, name: tooLongName }).success, false);
+  assert.equal(createPetSchema.safeParse({ ...validPet, name: "   " }).success, false);
+  assert.equal(updatePetSchema.safeParse({ ...validPet, id: "pet-1", name: maxLengthName }).success, true);
+  assert.equal(updatePetSchema.safeParse({ ...validPet, id: "pet-1", name: tooLongName }).success, false);
+});
+
 test("Pet更新入力はspeciesを受け付けず、改変されたspeciesを出力から除外する", () => {
   const result = updatePetSchema.safeParse({ ...validPet, id: "pet-1", species: "CAT" });
 
@@ -141,4 +152,5 @@ test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規�
   }
   assert.match(page, /<PetImageField petName="新しいPet"/);
   assert.match(page, /currentFileName=\{pet\.profileImageFileName\}/);
+  assert.equal((page.match(/name="name" required maxLength=\{15\}/g) ?? []).length, 2);
 });
