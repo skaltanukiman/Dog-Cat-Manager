@@ -9,7 +9,7 @@ import {
   commitFormDirtyState,
   requestFormDirtyReevaluation
 } from "@/components/form-dirty-state";
-import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
+import { SETTINGS_CARD_STANDARD_PADDING } from "@/components/settings-layout";
 import { StatusMessage } from "@/components/status-message";
 import { formatMinutesAsTime } from "@/lib/care-day";
 import {
@@ -64,7 +64,7 @@ export function CareDaySettingsForm({
         aria-expanded={isOpen}
         aria-controls={contentId}
         onClick={() => setIsOpen((current) => !current)}
-        className={`min-h-11 w-full text-left transition-colors duration-200 ease-out active:bg-brand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand motion-reduce:transition-none ${SETTINGS_CARD_RESPONSIVE_PADDING} ${
+        className={`min-h-11 w-full text-left transition-colors duration-200 ease-out active:bg-brand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand motion-reduce:transition-none ${SETTINGS_CARD_STANDARD_PADDING} ${
           isOpen ? "bg-brand/[0.15] hover:bg-brand/20" : "bg-brand/10 hover:bg-brand/[0.15]"
         }`}
       >
@@ -103,7 +103,7 @@ export function CareDaySettingsForm({
         }`}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className={`border-t border-slate-200 ${SETTINGS_CARD_RESPONSIVE_PADDING}`}>
+          <div className={`border-t border-slate-200 ${SETTINGS_CARD_STANDARD_PADDING}`}>
             <form ref={formRef} action={saveAction} data-dirty-watch aria-busy={isSaving}>
               <label className="block text-sm font-medium text-slate-700">
                 お世話日の切り替え時刻

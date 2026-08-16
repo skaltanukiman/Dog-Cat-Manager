@@ -1,11 +1,11 @@
 import { Trash2 } from "lucide-react";
 
-import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
+import { SETTINGS_CARD_STANDARD_PADDING } from "@/components/settings-layout";
 
 export function AccountDeleteEntryForm() {
   return (
     <section
-      className={`rounded-md border border-red-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
+      className={`rounded-md border border-red-200 bg-white shadow-sm ${SETTINGS_CARD_STANDARD_PADDING}`}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">

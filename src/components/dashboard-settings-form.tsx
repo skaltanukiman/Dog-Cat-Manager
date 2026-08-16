@@ -11,7 +11,7 @@ import {
   requestFormDirtyReevaluation
 } from "@/components/form-dirty-state";
 import { ProfileSettingsFields } from "@/components/profile-settings-form";
-import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
+import { SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING } from "@/components/settings-layout";
 import { SettingsScrollToSaveButton } from "@/components/settings-scroll-to-save-button";
 import { StatusMessage } from "@/components/status-message";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -530,7 +530,7 @@ export function DashboardSettingsForm({
         <section
           aria-labelledby="dashboard-settings-heading"
           data-settings-section="dashboard"
-          className={`space-y-5 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
+          className={`space-y-5 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING}`}
         >
           <header className="space-y-1">
             <div className="flex items-center gap-2">

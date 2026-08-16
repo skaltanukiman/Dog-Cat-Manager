@@ -1,6 +1,6 @@
 import { UserRound } from "lucide-react";
 
-import { SETTINGS_CARD_RESPONSIVE_PADDING } from "@/components/settings-layout";
+import { SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING } from "@/components/settings-layout";
 
 type ProfileSettingsFieldsProps = {
   name?: string | null;
@@ -10,7 +10,7 @@ type ProfileSettingsFieldsProps = {
 export function ProfileSettingsFields({ name, email }: ProfileSettingsFieldsProps) {
   return (
     <section
-      className={`space-y-4 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_RESPONSIVE_PADDING}`}
+      className={`space-y-4 rounded-md border border-slate-200 bg-white shadow-sm ${SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING}`}
     >
       <div className="flex items-center gap-2">
         <UserRound className="h-5 w-5 text-brand" aria-hidden />

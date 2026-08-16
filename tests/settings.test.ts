@@ -56,16 +56,25 @@ test("ダッシュボード設定は重複したPet IDを拒否する", () => {
   );
 });
 
-test("設定カードは固定ボタン回避用の余白とxlでの解除タイミングを共有する", () => {
+test("設定カードは固定ボタン回避用と通常用の余白を用途別に使い分ける", () => {
   const layout = readSource("src/components/settings-layout.ts");
-  const sources = [
+  const scrollSafeSources = [
     readSource("src/components/dashboard-settings-form.tsx"),
+    readSource("src/components/profile-settings-form.tsx")
+  ];
+  const standardSources = [
+    readSource("src/components/care-day-settings-form.tsx"),
+    readSource("src/components/contact-support-entry.tsx"),
     readSource("src/components/account-delete-entry-form.tsx")
   ];
 
   assert.match(layout, /py-5 pl-5 pr-24 sm:pr-24 xl:p-5/);
-  for (const source of sources) {
-    assert.match(source, /SETTINGS_CARD_RESPONSIVE_PADDING/);
+  assert.match(layout, /SETTINGS_CARD_STANDARD_PADDING = "p-5"/);
+  for (const source of scrollSafeSources) {
+    assert.match(source, /SETTINGS_CARD_SCROLL_BUTTON_SAFE_PADDING/);
+  }
+  for (const source of standardSources) {
+    assert.match(source, /SETTINGS_CARD_STANDARD_PADDING/);
   }
 });
 
