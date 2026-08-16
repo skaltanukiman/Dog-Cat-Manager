@@ -149,6 +149,15 @@ test("/careはPet選択・画像・お世話日・食事・水・閲覧専用状
   assert.match(page, /max=\{maxDateTime\}/);
 });
 
+test("/careのGET filter formはServer側filter stateの変更時に再生成する", async () => {
+  const page = await source("src/app/(app)/care/page.tsx");
+  assert.match(
+    page,
+    /const careFilterKey = `\$\{selectedPet\?\.id \?\? "none"\}:\$\{selectedCareDate\}:\$\{includeInactive \? "1" : "0"\}`/
+  );
+  assert.match(page, /<form\s+key=\{careFilterKey\}\s+method="get"/);
+});
+
 test("/careは独立Disclosureとallowlist済みのmutation後開状態を提供する", async () => {
   const page = await source("src/app/(app)/care/page.tsx");
   const disclosure = await source("src/components/care-disclosure.tsx");

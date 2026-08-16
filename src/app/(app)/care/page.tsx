@@ -142,6 +142,7 @@ export default async function CarePage({
   if (selectedPet) todayQuery.set("petId", selectedPet.id);
   if (includeInactive) todayQuery.set("includeInactive", "1");
   const todayHref = todayQuery.size > 0 ? `/care?${todayQuery.toString()}` : "/care";
+  const careFilterKey = `${selectedPet?.id ?? "none"}:${selectedCareDate}:${includeInactive ? "1" : "0"}`;
   const latestFeedingRecord = feedingRecords[feedingRecords.length - 1];
   const latestWaterRecord = waterRecords[waterRecords.length - 1];
   const latestWalkRecord = walkRecords[walkRecords.length - 1];
@@ -191,7 +192,11 @@ export default async function CarePage({
         )
       ) : (
         <>
-          <form method="get" className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+          <form
+            key={careFilterKey}
+            method="get"
+            className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2"
+          >
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               犬・猫
               <AutoSubmitSelect name="petId" defaultValue={selectedPet?.id ?? ""} disabled={pets.length === 0}>
