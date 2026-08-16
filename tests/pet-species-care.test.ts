@@ -33,6 +33,7 @@ test("PetWalkRecordとPetLitterRecordは独立したイベント履歴モデル�
   const litter = schema.slice(schema.indexOf("model PetLitterRecord {"), schema.indexOf("enum PetLitterAction"));
   assert.match(walk, /startedAt\s+DateTime\s+@map\("started_at"\)/);
   assert.match(walk, /durationMinutes\s+Int\?\s+@map\("duration_minutes"\)/);
+  assert.match(walk, /distanceMeters\s+Int\?\s+@map\("distance_meters"\)/);
   assert.match(walk, /@@index\(\[petId, recordDate, startedAt\]\)/);
   assert.doesNotMatch(walk, /@@unique\(\[petId, recordDate\]\)/);
   assert.match(litter, /occurredAt\s+DateTime\s+@map\("occurred_at"\)/);
@@ -44,6 +45,13 @@ test("PetWalkRecordとPetLitterRecordは独立したイベント履歴モデル�
   assert.match(schema, /litterRecords\s+PetLitterRecord\[\]/);
   assert.match(schema, /createdPetWalkRecords\s+PetWalkRecord\[\]/);
   assert.match(schema, /createdPetLitterRecords\s+PetLitterRecord\[\]/);
+});
+
+test("散歩距離migrationはnullableなINTEGER列だけを追加する", async () => {
+  const migration = await source("prisma/migrations/20260816090000_add_pet_walk_distance/migration.sql");
+  assert.match(migration, /ALTER TABLE "pet_walk_records"/);
+  assert.match(migration, /ADD COLUMN "distance_meters" INTEGER/);
+  assert.doesNotMatch(migration, /NOT NULL|UPDATE|DELETE|DROP/);
 });
 
 test("Phase 3B migrationは新規enum・テーブル・Cascade/SetNull FK・indexだけを追加する", async () => {
@@ -71,6 +79,13 @@ test("Walk ActionはDB取得したDOGだけを全CRUDで許可しFormData specie
     assert.doesNotMatch(action, /formData\.get\("species"\)|result\.data\.species/);
   }
   assert.match(actions, /pet: \{ householdId: context\.household\.id, species: "DOG", isActive: true \}/);
+});
+
+test("不正な散歩距離は散歩時間とは別のstatusで案内する", async () => {
+  const actions = await source("src/app/actions/pet-walk.ts");
+  const statusMessage = await source("src/components/status-message.tsx");
+  assert.match(actions, /issue\.path\[0\] === "distanceMeters"\)\) return "petWalkDistanceInvalid"/);
+  assert.match(statusMessage, /petWalkDistanceInvalid: "散歩距離は0\.01km単位の正の値で入力してください。"/);
 });
 
 test("Litter ActionはDB取得したCATだけを全CRUDで許可しFormData speciesを使わない", async () => {
@@ -117,6 +132,10 @@ test("Walk/Litter Actionは未来・Care日外・変更なしを拒否しmemoを
     assert.doesNotMatch(actions, /details: \{[^}]*memo/);
   }
   assert.match(walk, /record\.durationMinutes === result\.data\.durationMinutes/);
+  assert.match(walk, /record\.distanceMeters === result\.data\.distanceMeters/);
+  assert.match(walk, /previousDistanceMeters: record\.distanceMeters/);
+  assert.equal((walk.match(/distanceMeters: result\.data\.distanceMeters/g) ?? []).length >= 3, true);
+  assert.equal((walk.match(/distanceMeters: record\.distanceMeters/g) ?? []).length >= 2, true);
   assert.match(litter, /record\.action === result\.data\.action/);
 });
 
@@ -137,6 +156,11 @@ test("/careはDOGに散歩、CATに猫トイレを条件表示し共通Care UI�
   assert.match(page, /action=\{createPetWalkRecord\}/);
   assert.match(page, /action=\{updatePetWalkRecord\}/);
   assert.match(page, /action=\{deletePetWalkRecord\}/);
+  assert.equal((page.match(/name="distanceKm"/g) ?? []).length, 2);
+  assert.equal((page.match(/min="0\.01"/g) ?? []).length, 2);
+  assert.equal((page.match(/step="0\.01"/g) ?? []).length, 2);
+  assert.match(page, /formatWalkDistanceKm\(latestWalkRecord\.distanceMeters\)/);
+  assert.match(page, /formatWalkDistanceKm\(record\.distanceMeters\)/);
   assert.match(page, /action=\{createPetLitterRecord\}/);
   assert.match(page, /action=\{updatePetLitterRecord\}/);
   assert.match(page, /action=\{deletePetLitterRecord\}/);
@@ -162,11 +186,11 @@ test("Walk/Litterは専用Realtime sourceと6種類のActivityを同一transacti
 test("Walk/Litter ActivityはJST日時・時間・日本語actionを表示しmemoを展開しない", () => {
   const startedAt = "2026-08-12T12:10:00.000Z";
   const occurredAt = "2026-08-12T11:15:00.000Z";
-  assert.deepEqual(activity("PET_WALK_CREATED", { startedAt, durationMinutes: 30, memo: "非表示" }), {
+  assert.deepEqual(activity("PET_WALK_CREATED", { startedAt, durationMinutes: 30, distanceMeters: 2350, memo: "非表示" }), {
     summary: "林さんが「こむぎ」の散歩を記録しました",
-    detail: "2026/08/12 21:10・30分"
+    detail: "2026/08/12 21:10・30分・2.35km"
   });
-  assert.equal(activity("PET_WALK_UPDATED", { startedAt, durationMinutes: null }).detail, "2026/08/12 21:10");
+  assert.equal(activity("PET_WALK_UPDATED", { startedAt, durationMinutes: null, distanceMeters: 1500 }).detail, "2026/08/12 21:10・1.5km");
   assert.match(activity("PET_WALK_DELETED", { startedAt }).summary, /散歩記録を削除/);
   assert.deepEqual(activity("PET_LITTER_CREATED", { occurredAt, action: "DEFECATION", memo: "非表示" }), {
     summary: "林さんが「ミミ」の猫トイレを記録しました",

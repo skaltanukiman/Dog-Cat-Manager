@@ -232,6 +232,7 @@ model PetWalkRecord {
   recordDate      DateTime @map("record_date") @db.Date
   startedAt       DateTime @map("started_at")
   durationMinutes Int?     @map("duration_minutes")
+  distanceMeters  Int?     @map("distance_meters")
   memo            String?  @db.VarChar(500)
   createdByUserId String?  @map("created_by_user_id")
   createdBy       User?    @relation("PetWalkRecordCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)

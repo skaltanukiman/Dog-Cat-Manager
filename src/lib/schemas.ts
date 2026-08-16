@@ -7,7 +7,11 @@ import {
   MAX_PET_WEIGHT_KG,
   PET_WEIGHT_MEMO_MAX_LENGTH
 } from "@/lib/pet-weight-rules";
-import { isValidJstDateTimeLocal, PET_CARE_MEMO_MAX_LENGTH } from "@/lib/pet-care";
+import {
+  isValidJstDateTimeLocal,
+  MAX_WALK_DISTANCE_METERS,
+  PET_CARE_MEMO_MAX_LENGTH
+} from "@/lib/pet-care";
 
 export const idSchema = z.string().min(1);
 
@@ -152,16 +156,40 @@ const nullableWalkDurationSchema = z.preprocess((value) => {
   return trimmed.length > 0 ? trimmed : null;
 }, z.coerce.number().int().min(1).max(1440).nullable());
 
-export const createPetWalkRecordSchema = z.object({
+// km文字列の桁数を検証してから整数meterへ変換し、小数の丸めによる不正入力の受理を防ぐ。
+const nullableWalkDistanceMetersSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value ?? null;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(trimmed);
+  if (!match) return value;
+  const wholeKm = Number(match[1]);
+  const hundredthsKm = Number((match[2] ?? "").padEnd(2, "0"));
+  const distanceMeters = wholeKm * 1000 + hundredthsKm * 10;
+  return Number.isSafeInteger(distanceMeters) ? distanceMeters : value;
+}, z.number().int().min(10).max(MAX_WALK_DISTANCE_METERS).nullable());
+
+const petWalkRecordSchema = z.object({
   petId: idSchema,
   startedAt: petCareDateTimeSchema,
   durationMinutes: nullableWalkDurationSchema,
+  distanceMeters: nullableWalkDistanceMetersSchema,
   memo: nullablePetCareMemoSchema
 });
 
-export const updatePetWalkRecordSchema = createPetWalkRecordSchema.extend({
-  id: idSchema
-});
+/** FormDataのkm入力名を、Actionが扱うDB保存用meter値へ正規化する。 */
+function normalizePetWalkDistanceInput(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  return { ...value, distanceMeters: (value as Record<string, unknown>).distanceKm };
+}
+
+export const createPetWalkRecordSchema = z.preprocess(normalizePetWalkDistanceInput, petWalkRecordSchema);
+
+export const updatePetWalkRecordSchema = z.preprocess(
+  normalizePetWalkDistanceInput,
+  petWalkRecordSchema.extend({ id: idSchema })
+);
 
 export const deletePetWalkRecordSchema = z.object({
   id: idSchema,

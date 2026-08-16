@@ -13,7 +13,13 @@ import {
   updatePetWalkRecordSchema
 } from "../src/lib/schemas";
 
-const walk = { petId: "dog-1", startedAt: "2026-08-12T20:00", durationMinutes: "30", memo: "公園まで" };
+const walk = {
+  petId: "dog-1",
+  startedAt: "2026-08-12T20:00",
+  durationMinutes: "30",
+  distanceKm: "2.35",
+  memo: "公園まで"
+};
 const litter = { petId: "cat-1", occurredAt: "2026-08-12T20:15", action: "DEFECATION", memo: "普通" };
 
 test("Walkは厳密なJST datetime-localを受け付ける", () => {
@@ -33,6 +39,37 @@ test("Walk durationは空をnull化し1〜1440の整数だけを許可する", (
   }
   for (const durationMinutes of ["0", "1441", "30.5", "abc"]) {
     assert.equal(createPetWalkRecordSchema.safeParse({ ...walk, durationMinutes }).success, false);
+  }
+});
+
+test("Walk distanceは任意のkm入力を10m単位の整数meterへ変換する", () => {
+  for (const empty of ["", "   "]) {
+    const result = createPetWalkRecordSchema.safeParse({ ...walk, distanceKm: empty });
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.data.distanceMeters, null);
+  }
+
+  for (const [distanceKm, distanceMeters] of [
+    ["0.01", 10],
+    ["1", 1000],
+    ["2.35", 2350],
+    ["2.5", 2500]
+  ] as const) {
+    const result = createPetWalkRecordSchema.safeParse({ ...walk, distanceKm });
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.data.distanceMeters, distanceMeters);
+  }
+
+  for (const distanceKm of ["0", "-1", "0.001", "2.345", "abc", "NaN", "Infinity"]) {
+    assert.equal(createPetWalkRecordSchema.safeParse({ ...walk, distanceKm }).success, false);
+  }
+});
+
+test("Walk更新schemaは距離を追加・変更でき、空欄への変更はnullにする", () => {
+  for (const [distanceKm, distanceMeters] of [["1.5", 1500], ["2.75", 2750], ["", null]] as const) {
+    const result = updatePetWalkRecordSchema.safeParse({ ...walk, id: "walk-1", distanceKm });
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.data.distanceMeters, distanceMeters);
   }
 });
 

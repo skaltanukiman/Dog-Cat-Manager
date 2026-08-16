@@ -2,6 +2,8 @@ import { getCareDayDateInputJst } from "@/lib/care-day";
 import { isValidDateInput } from "@/lib/date";
 
 export const PET_CARE_MEMO_MAX_LENGTH = 500;
+// Prisma/PostgreSQLの32-bit Int上限を、入力単位の10mへ切り下げた技術上限。
+export const MAX_WALK_DISTANCE_METERS = 2_147_483_640;
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DATETIME_LOCAL_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
@@ -79,6 +81,10 @@ export function careDateStartDateTimeLocal(careDate: string, careDayStartMinutes
   const hour = Math.floor(careDayStartMinutes / 60);
   const minute = careDayStartMinutes % 60;
   return `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}`;
+}
+
+export function formatWalkDistanceKm(distanceMeters: number) {
+  return String(distanceMeters / 1000);
 }
 
 export const PET_WATER_ACTION_LABELS = {

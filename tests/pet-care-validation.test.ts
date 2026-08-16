@@ -5,6 +5,7 @@ import { getCareDayDateInputJst, getCareDayRecordDate } from "../src/lib/care-da
 import { toDateInputValue } from "../src/lib/date";
 import {
   formatJstDateTimeLocal,
+  formatWalkDistanceKm,
   isFuturePetCareTimestamp,
   isSameInputMinute,
   isTimestampInCareDate,
@@ -65,6 +66,13 @@ test("未来・不正なお世話日queryは現在のお世話日へ正規化す
   assert.equal(normalizePetCareDate("2026-08-11", "2026-08-12"), "2026-08-11");
   assert.equal(normalizePetCareDate("2026-08-13", "2026-08-12"), "2026-08-12");
   assert.equal(normalizePetCareDate("invalid", "2026-08-12"), "2026-08-12");
+});
+
+test("散歩距離の整数meterを末尾0のないkm表示へ変換する", () => {
+  assert.equal(formatWalkDistanceKm(2350), "2.35");
+  assert.equal(formatWalkDistanceKm(2500), "2.5");
+  assert.equal(formatWalkDistanceKm(2000), "2");
+  assert.equal(formatWalkDistanceKm(10), "0.01");
 });
 
 test("食事・水メモは空白をnull化し500文字を許可して501文字を拒否する", () => {

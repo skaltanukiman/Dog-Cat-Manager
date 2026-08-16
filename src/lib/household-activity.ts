@@ -5,6 +5,7 @@ import type {
   Prisma
 } from "@prisma/client";
 import { formatDateTimeJst } from "@/lib/date";
+import { formatWalkDistanceKm } from "@/lib/pet-care";
 
 export const HOUSEHOLD_ACTIVITY_PAGE_SIZE = 20;
 export const ACTOR_NAME_FALLBACK = "名前未設定";
@@ -181,9 +182,14 @@ export function formatHouseholdActivity(activity: HouseholdActivityListItem) {
         const action = activity.eventType === "PET_WALK_CREATED" ? "記録" : activity.eventType === "PET_WALK_UPDATED" ? "更新" : "削除";
         const timestamp = formatTimestamp(stringDetail(details, "startedAt"));
         const duration = numberDetail(details, "durationMinutes");
+        const distance = numberDetail(details, "distanceMeters");
         return {
           summary: `${actor}さんが「${target}」の散歩${action === "記録" ? "を記録" : action === "更新" ? "記録を更新" : "記録を削除"}しました`,
-          detail: [timestamp, duration !== null ? `${duration}分` : null].filter(Boolean).join("・") || null
+          detail: [
+            timestamp,
+            duration !== null ? `${duration}分` : null,
+            distance !== null ? `${formatWalkDistanceKm(distance)}km` : null
+          ].filter(Boolean).join("・") || null
         };
       }
       case "PET_LITTER_CREATED":

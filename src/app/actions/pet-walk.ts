@@ -34,6 +34,7 @@ class PetWalkUnchangedError extends Error {}
 function petWalkValidationStatus(issues: ZodIssue[]) {
   if (issues.some((issue) => issue.path[0] === "memo" && issue.code === "too_big")) return "petCareMemoTooLong";
   if (issues.some((issue) => issue.path[0] === "durationMinutes")) return "petWalkDurationInvalid";
+  if (issues.some((issue) => issue.path[0] === "distanceMeters")) return "petWalkDistanceInvalid";
   return "invalid";
 }
 
@@ -108,6 +109,7 @@ export async function createPetWalkRecord(formData: FormData) {
             recordDate: getCareDayRecordDate(startedAt, careDayStartMinutes),
             startedAt,
             durationMinutes: result.data.durationMinutes,
+            distanceMeters: result.data.distanceMeters,
             memo: result.data.memo,
             createdByUserId: context.user.id
           }
@@ -120,7 +122,11 @@ export async function createPetWalkRecord(formData: FormData) {
         targetType: "PET",
         targetId: pet.id,
         targetNameSnapshot: pet.name,
-        details: { startedAt: record.startedAt.toISOString(), durationMinutes: record.durationMinutes }
+        details: {
+          startedAt: record.startedAt.toISOString(),
+          durationMinutes: record.durationMinutes,
+          distanceMeters: record.distanceMeters
+        }
       })
     });
     publishHouseholdChangeSafely(change);
@@ -175,6 +181,7 @@ export async function updatePetWalkRecord(formData: FormData) {
             id: true,
             startedAt: true,
             durationMinutes: true,
+            distanceMeters: true,
             memo: true,
             updatedAt: true,
             pet: { select: { id: true, name: true, species: true, isActive: true } }
@@ -186,6 +193,7 @@ export async function updatePetWalkRecord(formData: FormData) {
         if (
           isSameInputMinute(record.startedAt, startedAt) &&
           record.durationMinutes === result.data.durationMinutes &&
+          record.distanceMeters === result.data.distanceMeters &&
           record.memo === result.data.memo
         ) throw new PetWalkUnchangedError();
         const updated = await tx.petWalkRecord.updateMany({
@@ -200,6 +208,7 @@ export async function updatePetWalkRecord(formData: FormData) {
             recordDate: getCareDayRecordDate(startedAt, careDayStartMinutes),
             startedAt,
             durationMinutes: result.data.durationMinutes,
+            distanceMeters: result.data.distanceMeters,
             memo: result.data.memo
           }
         });
@@ -216,7 +225,9 @@ export async function updatePetWalkRecord(formData: FormData) {
           previousStartedAt: record.startedAt.toISOString(),
           startedAt: startedAt.toISOString(),
           previousDurationMinutes: record.durationMinutes,
-          durationMinutes: result.data.durationMinutes
+          durationMinutes: result.data.durationMinutes,
+          previousDistanceMeters: record.distanceMeters,
+          distanceMeters: result.data.distanceMeters
         }
       })
     });
@@ -267,6 +278,7 @@ export async function deletePetWalkRecord(formData: FormData) {
             id: true,
             startedAt: true,
             durationMinutes: true,
+            distanceMeters: true,
             pet: { select: { id: true, name: true, species: true, isActive: true } }
           }
         });
@@ -290,7 +302,11 @@ export async function deletePetWalkRecord(formData: FormData) {
         targetType: "PET",
         targetId: pet.id,
         targetNameSnapshot: pet.name,
-        details: { startedAt: record.startedAt.toISOString(), durationMinutes: record.durationMinutes }
+        details: {
+          startedAt: record.startedAt.toISOString(),
+          durationMinutes: record.durationMinutes,
+          distanceMeters: record.distanceMeters
+        }
       })
     });
     publishHouseholdChangeSafely(change);

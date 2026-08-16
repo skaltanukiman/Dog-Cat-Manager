@@ -22,6 +22,7 @@ import { formatTimeJst } from "@/lib/date";
 import {
   careDateStartDateTimeLocal,
   formatJstDateTimeLocal,
+  formatWalkDistanceKm,
   PET_CARE_MEMO_MAX_LENGTH,
   PET_LITTER_ACTION_LABELS,
   PET_WATER_ACTION_LABELS
@@ -162,7 +163,10 @@ export default async function CarePage({
     latestWalkRecord
       ? [
           `最終 ${formatTimeJst(latestWalkRecord.startedAt)}`,
-          ...(latestWalkRecord.durationMinutes === null ? [] : [`${latestWalkRecord.durationMinutes}分`])
+          ...(latestWalkRecord.durationMinutes === null ? [] : [`${latestWalkRecord.durationMinutes}分`]),
+          ...(latestWalkRecord.distanceMeters === null
+            ? []
+            : [`${formatWalkDistanceKm(latestWalkRecord.distanceMeters)}km`])
         ]
       : []
   );
@@ -419,11 +423,11 @@ export default async function CarePage({
                   headerClassName="border-care-walk bg-care-walk/5"
                 >
                   <div className="space-y-6 px-3 py-4 sm:px-4">
-                  <p className="text-sm text-slate-600">開始日時と任意の散歩時間を記録します。</p>
+                  <p className="text-sm text-slate-600">開始日時と任意の散歩時間・距離を記録します。</p>
                   {canMutateSelectedPet ? (
                     <form action={createPetWalkRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                       <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
-                      <div className="grid gap-4 p-5 md:grid-cols-3">
+                      <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
                         開始日時
@@ -434,10 +438,14 @@ export default async function CarePage({
                         <input type="number" name="durationMinutes" min="1" max="1440" step="1" placeholder="30" />
                       </label>
                       <label className="grid gap-1 text-sm font-medium text-slate-700">
+                        距離（km・任意）
+                        <input type="number" name="distanceKm" min="0.01" step="0.01" placeholder="2.5" />
+                      </label>
+                      <label className="grid gap-1 text-sm font-medium text-slate-700">
                         メモ
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="公園まで" />
                       </label>
-                      <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
+                      <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2 xl:col-span-4">登録</button>
                       </div>
                     </form>
                   ) : null}
@@ -451,7 +459,11 @@ export default async function CarePage({
                         <article key={record.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                           <div className="flex flex-wrap items-baseline justify-between gap-2">
                             <p className="text-lg font-bold text-ink">
-                              {formatTimeJst(record.startedAt)}{record.durationMinutes !== null ? `・${record.durationMinutes}分` : ""}
+                              {[
+                                formatTimeJst(record.startedAt),
+                                record.durationMinutes !== null ? `${record.durationMinutes}分` : null,
+                                record.distanceMeters !== null ? `${formatWalkDistanceKm(record.distanceMeters)}km` : null
+                              ].filter(Boolean).join("・")}
                             </p>
                             <p className="text-xs text-slate-500">記録: {creatorName(record.createdBy?.name)}</p>
                           </div>
@@ -459,7 +471,7 @@ export default async function CarePage({
                             record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                           ) : (
                             <div className="mt-4 grid gap-3">
-                              <form action={updatePetWalkRecord} className="grid gap-3 md:grid-cols-3">
+                              <form action={updatePetWalkRecord} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                                 <input type="hidden" name="id" value={record.id} />
                                 <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -471,10 +483,20 @@ export default async function CarePage({
                                   <input type="number" name="durationMinutes" defaultValue={record.durationMinutes ?? ""} min="1" max="1440" step="1" />
                                 </label>
                                 <label className="grid gap-1 text-sm font-medium text-slate-700">
+                                  距離（km・任意）
+                                  <input
+                                    type="number"
+                                    name="distanceKm"
+                                    defaultValue={record.distanceMeters === null ? "" : formatWalkDistanceKm(record.distanceMeters)}
+                                    min="0.01"
+                                    step="0.01"
+                                  />
+                                </label>
+                                <label className="grid gap-1 text-sm font-medium text-slate-700">
                                   メモ
                                   <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                                 </label>
-                                <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</button>
+                                <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2 xl:col-span-4">更新</button>
                               </form>
                               <form action={deletePetWalkRecord}>
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />

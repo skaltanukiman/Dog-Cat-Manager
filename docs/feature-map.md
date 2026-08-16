@@ -66,7 +66,7 @@
 - **UI:** `src/components/care-disclosure.tsx`が各Care種類の独立した開閉状態と本文アニメーションを管理する。
 - **Action:** `src/app/actions/pet-feeding.ts`、`pet-water.ts`、`pet-walk.ts`、`pet-litter.ts`。
 - **query / 日付:** `src/lib/pet-care-queries.ts`、`src/lib/pet-care.ts`、`src/lib/care-day.ts`。
-- **Prisma:** `PetFeedingRecord`、`PetWaterRecord`、`PetWalkRecord`、`PetLitterRecord`。`Household.careDayStartMinutes`を全Care種別で共有する。
+- **Prisma:** `PetFeedingRecord`、`PetWaterRecord`、`PetWalkRecord`、`PetLitterRecord`。DOGの任意の散歩距離は`PetWalkRecord.distanceMeters`へ整数meterで保存し、`Household.careDayStartMinutes`を全Care種別で共有する。
 - **認可:** VIEWER、別Household、管理終了Pet、species不一致、未来時刻、お世話日不一致をAction側で拒否する。
 - **テスト:** `tests/pet-care.test.ts`、`pet-care-validation.test.ts`、`pet-species-care.test.ts`、`care-day.test.ts`、`care-day-settings.test.ts`。
 
