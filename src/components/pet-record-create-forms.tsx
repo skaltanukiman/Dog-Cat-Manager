@@ -147,7 +147,7 @@ export function PetRecordCreateForms({
 
   return (
     <UnsavedChangesGuard>
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5 sm:py-3">
         <div className="grid grid-cols-5 gap-px sm:gap-2" aria-label="登録する記録種類">
           {kinds.map((option) => {
             const Icon = option.icon;
@@ -159,7 +159,7 @@ export function PetRecordCreateForms({
                 aria-pressed={kind === option.value}
                 aria-label={option.actionLabel}
                 title={option.actionLabel}
-                className={`inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden whitespace-nowrap rounded-md border px-px text-[11px] font-semibold tracking-[-0.05em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:px-2 md:flex-row md:gap-2 md:px-3 md:text-sm md:tracking-normal ${kind === option.value ? petRecordCreateKindStyles[option.value].selected : petRecordCreateKindStyles[option.value].unselected}`}
+                className={`inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden whitespace-nowrap rounded-md border px-px text-[11px] font-semibold tracking-[-0.05em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:min-h-11 sm:px-2 md:flex-row md:gap-2 md:px-3 md:text-sm md:tracking-normal ${kind === option.value ? petRecordCreateKindStyles[option.value].selected : petRecordCreateKindStyles[option.value].unselected}`}
               >
                 <Icon className={`h-4 w-4 shrink-0 ${petRecordCreateKindStyles[option.value].icon}`} aria-hidden />
                 <span>{option.label}</span>
