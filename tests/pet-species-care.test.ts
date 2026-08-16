@@ -161,6 +161,11 @@ test("/careはDOGに散歩、CATに猫トイレを条件表示し共通Care UI�
   assert.equal((page.match(/step="0\.01"/g) ?? []).length, 2);
   assert.match(page, /formatWalkDistanceKm\(latestWalkRecord\.distanceMeters\)/);
   assert.match(page, /formatWalkDistanceKm\(record\.distanceMeters\)/);
+  assert.equal((page.match(/>お世話時刻</g) ?? []).length, 3);
+  assert.equal((page.match(/>開始時刻</g) ?? []).length, 1);
+  assert.match(page, /latestWaterRecord[\s\S]*PET_WATER_ACTION_LABELS\[latestWaterRecord\.action\]/);
+  assert.match(page, /latestWalkRecord[\s\S]*latestWalkRecord\.durationMinutes[\s\S]*latestWalkRecord\.distanceMeters/);
+  assert.match(page, /latestLitterRecord[\s\S]*PET_LITTER_ACTION_LABELS\[latestLitterRecord\.action\]/);
   assert.match(page, /action=\{createPetLitterRecord\}/);
   assert.match(page, /action=\{updatePetLitterRecord\}/);
   assert.match(page, /action=\{deletePetLitterRecord\}/);

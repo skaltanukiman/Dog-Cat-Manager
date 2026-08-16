@@ -297,7 +297,10 @@ export default async function CarePage({
                     {feedingRecords.map((record) => (
                       <article key={record.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <p className="text-lg font-bold text-ink">{formatTimeJst(record.fedAt)}</p>
+                          <p className="flex items-baseline gap-2 whitespace-nowrap">
+                            <span className="text-sm font-semibold text-slate-600">お世話時刻</span>
+                            <span className="text-lg font-bold text-ink">{formatTimeJst(record.fedAt)}</span>
+                          </p>
                           <p className="text-xs text-slate-500">記録: {creatorName(record.createdBy?.name)}</p>
                         </div>
                         {!canMutateSelectedPet ? (
@@ -373,7 +376,10 @@ export default async function CarePage({
                     {waterRecords.map((record) => (
                       <article key={record.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <p className="text-lg font-bold text-ink">{formatTimeJst(record.caredAt)}・{PET_WATER_ACTION_LABELS[record.action]}</p>
+                          <p className="flex items-baseline gap-2 whitespace-nowrap">
+                            <span className="text-sm font-semibold text-slate-600">お世話時刻</span>
+                            <span className="text-lg font-bold text-ink">{formatTimeJst(record.caredAt)}</span>
+                          </p>
                           <p className="text-xs text-slate-500">記録: {creatorName(record.createdBy?.name)}</p>
                         </div>
                         {!canMutateSelectedPet ? (
@@ -458,12 +464,9 @@ export default async function CarePage({
                       {walkRecords.map((record) => (
                         <article key={record.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                           <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <p className="text-lg font-bold text-ink">
-                              {[
-                                formatTimeJst(record.startedAt),
-                                record.durationMinutes !== null ? `${record.durationMinutes}分` : null,
-                                record.distanceMeters !== null ? `${formatWalkDistanceKm(record.distanceMeters)}km` : null
-                              ].filter(Boolean).join("・")}
+                            <p className="flex items-baseline gap-2 whitespace-nowrap">
+                              <span className="text-sm font-semibold text-slate-600">開始時刻</span>
+                              <span className="text-lg font-bold text-ink">{formatTimeJst(record.startedAt)}</span>
                             </p>
                             <p className="text-xs text-slate-500">記録: {creatorName(record.createdBy?.name)}</p>
                           </div>
@@ -558,7 +561,10 @@ export default async function CarePage({
                       {litterRecords.map((record) => (
                         <article key={record.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                           <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <p className="text-lg font-bold text-ink">{formatTimeJst(record.occurredAt)}・{PET_LITTER_ACTION_LABELS[record.action]}</p>
+                            <p className="flex items-baseline gap-2 whitespace-nowrap">
+                              <span className="text-sm font-semibold text-slate-600">お世話時刻</span>
+                              <span className="text-lg font-bold text-ink">{formatTimeJst(record.occurredAt)}</span>
+                            </p>
                             <p className="text-xs text-slate-500">記録: {creatorName(record.createdBy?.name)}</p>
                           </div>
                           {!canMutateSelectedPet ? (
