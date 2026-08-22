@@ -3,6 +3,7 @@
 .env.production
 .env*.local
 node_modules
+.pnpm-store/
 .next
 next-env.d.ts
 out
