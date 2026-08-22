@@ -1,6 +1,7 @@
 export type SettingsSaveStatus =
   | "saved"
   | "careDaySaved"
+  | "notificationSaved"
   | "unchanged"
   | "invalid"
   | "profileNameTooLong"
@@ -15,6 +16,7 @@ export type SettingsSaveState = {
   errorId?: string;
   savedName?: string;
   savedCareDayStartMinutes?: number;
+  savedCareNotificationCompactBody?: boolean;
   savedDashboardSettings?: {
     dashboardBoardCount: number;
     recordTimelineDefaultScope: "pet" | "household";
@@ -35,6 +37,7 @@ export function createSettingsSaveState(
     | "errorId"
     | "savedName"
     | "savedCareDayStartMinutes"
+    | "savedCareNotificationCompactBody"
     | "savedDashboardSettings"
   > = {}
 ): SettingsSaveState {
@@ -49,6 +52,7 @@ export function isCommittedSettingsSave(state: SettingsSaveState) {
   return (
     state.status === "saved" ||
     state.status === "careDaySaved" ||
+    state.status === "notificationSaved" ||
     state.status === "unchanged"
   );
 }

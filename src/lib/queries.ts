@@ -147,6 +147,7 @@ export async function getDashboardSettingsPageData() {
   ]);
   const boardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
   const recordTimelineDefaultScope = normalizePetRecordScope(setting?.recordTimelineDefaultScope);
+  const careNotificationCompactBody = setting?.careNotificationCompactBody === true;
   const selectedIds = setting?.dashboardPets.map((entry) => entry.petId) ?? [];
   // 設定画面の初期表示でも、ダッシュボードと同じ補完ルールで選択状態を作る。
   const selectedPetIds = pickDashboardPets(pets, boardCount, selectedIds).map((pet) => pet.id);
@@ -155,6 +156,7 @@ export async function getDashboardSettingsPageData() {
     user: context.user,
     boardCount,
     recordTimelineDefaultScope,
+    careNotificationCompactBody,
     careDayStartMinutes: normalizeCareDayStartMinutes(context.household.careDayStartMinutes),
     canManageCareDaySettings: canManageCareDaySettings(context.membership.role),
     pets,

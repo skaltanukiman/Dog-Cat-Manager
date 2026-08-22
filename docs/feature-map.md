@@ -6,7 +6,7 @@
 
 | 項目 | 主なファイル | 注意点 |
 | --- | --- | --- |
-| 認証・公開パス | `src/proxy.ts`, `src/auth.ts`, `src/lib/auth-cookies.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts` | 公開対象はログイン、Auth.js callback、health API。通常画面は認証必須で、CookieはDog & Cat Manager専用名を使う。 |
+| 認証・公開パス | `src/proxy.ts`, `src/auth.ts`, `src/lib/auth-cookies.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts` | 公開対象はログイン、Auth.js callback、health API、通知専用`/sw.js`。通常画面とPush購読APIは認証必須で、CookieはDog & Cat Manager専用名を使う。 |
 | 現在Household・権限 | `src/lib/auth-context.ts`, `src/lib/authorization.ts`, `src/app/actions/households.ts`, `src/components/household-switcher.tsx` | `OWNER` / `ADMIN` / `MEMBER` / `VIEWER`を共通判定し、共有データ更新は最新membershipをtransaction内でも確認する。 |
 | レイアウト・ナビ | `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | 主要導線はDashboard、Pets、Care、Records、Weights。設定・共有・管理・問い合わせは補助導線に置く。 |
 | 日付・検索 | `src/lib/date.ts`, `src/lib/care-day.ts`, `src/lib/search.ts`, `src/lib/tags.ts` | timestampはUTC保存・JST表示。測定日・記録日は暦日を維持し、お世話日だけHousehold境界を適用する。 |
@@ -46,11 +46,11 @@
 
 ## Petプロフィール
 
-- **画面:** `/pets`。
-- **Action:** `src/app/actions/pets.ts`。作成、更新、管理終了、画像更新を行う。
+- **画面:** `/pets`。プロフィールとは独立した折りたたみ式の本人用Pet通知ルールも表示する。
+- **Action:** `src/app/actions/pets.ts`。作成、更新、管理終了、画像更新を行う。`src/app/actions/pet-notifications.ts`はVIEWERを含む所属メンバー本人の通知ルールだけを一括保存する。
 - **画像:** `src/lib/pet-image.ts`、`src/components/pet-image-field.tsx`、認証付き`/api/pets/[id]/image`。`PET_IMAGE_DIR`へHousehold別UUID WebPを保存する。
-- **Prisma:** `Pet`、`PetSpecies`、`PetSex`。speciesは作成後に変更せず、管理終了後も履歴参照のためPet本体を保持する。
-- **テスト:** `tests/pets.test.ts`、`tests/pet-image.test.tsx`、`tests/authorization.test.ts`。
+- **Prisma:** `Pet`、`PetSpecies`、`PetSex`、`PetNotificationRule`。speciesは作成後に変更せず、管理終了後も履歴と通知ルールを保持する。
+- **テスト:** `tests/pets.test.ts`、`tests/pet-image.test.tsx`、`tests/authorization.test.ts`、`tests/pet-notifications.test.ts`。
 
 ## Pet体重
 
@@ -82,10 +82,10 @@
 
 ## 設定
 
-- **画面:** `/settings`。プロフィール、記録画面の初期表示（選択中のPet / 共有グループ全体）、Pet Dashboard表示数・対象・順序、お世話日の切り替え時刻、問い合わせ・アカウント削除導線を持つ。
+- **画面:** `/settings`。プロフィール、記録画面の初期表示（選択中のPet / 共有グループ全体）、Pet Dashboard表示数・対象・順序、お世話日の切り替え時刻、通知端末・本人用通知本文、問い合わせ・アカウント削除導線を持つ。
 - **Action:** `src/app/actions/settings.ts`、`src/app/actions/care-day-settings.ts`。
 - **状態管理:** `src/lib/settings-diff.ts`、`settings-save-state.ts`、`src/components/dashboard-settings-form.tsx`、`display-settings-section.tsx`、`care-day-settings-form.tsx`。記録画面scopeだけの変更は`DashboardPet`を再作成しない。
-- **Prisma:** `AppSetting.dashboardBoardCount`、`AppSetting.recordTimelineDefaultScope`（DB default・アプリfallbackとも`household`）、`DashboardPet`、`Household.careDayStartMinutes`。
+- **Prisma:** `AppSetting.dashboardBoardCount`、`AppSetting.recordTimelineDefaultScope`（DB default・アプリfallbackとも`household`）、`AppSetting.careNotificationCompactBody`、`DashboardPet`、`Household.careDayStartMinutes`。
 - **テスト:** `tests/settings.test.ts`、`settings-save-behavior.test.ts`、`dashboard-settings.test.ts`、`care-day-settings.test.ts`。
 
 ## アカウント削除
@@ -118,6 +118,15 @@
 - **source:** Petプロフィール、Pet体重、4種類のPet Care、Pet RecordsとHousehold / member / settingsの共通更新だけを扱う。
 - **整合性:** 業務データ、Activity、revisionを同じtransactionで更新し、commit後にSSEをpublishする。SSE不達時はrevision pollingが補完する。
 - **テスト:** `tests/csv-and-realtime.test.ts`、`tests/dashboard-pet.test.ts`、`tests/household-activity.test.ts`。
+
+## Petお世話通知 / Web Push
+
+- **設定:** `/settings`の`src/components/notification-settings-form.tsx`が端末購読と通常・簡略本文を管理し、`/pets`の`pet-notification-rules-form.tsx`がPet別ルールをプロフィールとは別フォームで管理する。
+- **判定:** `src/lib/pet-notifications.ts`がcare-day順序、JST実予定時刻、ルールごとの半開区間、本文安全化をpure functionとして扱う。Litterは`CLEANED`だけを完了とする。
+- **Push:** `/api/push/subscriptions`、`/status`、`src/lib/web-push.ts`、`public/sw.js`、`service-worker-registration.tsx`。mutation APIは認証・same-origin・本文サイズ・endpoint所有者を検証する。
+- **配信:** `src/lib/care-notification-dispatch.ts`、`scripts/dispatch-care-notifications.ts`。実予定時刻単位のDB claim、lease、最大3回retry、端末別成功履歴、失効購読削除を行う。
+- **Prisma:** `PetNotificationRule`、`WebPushSubscription`、`CareNotificationDispatch`、`CareNotificationDelivery`と関連enum。
+- **テスト:** `tests/pet-notifications.test.ts`、`tests/pet-notification-rules-form.test.tsx`。
 
 ## インフラ・永続化
 

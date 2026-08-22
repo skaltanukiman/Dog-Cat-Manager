@@ -77,7 +77,7 @@ export function CareDaySettingsForm({
               お世話日の設定
             </span>
             <span className="mt-0.5 block text-xs leading-5 text-slate-600">
-              食事と水替えを新しい日として扱い始める時刻を設定します。
+              食事・水・散歩・猫トイレなどのお世話を新しい日として扱い始める時刻を設定します。
             </span>
           </span>
         </span>
@@ -120,14 +120,14 @@ export function CareDaySettingsForm({
                 </span>
               </label>
               <div className="mt-2 max-w-3xl space-y-1 text-sm leading-6 text-slate-600">
-                <p>設定した時刻になると、食事と水替えが新しいお世話日に切り替わります。</p>
+                <p>設定した時刻になると、食事・水・散歩・猫トイレなどが新しいお世話日に切り替わります。</p>
                 <p>例：8:00に設定した場合、翌日の7:59までは同じお世話日として扱います。</p>
               </div>
               <div className="mt-4 w-full max-w-4xl rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
                 <div className="space-y-1">
                   <p>変更内容は、保存後すぐに反映されます。</p>
                   <p>
-                    現在時刻や変更前の設定によっては、食事・水替えの表示が「実施済み」から「未実施」、または「未実施」から「実施済み」に変わる場合があります。
+                    現在時刻や変更前の設定によっては、お世話の表示が「実施済み」から「未実施」、または「未実施」から「実施済み」に変わる場合があります。
                   </p>
                   <p>既存記録の日付は変更されません。</p>
                 </div>

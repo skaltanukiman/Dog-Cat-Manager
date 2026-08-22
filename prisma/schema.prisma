@@ -8,22 +8,22 @@ datasource db {
 }
 
 model Pet {
-  id                   String               @id @default(cuid())
-  householdId          String               @map("household_id")
-  household            Household            @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  id                   String                @id @default(cuid())
+  householdId          String                @map("household_id")
+  household            Household             @relation(fields: [householdId], references: [id], onDelete: Cascade)
   // ペット名はHousehold内だけで重複を避け、別Householdでは同名を許可する。
   name                 String
   species              PetSpecies
   breed                String?
-  sex                  PetSex               @default(UNKNOWN)
-  birthDate            DateTime?            @map("birth_date") @db.Date
-  adoptionDate         DateTime?            @map("adoption_date") @db.Date
-  profileImageFileName String?              @map("profile_image_file_name")
-  memo                 String?              @db.Text
+  sex                  PetSex                @default(UNKNOWN)
+  birthDate            DateTime?             @map("birth_date") @db.Date
+  adoptionDate         DateTime?             @map("adoption_date") @db.Date
+  profileImageFileName String?               @map("profile_image_file_name")
+  memo                 String?               @db.Text
   // 管理終了後もPet本体を保持し、将来追加する履歴の参照先を維持する。
-  isActive             Boolean              @default(true) @map("is_active")
-  createdAt            DateTime             @default(now()) @map("created_at")
-  updatedAt            DateTime             @updatedAt @map("updated_at")
+  isActive             Boolean               @default(true) @map("is_active")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
   weightRecords        PetWeightRecord[]
   feedingRecords       PetFeedingRecord[]
   waterRecords         PetWaterRecord[]
@@ -32,6 +32,7 @@ model Pet {
   records              PetRecord[]
   memoryRecords        PetMemoryRecordPet[]
   dashboardEntries     DashboardPet[]
+  notificationRules    PetNotificationRule[]
 
   @@unique([householdId, name])
   @@index([householdId, createdAt])
@@ -284,16 +285,17 @@ enum PetSex {
 }
 
 model AppSetting {
-  id                         String         @id @default(cuid())
-  userId                     String?        @map("user_id")
-  householdId                String?        @map("household_id")
-  user                       User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  household                  Household?     @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  dashboardBoardCount        Int            @default(6)
-  recordTimelineDefaultScope String         @default("household")
-  createdAt                  DateTime       @default(now())
-  updatedAt                  DateTime       @updatedAt
-  dashboardPets              DashboardPet[]
+  id                          String         @id @default(cuid())
+  userId                      String?        @map("user_id")
+  householdId                 String?        @map("household_id")
+  user                        User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household                   Household?     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  dashboardBoardCount         Int            @default(6)
+  recordTimelineDefaultScope  String         @default("household")
+  careNotificationCompactBody Boolean        @default(false)
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+  dashboardPets               DashboardPet[]
 
   @@unique([userId, householdId])
   @@map("app_settings")
@@ -316,37 +318,40 @@ model DashboardPet {
 }
 
 model User {
-  id                          String                  @id @default(cuid())
+  id                          String                     @id @default(cuid())
   name                        String?
-  email                       String?                 @unique
-  emailVerified               DateTime?               @map("email_verified")
+  email                       String?                    @unique
+  emailVerified               DateTime?                  @map("email_verified")
   image                       String?
-  appRole                     AppRole                 @default(USER) @map("app_role")
-  accessStatus                UserAccessStatus        @default(ACTIVE) @map("access_status")
-  suspendedAt                 DateTime?               @map("suspended_at")
-  suspendedByUserId           String?                 @map("suspended_by_user_id")
-  suspensionReason            String?                 @map("suspension_reason") @db.VarChar(500)
+  appRole                     AppRole                    @default(USER) @map("app_role")
+  accessStatus                UserAccessStatus           @default(ACTIVE) @map("access_status")
+  suspendedAt                 DateTime?                  @map("suspended_at")
+  suspendedByUserId           String?                    @map("suspended_by_user_id")
+  suspensionReason            String?                    @map("suspension_reason") @db.VarChar(500)
   accounts                    Account[]
   sessions                    Session[]
   memberships                 HouseholdMember[]
   appSettings                 AppSetting[]
-  createdHouseholdInvitations HouseholdInvitation[]   @relation("HouseholdInvitationCreator")
-  createdPetRecords           PetRecord[]             @relation("PetRecordCreator")
-  createdPetFeedingRecords    PetFeedingRecord[]      @relation("PetFeedingRecordCreator")
-  createdPetWaterRecords      PetWaterRecord[]        @relation("PetWaterRecordCreator")
-  createdPetWalkRecords       PetWalkRecord[]         @relation("PetWalkRecordCreator")
-  createdPetLitterRecords     PetLitterRecord[]       @relation("PetLitterRecordCreator")
-  createdSavedMemoryTags      SavedMemoryTag[]        @relation("SavedMemoryTagCreator")
-  householdActivities         HouseholdActivity[]     @relation("HouseholdActivityActor")
-  suspendedBy                 User?                   @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
-  suspendedUsers              User[]                  @relation("UserCurrentSuspensionActor")
-  performedUserAccessActions  UserAccessAction[]      @relation("UserAccessActionActor")
-  receivedUserAccessActions   UserAccessAction[]      @relation("UserAccessActionTarget")
-  contactInquiries            ContactInquiry[]        @relation("ContactInquiryUser")
-  assignedContactInquiries    ContactInquiry[]        @relation("ContactInquiryAssignedAdmin")
-  contactInquiryMessages      ContactInquiryMessage[] @relation("ContactInquiryMessageSender")
-  createdAt                   DateTime                @default(now()) @map("created_at")
-  updatedAt                   DateTime                @updatedAt @map("updated_at")
+  createdHouseholdInvitations HouseholdInvitation[]      @relation("HouseholdInvitationCreator")
+  createdPetRecords           PetRecord[]                @relation("PetRecordCreator")
+  createdPetFeedingRecords    PetFeedingRecord[]         @relation("PetFeedingRecordCreator")
+  createdPetWaterRecords      PetWaterRecord[]           @relation("PetWaterRecordCreator")
+  createdPetWalkRecords       PetWalkRecord[]            @relation("PetWalkRecordCreator")
+  createdPetLitterRecords     PetLitterRecord[]          @relation("PetLitterRecordCreator")
+  createdSavedMemoryTags      SavedMemoryTag[]           @relation("SavedMemoryTagCreator")
+  householdActivities         HouseholdActivity[]        @relation("HouseholdActivityActor")
+  suspendedBy                 User?                      @relation("UserCurrentSuspensionActor", fields: [suspendedByUserId], references: [id], onDelete: SetNull)
+  suspendedUsers              User[]                     @relation("UserCurrentSuspensionActor")
+  performedUserAccessActions  UserAccessAction[]         @relation("UserAccessActionActor")
+  receivedUserAccessActions   UserAccessAction[]         @relation("UserAccessActionTarget")
+  contactInquiries            ContactInquiry[]           @relation("ContactInquiryUser")
+  assignedContactInquiries    ContactInquiry[]           @relation("ContactInquiryAssignedAdmin")
+  contactInquiryMessages      ContactInquiryMessage[]    @relation("ContactInquiryMessageSender")
+  petNotificationRules        PetNotificationRule[]
+  webPushSubscriptions        WebPushSubscription[]
+  careNotificationDispatches  CareNotificationDispatch[]
+  createdAt                   DateTime                   @default(now()) @map("created_at")
+  updatedAt                   DateTime                   @updatedAt @map("updated_at")
 
   @@index([accessStatus])
   @@index([suspendedByUserId])
@@ -412,26 +417,126 @@ model VerificationToken {
 }
 
 model Household {
-  id                    String                @id @default(cuid())
-  name                  String
-  isDemo                Boolean               @default(false) @map("is_demo")
+  id                         String                     @id @default(cuid())
+  name                       String
+  isDemo                     Boolean                    @default(false) @map("is_demo")
   // JSTの0時からの分数。Pet Careが共有するHousehold固有のお世話日境界として扱う。
-  careDayStartMinutes   Int                   @default(0) @map("care_day_start_minutes")
-  createdAt             DateTime              @default(now()) @map("created_at")
-  updatedAt             DateTime              @updatedAt @map("updated_at")
+  careDayStartMinutes        Int                        @default(0) @map("care_day_start_minutes")
+  createdAt                  DateTime                   @default(now()) @map("created_at")
+  updatedAt                  DateTime                   @updatedAt @map("updated_at")
   // 業務更新と同じtransactionで増分し、SSEを受け取れないクライアントがpollで変更を検出する。
   // actor列は直近の更新元を保持し、クライアント側が自己更新かどうかを判定できるようにする。
-  realtimeRevision      BigInt                @default(0) @map("realtime_revision")
-  realtimeActorClientId String?               @map("realtime_actor_client_id") @db.VarChar(128)
-  realtimeActorUserId   String?               @map("realtime_actor_user_id")
-  members               HouseholdMember[]
-  pets                  Pet[]
-  appSettings           AppSetting[]
-  invitations           HouseholdInvitation[]
-  savedMemoryTags       SavedMemoryTag[]
-  activities            HouseholdActivity[]
+  realtimeRevision           BigInt                     @default(0) @map("realtime_revision")
+  realtimeActorClientId      String?                    @map("realtime_actor_client_id") @db.VarChar(128)
+  realtimeActorUserId        String?                    @map("realtime_actor_user_id")
+  members                    HouseholdMember[]
+  pets                       Pet[]
+  appSettings                AppSetting[]
+  invitations                HouseholdInvitation[]
+  savedMemoryTags            SavedMemoryTag[]
+  activities                 HouseholdActivity[]
+  petNotificationRules       PetNotificationRule[]
+  careNotificationDispatches CareNotificationDispatch[]
 
   @@map("households")
+}
+
+model PetNotificationRule {
+  id                  String              @id @default(cuid())
+  userId              String              @map("user_id")
+  householdId         String              @map("household_id")
+  petId               String              @map("pet_id")
+  kind                PetNotificationKind
+  label               String              @db.VarChar(40)
+  // JST壁時計の0:00から期限までの分数。実日時への変換時はHouseholdのお世話日境界を適用する。
+  deadlineMinutes     Int                 @map("deadline_minutes") @db.SmallInt
+  notifyBeforeMinutes Int                 @map("notify_before_minutes") @db.SmallInt
+  enabled             Boolean             @default(true)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household           Household           @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  pet                 Pet                 @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  // 同じ利用者が同じPet・お世話種別・期限へ重複した通知を作れないようDBでも保証する。
+  @@unique([userId, householdId, petId, kind, deadlineMinutes])
+  @@index([userId, householdId, petId])
+  @@index([householdId, enabled])
+  @@map("pet_notification_rules")
+}
+
+enum PetNotificationKind {
+  FEEDING
+  WATER
+  WALK
+  LITTER_CLEANING
+}
+
+model WebPushSubscription {
+  id            String                     @id @default(cuid())
+  userId        String                     @map("user_id")
+  // endpointはブラウザー購読を一意に表すため、別ユーザーへの付け替えを許可しない。
+  endpoint      String                     @unique @db.Text
+  p256dh        String                     @db.Text
+  auth          String                     @db.Text
+  userAgent     String?                    @map("user_agent") @db.VarChar(512)
+  lastSuccessAt DateTime?                  @map("last_success_at")
+  createdAt     DateTime                   @default(now()) @map("created_at")
+  updatedAt     DateTime                   @updatedAt @map("updated_at")
+  user          User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries    CareNotificationDelivery[]
+
+  @@index([userId])
+  @@map("web_push_subscriptions")
+}
+
+model CareNotificationDispatch {
+  id             String                         @id @default(cuid())
+  userId         String                         @map("user_id")
+  householdId    String                         @map("household_id")
+  targetCareDate DateTime                       @map("target_care_date") @db.Date
+  scheduledAt    DateTime                       @map("scheduled_at")
+  status         CareNotificationDispatchStatus @default(CLAIMED)
+  attemptCount   Int                            @default(1) @map("attempt_count")
+  // リース再取得後に古い実行プロセスが結果を上書きしないよう、確定更新の照合にも使う。
+  claimToken     String                         @map("claim_token") @db.VarChar(36)
+  claimedAt      DateTime                       @default(now()) @map("claimed_at")
+  leaseExpiresAt DateTime                       @map("lease_expires_at")
+  nextAttemptAt  DateTime?                      @map("next_attempt_at")
+  lastAttemptAt  DateTime?                      @map("last_attempt_at")
+  sentAt         DateTime?                      @map("sent_at")
+  createdAt      DateTime                       @default(now()) @map("created_at")
+  updatedAt      DateTime                       @updatedAt @map("updated_at")
+  user           User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household      Household                      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  deliveries     CareNotificationDelivery[]
+
+  // cronが重複起動しても、同じ利用者・Household・お世話日・実通知予定時刻は1回だけ予約する。
+  @@unique([userId, householdId, targetCareDate, scheduledAt])
+  @@index([status, nextAttemptAt])
+  @@index([status, leaseExpiresAt])
+  @@index([householdId, targetCareDate])
+  @@map("care_notification_dispatches")
+}
+
+enum CareNotificationDispatchStatus {
+  CLAIMED
+  SENT
+  RETRYABLE
+  SKIPPED
+}
+
+model CareNotificationDelivery {
+  dispatchId     String                   @map("dispatch_id")
+  subscriptionId String                   @map("subscription_id")
+  sentAt         DateTime                 @default(now()) @map("sent_at")
+  dispatch       CareNotificationDispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  subscription   WebPushSubscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  // retry時はこの行を持つ端末を除外し、既に成功した端末へ同じdispatchを再送しない。
+  @@id([dispatchId, subscriptionId])
+  @@index([subscriptionId])
+  @@map("care_notification_deliveries")
 }
 
 model HouseholdMember {

@@ -34,18 +34,20 @@ test("現行 Prisma schema は Pet domain と共有基盤だけを保持する",
     "MedicalVisitDetail",
     "MemoryRecordDetail",
     "MemoryRecordHamster",
-    "MemoryRecordImage",
-    "WebPushSubscription",
-    "CareNotificationDispatch"
+    "MemoryRecordImage"
   ]) {
     assert.doesNotMatch(schema, new RegExp(`^model ${model}\\b`, "m"));
   }
-  assert.doesNotMatch(schema, /^enum (?:HamsterRecordType|CareNotificationDispatchStatus)\b/m);
+  assert.doesNotMatch(schema, /^enum HamsterRecordType\b/m);
 
   for (const shared of [
     /^model Pet\b/m,
     /^model DashboardPet\b/m,
     /^model SavedMemoryTag\b/m,
+    /^model PetNotificationRule\b/m,
+    /^model WebPushSubscription\b/m,
+    /^model CareNotificationDispatch\b/m,
+    /^enum CareNotificationDispatchStatus\b/m,
     /^enum HealthOverallCondition\b/m,
     /^enum HealthAmountCondition\b/m,
     /^enum HealthExcretionCondition\b/m,
@@ -157,7 +159,7 @@ test("remove migration は legacy data を検査してから旧構造だけを�
   assert.doesNotMatch(migration, /DROP EXTENSION/i);
 });
 
-test("旧 route・API・runtime access・環境設定は復活していない", () => {
+test("旧Hamster route・API・runtime accessは復活せずPet通知基盤だけを導入する", () => {
   for (const removedPath of [
     "src/app/(app)/hamsters/page.tsx",
     "src/app/(app)/cleaning/page.tsx",
@@ -165,9 +167,7 @@ test("旧 route・API・runtime access・環境設定は復活していない", 
     "src/app/api/device/care/route.ts",
     "src/app/api/hamsters/[id]/image/route.ts",
     "src/app/api/records/[id]/image/route.ts",
-    "src/app/demo/page.tsx",
-    "scripts/dispatch-care-notifications.ts",
-    "public/sw.js"
+    "src/app/demo/page.tsx"
   ]) {
     assert.equal(existsSync(join(repositoryRoot, removedPath)), false, removedPath);
   }
@@ -178,7 +178,9 @@ test("旧 route・API・runtime access・環境設定は復活していない", 
     "src/app/(app)/weights/page.tsx",
     "src/app/(app)/care/page.tsx",
     "src/app/(app)/records/page.tsx",
-    "src/app/(app)/settings/page.tsx"
+    "src/app/(app)/settings/page.tsx",
+    "scripts/dispatch-care-notifications.ts",
+    "public/sw.js"
   ]) {
     assert.equal(existsSync(join(repositoryRoot, currentPath)), true, currentPath);
   }
@@ -193,9 +195,7 @@ test("旧 route・API・runtime access・環境設定は復活していない", 
     /prisma\.(?:cleaningRecord|feedingRecord|waterReplacementRecord|weightRecord|hamsterRecord)\b/,
     /HAMSTER_IMAGE_DIR/,
     /(?:^|[^A-Z_])RECORD_IMAGE_DIR/,
-    /DEVICE_CARE/,
-    /WEB_PUSH/,
-    /VAPID/
+    /DEVICE_CARE/
   ]) {
     assert.doesNotMatch(runtimeSource, legacyAccess);
   }
@@ -209,10 +209,12 @@ test("旧 route・API・runtime access・環境設定は復活していない", 
   ].join("\n");
   assert.doesNotMatch(
     configuration,
-    /HAMSTER_IMAGE_DIR|(?:^|\n)RECORD_IMAGE_DIR=|DEVICE_CARE|WEB_PUSH|VAPID|web-push/
+    /HAMSTER_IMAGE_DIR|(?:^|\n)RECORD_IMAGE_DIR=|DEVICE_CARE/
   );
   assert.match(configuration, /PET_IMAGE_DIR/);
   assert.match(configuration, /PET_RECORD_IMAGE_DIR/);
+  assert.match(configuration, /WEB_PUSH_VAPID_PUBLIC_KEY/);
+  assert.match(configuration, /web-push/);
 });
 
 test("current CI runtime configuration does not reintroduce Hamster settings", () => {

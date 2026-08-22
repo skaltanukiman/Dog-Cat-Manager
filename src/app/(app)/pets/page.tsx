@@ -3,6 +3,7 @@ import { Archive, Plus, RotateCcw, Save } from "lucide-react";
 import { createPet, updatePet, updatePetActiveStatus } from "@/app/actions/pets";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import { PetImageField } from "@/components/pet-image-field";
+import { PetNotificationRulesForm } from "@/components/pet-notification-rules-form";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { StatusMessage } from "@/components/status-message";
 import { canEditHouseholdSharedData } from "@/lib/authorization";
@@ -32,7 +33,20 @@ export default async function PetsPage({
   const canEdit = canEditHouseholdSharedData(context.membership.role);
   const pets = await prisma.pet.findMany({
     where: { householdId: context.household.id },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }]
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    include: {
+      notificationRules: {
+        where: { userId: context.user.id, householdId: context.household.id },
+        orderBy: [{ kind: "asc" }, { deadlineMinutes: "asc" }, { id: "asc" }],
+        select: {
+          kind: true,
+          label: true,
+          deadlineMinutes: true,
+          notifyBeforeMinutes: true,
+          enabled: true
+        }
+      }
+    }
   });
   // 誕生日とお迎え日は暦日として扱い、未来日をブラウザとServer Actionの両方で拒否する。
   const today = todayInputJst();
@@ -192,6 +206,14 @@ export default async function PetsPage({
                     </DirtySubmitButton>
                   ) : null}
                 </form>
+                <PetNotificationRulesForm
+                  petId={pet.id}
+                  petName={pet.name}
+                  species={pet.species}
+                  isActive={pet.isActive}
+                  careDayStartMinutes={context.household.careDayStartMinutes}
+                  initialRules={pet.notificationRules}
+                />
               </article>
             ))}
           </div>

@@ -2,8 +2,10 @@ import { AccountDeleteEntryForm } from "@/components/account-delete-entry-form";
 import { ContactSupportEntry } from "@/components/contact-support-entry";
 import { CareDaySettingsForm } from "@/components/care-day-settings-form";
 import { DashboardSettingsForm } from "@/components/dashboard-settings-form";
+import { NotificationSettingsForm } from "@/components/notification-settings-form";
 import { StatusMessage } from "@/components/status-message";
 import { getDashboardSettingsPageData } from "@/lib/queries";
+import { getPublicVapidConfiguration } from "@/lib/web-push";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +23,13 @@ export default async function SettingsPage({
     user,
     boardCount,
     recordTimelineDefaultScope,
+    careNotificationCompactBody,
     careDayStartMinutes,
     canManageCareDaySettings,
     pets,
     selectedPetIds
   } = await getDashboardSettingsPageData();
+  const vapid = getPublicVapidConfiguration();
 
   return (
     <div className="space-y-6">
@@ -51,6 +55,12 @@ export default async function SettingsPage({
         key={`care-day-${careDayStartMinutes}-${canManageCareDaySettings}`}
         careDayStartMinutes={careDayStartMinutes}
         canManage={canManageCareDaySettings}
+      />
+
+      <NotificationSettingsForm
+        compactBody={careNotificationCompactBody}
+        vapidConfigured={vapid.configured}
+        vapidPublicKey={vapid.publicKey}
       />
 
       <ContactSupportEntry />

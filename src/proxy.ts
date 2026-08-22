@@ -6,7 +6,8 @@ const PUBLIC_PATHS = [
   "/login",
   "/invitations/accept",
   "/api/health",
-  "/manifest.webmanifest"
+  "/manifest.webmanifest",
+  "/sw.js"
 ];
 const PUBLIC_PREFIXES = ["/api/auth", "/icons/"];
 

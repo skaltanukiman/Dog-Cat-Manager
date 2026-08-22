@@ -93,6 +93,10 @@ HOUSEHOLD_ACTIVITY_RETENTION_DAYS=90
 
 PET_IMAGE_DIR=/app/uploads/pets
 PET_RECORD_IMAGE_DIR=/app/uploads/pet-records
+
+WEB_PUSH_VAPID_PUBLIC_KEY=
+WEB_PUSH_VAPID_PRIVATE_KEY=
+WEB_PUSH_SUBJECT=
 ```
 
 開発・本番でDB、`AUTH_SECRET`、Cookie、画像rootをほかのサービスと共有しないでください。Docker Composeのホスト側ポートはappが`127.0.0.1:3002`、DBが`127.0.0.1:5434`です。
@@ -206,6 +210,36 @@ npm run contact-inquiries:auto-close
 - `RESOLVED`の問い合わせは`resolvedAt`から7日後に`CLOSED`へ移行する。
 
 cronやschedulerから実行するときは、同じreleaseのコード、同じ環境ファイル、同じDB接続先を使ってください。まず`--dry-run`の監視を行い、標準出力・errorIdをログへ保存します。
+
+## Web Push通知
+
+通知ルールはHousehold共有設定ではなく、現在の`User + Household + Pet`ごとに保存します。Petの管理終了中、ユーザーの利用停止中、membership削除後、demo Householdでは配信しません。
+
+VAPID鍵は次のコマンド等で生成し、公開鍵・秘密鍵・連絡先subjectをsecret管理側へ設定します。秘密鍵をrepository、クライアント、ログへ出力しないでください。
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+```dotenv
+WEB_PUSH_VAPID_PUBLIC_KEY=
+WEB_PUSH_VAPID_PRIVATE_KEY=
+WEB_PUSH_SUBJECT=mailto:operations@example.com
+```
+
+Push APIとService Workerは本番ではHTTPSが必要です。端末購読の404 / 410応答は失効としてDBから削除します。
+
+配信判定は次のCLIを外部cronまたはschedulerから5分間隔で実行してください。特定クラウドのschedulerには依存しません。重複起動はDB claimで抑止し、一時失敗は5分間隔・最大3回まで再試行します。
+
+```bash
+npm run notifications:dispatch
+```
+
+例（実際のrelease pathと環境読込方式へ置き換えること）:
+
+```cron
+*/5 * * * * cd /path/to/Dog-Cat-Manager && npm run notifications:dispatch
+```
 
 ## 管理者補助
 

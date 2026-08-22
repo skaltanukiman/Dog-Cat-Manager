@@ -124,7 +124,7 @@ test("AppSettingの記録画面scopeはDBでもhouseholdをdefaultにする追�
     "prisma/migrations/20260816120000_add_record_timeline_default_scope/migration.sql"
   );
 
-  assert.match(schema, /recordTimelineDefaultScope String\s+@default\("household"\)/);
+  assert.match(schema, /recordTimelineDefaultScope\s+String\s+@default\("household"\)/);
   assert.match(migration, /ADD COLUMN "recordTimelineDefaultScope" TEXT NOT NULL DEFAULT 'household'/);
   assert.doesNotMatch(migration, /\b(?:DROP|TRUNCATE|DELETE)\b/i);
 });
