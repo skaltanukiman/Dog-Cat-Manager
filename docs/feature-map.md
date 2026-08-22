@@ -1,6 +1,6 @@
 # 機能マップ
 
-最終確認: 2026-08-14。現在のruntime domainは犬・猫の`Pet`のみです。修正対象を探すときは、ここに記載した画面、Action / API、データアクセスと、その直接依存先から調査を始めてください。
+最終確認: 2026-08-23。現在のruntime domainは犬・猫の`Pet`のみです。修正対象を探すときは、ここに記載した画面、Action / API、データアクセスと、その直接依存先から調査を始めてください。
 
 ## 共通の起点
 
@@ -54,11 +54,11 @@
 
 ## Pet体重
 
-- **画面:** `/weights`。
-- **Action / query:** `src/app/actions/pet-weights.ts`、`src/lib/pet-weight-queries.ts`、`src/lib/pet-weight-rules.ts`。
-- **UI:** `src/components/pet-weight-chart.tsx`、`src/components/pet-weight-history-list.tsx`。
+- **画面:** `/weights`、`/weights/export`（CSVエクスポート）。
+- **Action / query:** `src/app/actions/pet-weights.ts`、`src/lib/pet-weight-queries.ts`、`src/lib/pet-weight-rules.ts`、`src/lib/pet-weight-csv-export.ts`、`/weights/export/download` Route。
+- **UI:** `src/components/pet-weight-chart.tsx`、`src/components/pet-weight-history-list.tsx`、`src/components/pet-weight-csv-export-form.tsx`。
 - **Prisma:** `PetWeightRecord`。Petと測定日の組み合わせは一意で、重量をg単位のDecimalで保存する。
-- **テスト:** `tests/pet-weights.test.ts`、`tests/date-validation.test.ts`。
+- **テスト:** `tests/pet-weights.test.ts`、`tests/pet-weight-csv-export.test.ts`、`tests/date-validation.test.ts`。
 
 ## Pet Care
 

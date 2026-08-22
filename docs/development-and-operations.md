@@ -9,6 +9,7 @@ Dog & Cat ManagerはNext.js App Router、Prisma、PostgreSQLで構成する犬�
 - `/`: Pet Dashboard
 - `/pets`: Petプロフィール
 - `/weights`: Pet体重
+- `/weights/export`: Pet体重CSVエクスポート（CSV importは未対応）
 - `/care`: 食事、水、DOG散歩、CAT猫トイレ
 - `/records`: 健康、通院、投薬、ワクチン、思い出
 - `/settings`: プロフィール、Dashboard、お世話日設定

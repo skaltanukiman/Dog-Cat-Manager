@@ -4,6 +4,16 @@ import { prisma } from "@/lib/prisma";
 export const PET_WEIGHT_HISTORY_PAGE_SIZE = 20;
 export const PET_WEIGHT_CHART_MAX_POINTS = 365;
 
+/** CSVエクスポート用に、管理終了Petを含む現在Household内の選択肢を返す。 */
+export async function getPetWeightExportPets() {
+  const context = await getRequiredHouseholdContext();
+  return prisma.pet.findMany({
+    where: { householdId: context.household.id },
+    orderBy: [{ isActive: "desc" }, { createdAt: "asc" }, { id: "asc" }],
+    select: { id: true, name: true, species: true, isActive: true }
+  });
+}
+
 /**
  * 現在のHouseholdに属するPetと、選択Petの体重履歴を取得する。
  * 一覧はDBでページングし、グラフはClient Componentへの転送量を抑えるため直近365点に制限する。

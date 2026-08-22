@@ -33,12 +33,13 @@ Dashboardは`DashboardPet`に保存されたPet順を優先し、`AppSetting.das
 
 ## Pet体重
 
-`PetWeightRecord`はPetと測定日の組み合わせを一意にし、体重をg単位のDecimalで保持します。表示はkgへ変換します。
+`PetWeightRecord`はPetと測定日の組み合わせを一意にし、体重をkg単位のDecimalで保持します。
 
 - 測定日は時刻を持たない暦日として扱う。
 - VIEWER、管理終了Pet、別HouseholdのPetを更新できない。
 - 一覧はDBページングし、グラフ取得件数には上限を設ける。
-- Pet体重用のCSV import / exportは現時点では提供しない。
+- Pet体重CSV exportは標準・詳細の2形式で提供する。詳細形式は将来の取込用に安定した識別列とschema versionを持つ。
+- Pet体重CSV importは現時点では提供しない。
 
 ## Pet Care
 

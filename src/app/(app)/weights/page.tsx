@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { Download, Plus } from "lucide-react";
 
 import { createPetWeightRecord } from "@/app/actions/pet-weights";
 import { AutoSubmitInput } from "@/components/auto-submit-input";
@@ -70,9 +71,15 @@ export default async function WeightsPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h2 className="text-xl font-bold text-ink">体重管理</h2>
-        <p className="mt-1 text-sm text-slate-600">犬・猫の日付ごとの体重を記録し、推移を確認します。</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-ink">体重管理</h2>
+          <p className="mt-1 text-sm text-slate-600">犬・猫の日付ごとの体重を記録し、推移を確認します。</p>
+        </div>
+        <Link href="/weights/export" className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          <Download className="h-4 w-4" aria-hidden />
+          CSVエクスポート
+        </Link>
       </header>
 
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
