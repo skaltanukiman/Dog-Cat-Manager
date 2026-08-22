@@ -116,7 +116,7 @@ export default async function DashboardPage({
                       </dt>
                       <dd className="text-right">
                         <span className={latestWeight ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
-                          {latestWeight ? `${latestWeight.weightKg.toString()}kg` : "未記録"}
+                          {latestWeight ? `${latestWeight.weightKg.toString()}kg` : "未入力"}
                         </span>
                       </dd>
                     </div>
@@ -129,7 +129,7 @@ export default async function DashboardPage({
                         <span className={pet.todayFeeding ? DASHBOARD_VALUE_CLASS : DASHBOARD_EMPTY_VALUE_CLASS}>
                           {pet.todayFeeding
                             ? careSummary(pet.todayFeeding.count, pet.todayFeeding.latest.fedAt)
-                            : "未記録"}
+                            : "未入力"}
                         </span>
                       </dd>
                     </div>
@@ -146,7 +146,7 @@ export default async function DashboardPage({
                                 pet.todayWater.latest.caredAt,
                                 PET_WATER_ACTION_LABELS[pet.todayWater.latest.action]
                               )
-                            : "未記録"}
+                            : "未入力"}
                         </span>
                       </dd>
                     </div>
@@ -166,7 +166,7 @@ export default async function DashboardPage({
                                     ? undefined
                                     : `${pet.todayWalk.latest.durationMinutes}分`
                                 )
-                              : "未記録"}
+                              : "未入力"}
                           </span>
                         </dd>
                       </div>
@@ -184,7 +184,7 @@ export default async function DashboardPage({
                                   pet.todayLitter.latest.occurredAt,
                                   PET_LITTER_ACTION_LABELS[pet.todayLitter.latest.action]
                                 )
-                              : "未記録"}
+                              : "未入力"}
                           </span>
                         </dd>
                       </div>

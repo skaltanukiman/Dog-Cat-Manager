@@ -83,7 +83,7 @@ test("Care集計は現在のお世話日と表示Pet IDを種類別一括query�
   assert.match(queries, /summarizePetCareRecords\(waterRecords\)/);
 });
 
-test("カードは食事・水・DOG散歩・CATトイレの件数と最新内容、未記録を表示する", () => {
+test("カードは食事・水・DOG散歩・CATトイレの件数と最新内容、未入力を表示する", () => {
   assert.match(page, /\$\{count\}回｜\$\{formatTimeJst\(occurredAt\)\}/);
   assert.match(page, /suffix \? `｜\$\{suffix\}` : ""/);
   assert.doesNotMatch(page, /回 \/ 最終/);
@@ -93,7 +93,7 @@ test("カードは食事・水・DOG散歩・CATトイレの件数と最新内�
   assert.match(page, /pet\.todayWalk\.latest\.startedAt/);
   assert.match(page, /pet\.todayWalk\.latest\.durationMinutes == null/);
   assert.match(page, /PET_LITTER_ACTION_LABELS\[pet\.todayLitter\.latest\.action\]/);
-  assert.ok((page.match(/"未記録"/g) ?? []).length >= 4);
+  assert.equal((page.match(/"未入力"/g) ?? []).length, 5);
 });
 
 test("DashboardのCareサマリー値は共通badgeで折り返さない", () => {
