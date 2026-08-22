@@ -196,6 +196,7 @@ test("Pet通知UIは折りたたみ・species別表示・独立dirty state・ina
   assert.match(source, /data-dirty-control/);
   assert.match(source, /commitFormDirtyState/);
   assert.match(source, /管理終了中のため通知は送信されません。/);
+  assert.match(source, /\$\{petName\}の通知設定を保存しました。/);
   assert.match(source, /sm:grid-cols-3/);
   assert.doesNotMatch(source, /moss|persimmon|straw|paper/);
 });

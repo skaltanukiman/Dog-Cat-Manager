@@ -6,7 +6,7 @@ import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { savePetNotificationRules } from "@/app/actions/pet-notifications";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import { commitFormDirtyState, requestFormDirtyReevaluation } from "@/components/form-dirty-state";
-import { StatusMessage } from "@/components/status-message";
+import { AutoDismissSuccessMessage, StatusMessage } from "@/components/status-message";
 import { formatMinutesAsTime, parseTimeInputToMinutes } from "@/lib/care-day";
 import {
   careDayOffset,
@@ -133,7 +133,11 @@ export function PetNotificationRulesForm({ petId, petName, species, isActive, ca
           </fieldset>;
         })}
         <p className="text-xs text-slate-500">通知ルールは1匹につき最大{PET_NOTIFICATION_RULE_MAX_COUNT}件です。通知予定時刻はお世話日の開始より前には設定できません。</p>
-        {saveState.status ? <StatusMessage status={saveState.status} errorId={saveState.errorId} /> : null}
+        {saveState.status ? <div key={saveState.submissionId}>
+          {saveState.status === "petNotificationSaved"
+            ? <AutoDismissSuccessMessage message={`${petName}の通知設定を保存しました。`} />
+            : <StatusMessage status={saveState.status} errorId={saveState.errorId} />}
+        </div> : null}
         {!disabled ? <div className="flex justify-end"><DirtySubmitButton disabled={isSaving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-dark disabled:bg-slate-300 sm:w-auto"><Save className="h-4 w-4" aria-hidden />{isSaving ? "保存中…" : "通知設定を保存"}</DirtySubmitButton></div> : null}
       </form>
     </div></div>
