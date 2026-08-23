@@ -9,14 +9,15 @@ Dog & Cat Manager は、犬・猫のプロフィールと日々の飼育記録�
 ## 主な機能
 
 - **Pet Dashboard**: 管理中の犬・猫と当日のお世話状況を一覧表示。表示数、対象 Pet、並び順をユーザー・Household ごとに設定
-- **Pet プロフィール**: 犬・猫の名前、犬種・猫種、性別、誕生日、迎え入れ日、メモ、プロフィール画像を管理。管理終了後も既存履歴を保持
-- **体重**: Pet ごとに日別の体重とメモを記録し、グラフと履歴で推移を確認
+- **Pet プロフィール**: 犬・猫の名前、犬種・猫種、性別、誕生日、迎え入れ日、メモ、プロフィール画像を管理。管理終了後も既存履歴と通知ルールを保持
+- **体重**: Pet ごとに日別の体重とメモを記録し、グラフと履歴で推移を確認。Pet・年月で絞り込める CSV エクスポートを提供（CSV import は未対応）
 - **Care**: 全 Pet 共通の食事・水、犬専用の散歩、猫専用の猫トイレを履歴として記録。Household ごとにお世話日の切り替え時刻を設定
 - **Records**: 健康、通院、投薬、ワクチン、思い出を記録。Pet または Household 全体を対象に検索・絞り込み・ページング
 - **思い出と画像**: 複数 Pet を一つの思い出へ関連付け、タグ、お気に入り、複数画像を保存
 - **Household 共有**: 招待リンク、メンバー権限、Household 切り替え、退出・所有権移譲・削除、共有グループの操作履歴
 - **認証**: Auth.js と Google OAuth によるログイン、DB セッション、利用停止ユーザーのログイン・既存セッション拒否
-- **設定**: ユーザープロフィール、Records の初期表示範囲、Dashboard、お世話日の切り替え時刻、アカウント削除
+- **通知**: Web Push によるお世話リマインダー。端末の購読、通常・簡略の通知本文、本人・Household・Pet ごとの食事、水、散歩、猫トイレのルールを設定
+- **設定**: ユーザープロフィール、Records の初期表示範囲、Dashboard、お世話日の切り替え時刻、通知、アカウント削除
 - **サポート**: 利用者からの問い合わせ作成・履歴・返信と、管理者による検索・担当・ステータス・返信管理
 - **アプリ全体管理**: ユーザー、利用状態、アプリ全体権限、Household、招待、問い合わせの管理
 - **リアルタイム更新**: Household と問い合わせの変更を SSE で反映し、revision polling で取りこぼしを補完
@@ -32,9 +33,11 @@ Dog & Cat Manager は、犬・猫のプロフィールと日々の飼育記録�
 | `/pets` | Pet プロフィールの登録・編集・管理終了 |
 | `/care` | 食事、水、散歩、猫トイレの記録 |
 | `/records` | 健康、通院、投薬、ワクチン、思い出の記録・検索 |
-| `/weights` | 体重の登録、グラフ、履歴 |
-| `/settings` | プロフィール、Records、Dashboard、お世話日の設定 |
+| `/weights` | 体重の登録、グラフ、履歴、CSV エクスポートへの導線 |
+| `/weights/export` | Pet・年月を指定した体重 CSV エクスポート |
+| `/settings` | プロフィール、Records、Dashboard、お世話日、通知の設定 |
 | `/settings/members` | Household 名、招待、メンバー権限、退出・削除、操作履歴 |
+| `/settings/account/delete` | アカウント削除 |
 | `/contact` | 問い合わせの作成と履歴 |
 | `/admin` | アプリ全体の管理トップ、招待一覧 |
 | `/admin/users` | ユーザー、利用状態、アプリ全体権限の管理 |
@@ -51,6 +54,7 @@ Dog & Cat Manager は、犬・猫のプロフィールと日々の飼育記録�
 | Database | PostgreSQL 16、Prisma 6.19.3 |
 | Authentication | Auth.js 5.0.0-beta.31、Google OAuth、Prisma Adapter |
 | Image | Sharp 0.34.0、WebP 変換、ローカルファイル保存 |
+| Notifications | web-push 3.6.7、Web Push / VAPID |
 | Logging | Winston 3.19.0、日次ローテーション、JSON Lines |
 | Infrastructure | Docker、Docker Compose、Next.js standalone output |
 | Validation / Test | Zod、ESLint 9、Node.js test runner + `tsx` |
@@ -67,6 +71,7 @@ Browser / PWA
        ├─ Prisma ── PostgreSQL
        ├─ Sharp ── uploads/pets
        │          └─ uploads/pet-records
+       ├─ Web Push ── ブラウザーの Service Worker
        └─ Winston ── logs
 ```
 
@@ -75,6 +80,7 @@ Browser / PWA
 - 誕生日、迎え入れ日、測定日、記録日のような時刻を持たない日付は暦日のまま扱います。
 - Pet Care だけは、Household に設定した JST の日替わり時刻をお世話日の境界に使用します。
 - Pet プロフィール画像と思い出画像は Household ごとのディレクトリへ WebP で保存し、認証・Household 認可付き API から配信します。
+- Web Push の購読はユーザー単位、通知ルールと本文設定は `User + Household + Pet` 単位で管理します。
 
 ## 必要なもの
 
@@ -196,6 +202,16 @@ npm run dev
 
 seed / UI fixture 専用の override 変数は [開発・運用ドキュメント](docs/development-and-operations.md) を参照してください。
 
+### Web Push
+
+| 変数 | 必須 | 用途 |
+| --- | --- | --- |
+| `WEB_PUSH_VAPID_PUBLIC_KEY` | 通知を有効にする場合 | ブラウザーへ公開する VAPID 公開鍵 |
+| `WEB_PUSH_VAPID_PRIVATE_KEY` | 通知を有効にする場合 | 配信に使う VAPID 秘密鍵。secret 管理にのみ保存 |
+| `WEB_PUSH_SUBJECT` | 通知を有効にする場合 | VAPID の連絡先。例: `mailto:operations@example.com` |
+
+3 つが有効な値でそろうまで、端末の通知購読は有効になりません。VAPID 秘密鍵はリポジトリ、クライアント、ログへ出力しないでください。
+
 ## Docker Compose での起動
 
 ### 1. 環境ファイルを準備
@@ -281,6 +297,30 @@ npx prisma validate
 
 DB と `uploads/pets`、`uploads/pet-records` は相互参照するため、バックアップと復元では同じ時点の一組として扱います。
 
+`20260814090000_remove_hamster_legacy` より前の migration には派生元サービスの履歴が残っています。過去 migration は編集・削除せず、fresh DB では履歴を順に適用します。撤去 migration は旧 table と旧 Activity event が空であることを preflight で確認し、データがあれば自動削除せず停止します。実データで停止した場合は、内容と移行方針を確認してから対応してください。
+
+## Web Push 通知
+
+通知は対応ブラウザーで端末購読を有効にし、Pet ごとに期限と何分前に知らせるかを設定して利用します。食事・水は全 Pet、散歩は犬、猫トイレ清掃は猫に設定できます。通知の判定には Household のお世話日切り替え時刻を使用し、猫トイレは `CLEANED` の記録だけを完了として扱います。
+
+通知ルールは各利用者の `User + Household + Pet` 単位です。管理終了 Pet、利用停止ユーザー、Household から退出したユーザー、demo Household には配信しません。失効した端末購読は配信時に削除され、一時的な配信失敗は最大 3 回まで再試行します。
+
+VAPID 鍵はたとえば次のコマンドで生成し、環境変数は secret 管理に設定します。
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Push API と Service Worker は本番では HTTPS が必要です。外部 cron または scheduler から、同じ release と環境変数を使用して次のコマンドを 5 分間隔で実行してください。特定の scheduler はリポジトリで固定していません。
+
+```bash
+npm run notifications:dispatch
+```
+
+```cron
+*/5 * * * * cd /path/to/Dog-Cat-Manager && npm run notifications:dispatch
+```
+
 ## 開発用コマンド
 
 ### 日常的に使用するコマンド
@@ -313,6 +353,7 @@ npm run contact-inquiries:auto-close -- --dry-run
 - `invitations:cleanup`: 使用済み・期限切れの招待を保持期間に従って削除
 - `household-activities:cleanup`: `HOUSEHOLD_ACTIVITY_RETENTION_DAYS` より古い操作履歴を削除
 - `contact-inquiries:auto-close`: 対応済みから 7 日経過した問い合わせを終了へ移行
+- `notifications:dispatch`: 期限に到達したお世話通知を判定・配信。`--dry-run` には対応せず、Web Push の本番運用では 5 分間隔で実行
 
 本番で定期実行する場合は、稼働中の `app` コンテナ内で同じ release、環境ファイル、DB 接続先を使用します。
 
@@ -377,7 +418,7 @@ src/
 ├─ app/
 │  ├─ (app)/              # 画面とレイアウト
 │  ├─ actions/            # Server Actions
-│  └─ api/                # Auth、health、画像、リアルタイム API
+│  └─ api/                # Auth、health、画像、リアルタイム、Push API
 ├─ components/            # UI コンポーネント
 ├─ lib/                   # 認可、DB query、日付、画像、ログなど
 └─ auth.ts                # Auth.js 設定
@@ -389,12 +430,12 @@ prisma/
 scripts/                  # 定期保守・診断 CLI
 tests/                    # Node.js test runner のテスト
 docs/                     # 設計、機能マップ、開発・運用資料
-public/                   # PWA アイコンなどの静的ファイル
+public/                   # PWA アイコン、通知用 Service Worker などの静的ファイル
 ```
 
 ## デプロイ
 
-現在の production image は Node.js 22 Alpine 上で Next.js standalone server を非 root ユーザーとして実行します。Compose のアプリポートは VPS ホストの `127.0.0.1:3002` にだけ公開されるため、外部公開時は HTTPS を終端する Nginx などの reverse proxy から転送してください。
+現在の production image は Node.js 22 Alpine 上で Next.js standalone server を非 root ユーザーとして実行します。Compose のアプリポートは VPS ホストの `127.0.0.1:3002` にだけ公開されるため、外部公開時は HTTPS を終端する Nginx などの reverse proxy から転送してください。Web Push を使う場合は HTTPS と `notifications:dispatch` の 5 分間隔実行も必要です。
 
 基本的な更新手順:
 
