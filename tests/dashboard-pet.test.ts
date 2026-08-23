@@ -132,11 +132,11 @@ test("最新体重だけをDecimalのまま表示し、PetThumbnailと犬猫・�
   assert.match(page, /pet\.isActive \? "管理中" : "管理終了"/);
 });
 
-test("管理中PetだけCare導線を持ち、Recordsと空HouseholdのPet登録導線を維持する", () => {
+test("管理中PetだけCare導線を持ち、Recordsと空Householdのペット登録導線を維持する", () => {
   assert.match(page, /pet\.isActive \? \([\s\S]*href=\{`\/care\?petId=/);
   assert.match(page, /`\/records\?petId=\$\{encodeURIComponent\(pet\.id\)\}&scope=pet&includeInactive=1`/);
-  assert.match(page, /<EmptyState title="Petがまだ登録されていません。" href="\/pets"/);
-  assert.match(page, /href="\/pets"[\s\S]*Pet登録/);
+  assert.match(page, /<EmptyState title="ペットがまだ登録されていません。" href="\/pets"/);
+  assert.match(page, /href="\/pets"[\s\S]*ペット登録/);
 });
 
 test("DashboardPet migrationはadditiveでunique・index・両Cascadeだけを追加する", () => {

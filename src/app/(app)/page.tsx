@@ -55,7 +55,7 @@ export default async function DashboardPage({
             className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
           >
             <Plus className="h-4 w-4" aria-hidden />
-            Pet登録
+            ペット登録
           </Link>
         </div>
       </div>
@@ -63,7 +63,7 @@ export default async function DashboardPage({
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
 
       {pets.length === 0 ? (
-        <EmptyState title="Petがまだ登録されていません。" href="/pets" actionLabel="登録する" />
+        <EmptyState title="ペットがまだ登録されていません。" href="/pets" actionLabel="登録する" />
       ) : (
         <>
           {hiddenPetCount > 0 ? (

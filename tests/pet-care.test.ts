@@ -131,7 +131,7 @@ test("/careはPet選択・画像・お世話日・食事・水・閲覧専用状
   const page = await source("src/app/(app)/care/page.tsx");
   for (const text of [
     "お世話管理", "犬・猫の食事や水のお世話を記録します。", "管理終了したPetも含む", "今日に戻る",
-    "食事", "水", "水を交換", "水を補充", "先に犬・猫を登録してください。", "閲覧のみ可能です"
+    "食事", "水", "水を交換", "水を補充", "先にペットを登録してください。", "閲覧のみ可能です"
   ]) assert.match(page, new RegExp(text));
   assert.match(page, /name="petId"/);
   assert.match(page, /SPECIES_LABELS\[pet\.species\]/);

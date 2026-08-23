@@ -86,10 +86,10 @@ export default async function WeightsPage({
 
       {totalPets === 0 ? (
         canEdit ? (
-          <EmptyState title="先に犬・猫を登録してください。" href="/pets" actionLabel="犬・猫を登録する" />
+          <EmptyState title="先にペットを登録してください。" href="/pets" actionLabel="ペットを登録する" />
         ) : (
           <p className="rounded-md border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-            閲覧できる犬・猫はまだ登録されていません。
+            閲覧できるペットはまだ登録されていません。
           </p>
         )
       ) : (

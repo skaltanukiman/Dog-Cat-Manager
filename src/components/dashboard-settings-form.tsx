@@ -775,7 +775,7 @@ export function DashboardSettingsForm({
             </h4>
         {pets.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-            Petがまだ登録されていません。
+            ペットがまだ登録されていません。
           </div>
         ) : (
           <>
