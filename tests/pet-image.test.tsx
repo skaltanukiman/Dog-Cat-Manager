@@ -155,13 +155,14 @@ test("Pet画像UIはpreview・削除指定・placeholder・Pet名altを提供し
 });
 
 test("Pet画面・Actionは画像追加差し替え削除を既存権限・species不変のまま扱う", async () => {
-  const [page, actions, field, breedField] = await Promise.all([
+  const [page, createForm, actions, field, breedField] = await Promise.all([
     source("src/app/(app)/pets/page.tsx"),
+    source("src/components/pet-create-form.tsx"),
     source("src/app/actions/pets.ts"),
     source("src/components/pet-image-field.tsx"),
     source("src/components/breed-combobox.tsx")
   ]);
-  assert.match(page, /<PetImageField petName="新しいPet"/);
+  assert.match(createForm, /<PetImageField petName="新しいPet"/);
   assert.match(page, /currentFileName=\{pet\.profileImageFileName\}/);
   assert.match(page, /disabled=\{!canEdit\}/);
   assert.equal((breedField.match(/name="species"/g) ?? []).length, 1);

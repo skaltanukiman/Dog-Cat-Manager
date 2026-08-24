@@ -1,8 +1,9 @@
-import { Archive, Plus, RotateCcw, Save } from "lucide-react";
+import { Archive, RotateCcw, Save } from "lucide-react";
 
-import { createPet, updatePet, updatePetActiveStatus } from "@/app/actions/pets";
-import { BreedCombobox, PetCreateSpeciesBreedFields } from "@/components/breed-combobox";
+import { updatePet, updatePetActiveStatus } from "@/app/actions/pets";
+import { BreedCombobox } from "@/components/breed-combobox";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
+import { PetCreateForm } from "@/components/pet-create-form";
 import { PetImageField } from "@/components/pet-image-field";
 import { PetNotificationRulesForm } from "@/components/pet-notification-rules-form";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
@@ -80,55 +81,7 @@ export default async function PetsPage({
       {canEdit ? (
         <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="text-base font-bold text-ink">新規登録</h3>
-          <form action={createPet} data-dirty-watch className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              名前
-              <input className="h-10" name="name" required maxLength={15} placeholder="例: こむぎ" />
-            </label>
-            <PetCreateSpeciesBreedFields breeds={breeds} />
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>
-                性別
-                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
-              </span>
-              <select className="h-10" name="sex" defaultValue="UNKNOWN">
-                <option value="MALE">オス</option>
-                <option value="FEMALE">メス</option>
-                <option value="UNKNOWN">不明</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>
-                誕生日
-                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
-              </span>
-              <input className="h-10" type="date" name="birthDate" max={today} />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>
-                お迎え日
-                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
-              </span>
-              <input className="h-10" type="date" name="adoptionDate" max={today} />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700 md:col-span-2 lg:col-span-2">
-              <span>
-                メモ
-                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
-              </span>
-              <input className="h-10" name="memo" maxLength={2000} placeholder="性格、注意点など" />
-            </label>
-            <div className="md:col-span-2 lg:col-span-4">
-              <PetImageField petName="新しいPet" />
-            </div>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2 lg:col-span-4 lg:justify-self-end"
-            >
-              <Plus className="h-4 w-4" aria-hidden />
-              登録
-            </button>
-          </form>
+          <PetCreateForm breeds={breeds} today={today} />
         </section>
       ) : (
         <p className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">

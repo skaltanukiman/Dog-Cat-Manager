@@ -140,41 +140,80 @@ test("管理終了はisActive更新だけを行いPet本体を保持する", asy
 
 test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規登録時のみ選択できる", async () => {
   const page = await source("src/app/(app)/pets/page.tsx");
+  const createForm = await source("src/components/pet-create-form.tsx");
   const combobox = await source("src/components/breed-combobox.tsx");
 
   assert.match(page, /where: \{ householdId: context\.household\.id \}/);
-  for (const field of ["name", "sex", "birthDate", "adoptionDate", "memo"]) assert.match(page, new RegExp(`name="${field}"`));
+  for (const field of ["name", "sex", "birthDate", "adoptionDate", "memo"]) {
+    assert.match(`${page}\n${createForm}`, new RegExp(`name="${field}"`));
+  }
   for (const field of ["breedId", "customBreedName"]) assert.match(combobox, new RegExp(`name="${field}"`));
   assert.equal((combobox.match(/name="species"/g) ?? []).length, 1);
-  assert.match(page, /<PetCreateSpeciesBreedFields breeds=\{breeds\} \/>/);
+  assert.match(page, /<PetCreateForm breeds=\{breeds\} today=\{today\} \/>/);
+  assert.match(createForm, /<PetCreateSpeciesBreedFields breeds=\{breeds\} \/>/);
   assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
   assert.match(page, /<PetSpeciesBadge species=\{pet\.species\} \/>/);
-  assert.ok((page.match(/className="h-10"/g) ?? []).length >= 10);
+  assert.ok((`${page}\n${createForm}`.match(/className="h-10"/g) ?? []).length >= 10);
   assert.match(page, /<span className="flex h-10 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-3">/);
   assert.match(page, /className="grid items-start gap-3 md:grid-cols-2 lg:grid-cols-4"/);
   assert.match(page, /種類は登録後変更できません/);
   for (const label of ["犬", "猫", "オス", "メス", "不明", "管理中", "管理終了"]) {
-    assert.match(page, new RegExp(label));
+    assert.match(`${page}\n${createForm}\n${combobox}`, new RegExp(label));
   }
-  assert.match(page, /<PetImageField petName="新しいPet"/);
+  assert.match(createForm, /<PetImageField petName="新しいPet"/);
   assert.match(page, /currentFileName=\{pet\.profileImageFileName\}/);
-  assert.equal((page.match(/name="name" required maxLength=\{15\}/g) ?? []).length, 2);
+  assert.equal((`${page}\n${createForm}`.match(/name="name"[\s\S]{0,100}required[\s\S]{0,100}maxLength=\{15\}/g) ?? []).length, 2);
 });
 
 test("Petプロフィールの任意項目は新規登録・編集で統一して表示する", async () => {
-  const [page, combobox, imageField] = await Promise.all([
+  const [page, createForm, combobox, imageField] = await Promise.all([
     source("src/app/(app)/pets/page.tsx"),
+    source("src/components/pet-create-form.tsx"),
     source("src/components/breed-combobox.tsx"),
     source("src/components/pet-image-field.tsx")
   ]);
 
   for (const label of ["性別", "誕生日", "お迎え日", "メモ"]) {
-    assert.equal((page.match(new RegExp(`${label}\\s*<span[^>]*>（任意）`, "g")) ?? []).length, 2);
+    assert.equal((`${page}\n${createForm}`.match(new RegExp(`${label}\\s*<span[^>]*>（任意）`, "g")) ?? []).length, 2);
   }
   assert.equal((combobox.match(/品種\s*<span[^>]*>（任意）/g) ?? []).length, 2);
   assert.match(imageField, /プロフィール画像\s*<span[^>]*>（任意）/);
-  assert.doesNotMatch(page, /名前\s*<span[^>]*>（任意）/);
+  assert.doesNotMatch(`${page}\n${createForm}`, /名前\s*<span[^>]*>（任意）/);
   assert.doesNotMatch(combobox, /種類\s*<span[^>]*>（任意）/);
+});
+
+test("Pet新規登録は修正可能エラーでredirectせず、同じフォーム状態から再送信できる", async () => {
+  const [actions, createForm, combobox] = await Promise.all([
+    source("src/app/actions/pets.ts"),
+    source("src/components/pet-create-form.tsx"),
+    source("src/components/breed-combobox.tsx")
+  ]);
+  const createStart = actions.indexOf("export async function createPet");
+  const updateStart = actions.indexOf("export async function updatePet", createStart);
+  const createAction = actions.slice(createStart, updateStart);
+
+  assert.match(createAction, /previousState: PetCreateActionState/);
+  for (const status of ["petDuplicate", "petBreedInvalid"]) {
+    assert.match(createAction, new RegExp(`createPetErrorState\\(previousState, [^)]*${status}`));
+  }
+  assert.match(createAction, /createPetErrorState\(previousState, petValidationStatus/);
+  assert.match(createAction, /createPetErrorState\(previousState, petImageValidationStatus\(error\)\)/);
+  assert.doesNotMatch(createAction, /redirect\(`?\/pets\?status=\$?\{?(?:petValidationStatus|petImageValidationStatus)/);
+  assert.match(createAction, /redirect\("\/pets\?status=created"\)/);
+
+  assert.match(createForm, /useActionState\(createPet, INITIAL_ACTION_STATE\)/);
+  assert.match(createForm, /event\.preventDefault\(\)/);
+  assert.match(createForm, /new FormData\(event\.currentTarget\)/);
+  assert.match(createForm, /startTransition\(\(\) => action\(formData\)\)/);
+  assert.match(createForm, /<StatusMessage status=\{state\.status\} \/>/);
+  for (const field of ["name", "sex", "birthDate", "adoptionDate", "memo"]) {
+    assert.match(createForm, new RegExp(`value=\\{values\\.${field}\\}`));
+  }
+  assert.doesNotMatch(createForm, /form\.reset\(|setValues\(INITIAL_VALUES\)/);
+  assert.match(combobox, /value=\{species\}/);
+  assert.match(combobox, /value=\{query\}/);
+  assert.match(combobox, /value=\{breedId\}/);
+  assert.match(combobox, /value=\{customBreedName\}/);
 });
 
 test("品種入力はマスタ、自由入力、未入力を許可し、同時指定と100文字超を拒否する", () => {

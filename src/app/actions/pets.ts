@@ -27,6 +27,36 @@ class PetMutationForbiddenError extends Error {
   }
 }
 
+class PetBreedInvalidError extends Error {
+  constructor() {
+    super("The selected breed is unavailable for the Pet species.");
+    this.name = "PetBreedInvalidError";
+  }
+}
+
+export type PetCreateActionState = {
+  submissionId: number;
+  status:
+    | "invalid"
+    | "future"
+    | "petDuplicate"
+    | "petNameTooLong"
+    | "petBreedTooLong"
+    | "petBreedInvalid"
+    | "petMemoTooLong"
+    | "petImageTooLarge"
+    | "petImageUnsupported"
+    | "petImageInvalid"
+    | null;
+};
+
+function createPetErrorState(
+  previousState: PetCreateActionState,
+  status: Exclude<PetCreateActionState["status"], null>
+): PetCreateActionState {
+  return { submissionId: previousState.submissionId + 1, status };
+}
+
 /**
  * 画面表示後に権限が変わる場合に備え、Pet更新と同じtransaction内で最新membershipを確認する。
  */
@@ -86,7 +116,7 @@ async function assertValidBreedChoice(
     },
     select: { id: true }
   });
-  if (!breed) redirect("/pets?status=petBreedInvalid");
+  if (!breed) throw new PetBreedInvalidError();
 }
 
 function petImageValidationStatus(error: InstanceType<typeof PetImageError>) {
@@ -114,11 +144,20 @@ async function deletePetImageAfterMutation(
   }
 }
 
-export async function createPet(formData: FormData) {
+/**
+ * Pet作成に成功した場合だけ従来の完了URLへredirectし、修正可能な入力エラーはフォームへ返す。
+ * これによりClient Componentを再生成せず、ブラウザ上の入力値と選択済み画像を再送信に利用できる。
+ */
+export async function createPet(
+  previousState: PetCreateActionState,
+  formData: FormData
+): Promise<PetCreateActionState> {
   try {
     const context = await getRequiredHouseholdMutationContext("/pets");
     const result = createPetSchema.safeParse(Object.fromEntries(formData));
-    if (!result.success) redirect(`/pets?status=${petValidationStatus(result.error.issues)}`);
+    if (!result.success) {
+      return createPetErrorState(previousState, petValidationStatus(result.error.issues));
+    }
 
     const imageFile = getOptionalPetImageFile(formData.get("profileImage"));
     const preparedImage = imageFile ? await preparePetImage(imageFile) : null;
@@ -144,9 +183,16 @@ export async function createPet(formData: FormData) {
     });
     redirect("/pets?status=created");
   } catch (error) {
-    if (error instanceof PetImageError) redirect(`/pets?status=${petImageValidationStatus(error)}`);
+    if (error instanceof PetImageError) {
+      return createPetErrorState(previousState, petImageValidationStatus(error));
+    }
+    if (error instanceof PetBreedInvalidError) {
+      return createPetErrorState(previousState, "petBreedInvalid");
+    }
     if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
-    if (isPrismaUniqueConstraintError(error)) redirect("/pets?status=petDuplicate");
+    if (isPrismaUniqueConstraintError(error)) {
+      return createPetErrorState(previousState, "petDuplicate");
+    }
     handleServerActionError(error, { operation: "pets.create", pathname: "/pets" });
   }
 }
@@ -231,6 +277,7 @@ export async function updatePet(formData: FormData) {
     redirect("/pets?status=updated");
   } catch (error) {
     if (error instanceof PetImageError) redirect(`/pets?status=${petImageValidationStatus(error)}`);
+    if (error instanceof PetBreedInvalidError) redirect("/pets?status=petBreedInvalid");
     if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
     if (isPrismaUniqueConstraintError(error)) redirect("/pets?status=petDuplicate");
     handleServerActionError(error, { operation: "pets.update", pathname: "/pets" });

@@ -1,6 +1,6 @@
 # 機能マップ
 
-最終確認: 2026-08-23。現在のruntime domainは犬・猫の`Pet`のみです。修正対象を探すときは、ここに記載した画面、Action / API、データアクセスと、その直接依存先から調査を始めてください。
+最終確認: 2026-08-24。現在のruntime domainは犬・猫の`Pet`のみです。修正対象を探すときは、ここに記載した画面、Action / API、データアクセスと、その直接依存先から調査を始めてください。
 
 ## 共通の起点
 
@@ -46,7 +46,7 @@
 
 ## Petプロフィール
 
-- **画面:** `/pets`。プロフィールとは独立した折りたたみ式の本人用Pet通知ルールも表示する。品種は`src/components/breed-combobox.tsx`でspecies別の有効なマスタを検索・選択でき、マスタ外の名称は自由入力として保持する。
+- **画面:** `/pets`。新規登録は`src/components/pet-create-form.tsx`が修正可能エラー時の入力状態を保持し、プロフィールとは独立した折りたたみ式の本人用Pet通知ルールも表示する。品種は`src/components/breed-combobox.tsx`でspecies別の有効なマスタを検索・選択でき、マスタ外の名称は自由入力として保持する。
 - **Action:** `src/app/actions/pets.ts`。作成、更新、管理終了、画像更新を行う。`src/app/actions/pet-notifications.ts`はVIEWERを含む所属メンバー本人の通知ルールだけを一括保存する。
 - **画像:** `src/lib/pet-image.ts`、`src/components/pet-image-field.tsx`、認証付き`/api/pets/[id]/image`。`PET_IMAGE_DIR`へHousehold別UUID WebPを保存する。
 - **Prisma:** `Pet`、`Breed`、`PetSpecies`、`PetSex`、`PetNotificationRule`。speciesは作成後に変更せず、管理終了後も履歴と通知ルールを保持する。`Breed`は`isActive`で候補から外し、既存Petの参照は維持する。マスタ投入と旧自由入力の完全一致backfillは`prisma/seed-breeds.ts`が担う。
