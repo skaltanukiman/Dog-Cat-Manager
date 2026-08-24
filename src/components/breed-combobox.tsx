@@ -112,7 +112,10 @@ export function BreedCombobox({
   if (disabled) {
     return (
       <div className="grid gap-1 text-sm font-medium text-slate-700">
-        <label htmlFor={inputId}>品種</label>
+        <label htmlFor={inputId}>
+          品種
+          <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+        </label>
         <input id={inputId} className="h-10" value={initialText} readOnly />
       </div>
     );
@@ -120,7 +123,10 @@ export function BreedCombobox({
 
   return (
     <div className="grid gap-1 text-sm font-medium text-slate-700">
-      <label htmlFor={inputId}>品種</label>
+      <label htmlFor={inputId}>
+        品種
+        <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+      </label>
       <div
         ref={wrapperRef}
         className="relative min-w-0"

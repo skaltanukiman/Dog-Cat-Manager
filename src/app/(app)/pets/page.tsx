@@ -87,7 +87,10 @@ export default async function PetsPage({
             </label>
             <PetCreateSpeciesBreedFields breeds={breeds} />
             <label className="grid gap-1 text-sm font-medium text-slate-700">
-              性別
+              <span>
+                性別
+                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+              </span>
               <select className="h-10" name="sex" defaultValue="UNKNOWN">
                 <option value="MALE">オス</option>
                 <option value="FEMALE">メス</option>
@@ -95,15 +98,24 @@ export default async function PetsPage({
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
-              誕生日
+              <span>
+                誕生日
+                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+              </span>
               <input className="h-10" type="date" name="birthDate" max={today} />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
-              お迎え日
+              <span>
+                お迎え日
+                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+              </span>
               <input className="h-10" type="date" name="adoptionDate" max={today} />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700 md:col-span-2 lg:col-span-2">
-              メモ
+              <span>
+                メモ
+                <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+              </span>
               <input className="h-10" name="memo" maxLength={2000} placeholder="性格、注意点など" />
             </label>
             <div className="md:col-span-2 lg:col-span-4">
@@ -182,7 +194,10 @@ export default async function PetsPage({
                     disabled={!canEdit}
                   />
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
-                    性別
+                    <span>
+                      性別
+                      <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+                    </span>
                     <select className="h-10" name="sex" defaultValue={pet.sex} disabled={!canEdit}>
                       {Object.entries(SEX_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
@@ -190,15 +205,24 @@ export default async function PetsPage({
                     </select>
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
-                    誕生日
+                    <span>
+                      誕生日
+                      <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+                    </span>
                     <input className="h-10" type="date" name="birthDate" max={today} defaultValue={pet.birthDate ? toDateInputValue(pet.birthDate) : ""} readOnly={!canEdit} />
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
-                    お迎え日
+                    <span>
+                      お迎え日
+                      <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+                    </span>
                     <input className="h-10" type="date" name="adoptionDate" max={today} defaultValue={pet.adoptionDate ? toDateInputValue(pet.adoptionDate) : ""} readOnly={!canEdit} />
                   </label>
                   <label className="grid gap-1 text-sm font-medium text-slate-700 md:col-span-2 lg:col-span-2">
-                    メモ
+                    <span>
+                      メモ
+                      <span className="ml-1 text-xs font-normal text-slate-500">（任意）</span>
+                    </span>
                     <input className="h-10" name="memo" maxLength={2000} defaultValue={pet.memo ?? ""} readOnly={!canEdit} />
                   </label>
                   <div className="md:col-span-2 lg:col-span-4">

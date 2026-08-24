@@ -161,6 +161,22 @@ test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規�
   assert.equal((page.match(/name="name" required maxLength=\{15\}/g) ?? []).length, 2);
 });
 
+test("Petプロフィールの任意項目は新規登録・編集で統一して表示する", async () => {
+  const [page, combobox, imageField] = await Promise.all([
+    source("src/app/(app)/pets/page.tsx"),
+    source("src/components/breed-combobox.tsx"),
+    source("src/components/pet-image-field.tsx")
+  ]);
+
+  for (const label of ["性別", "誕生日", "お迎え日", "メモ"]) {
+    assert.equal((page.match(new RegExp(`${label}\\s*<span[^>]*>（任意）`, "g")) ?? []).length, 2);
+  }
+  assert.equal((combobox.match(/品種\s*<span[^>]*>（任意）/g) ?? []).length, 2);
+  assert.match(imageField, /プロフィール画像\s*<span[^>]*>（任意）/);
+  assert.doesNotMatch(page, /名前\s*<span[^>]*>（任意）/);
+  assert.doesNotMatch(combobox, /種類\s*<span[^>]*>（任意）/);
+});
+
 test("品種入力はマスタ、自由入力、未入力を許可し、同時指定と100文字超を拒否する", () => {
   assert.equal(createPetSchema.safeParse(validPet).success, true);
   assert.equal(createPetSchema.safeParse({ ...validPet, breedId: "", customBreedName: "チワプー" }).success, true);
