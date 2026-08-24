@@ -24,7 +24,7 @@ function summarizePetCareRecords<T extends { petId: string }>(records: T[]) {
   return summaries;
 }
 
-export async function getDashboardData() {
+export async function getDashboardData(tutorialPetId?: string) {
   const context = await getRequiredHouseholdContext();
   const [pets, setting] = await Promise.all([
     prisma.pet.findMany({
@@ -55,7 +55,15 @@ export async function getDashboardData() {
   ]);
   const boardCount = normalizeDashboardBoardCount(setting?.dashboardBoardCount);
   const selectedIds = setting?.dashboardPets.map((entry) => entry.petId) ?? [];
-  const dashboardPets = pickDashboardPets(pets, boardCount, selectedIds);
+  const selectedDashboardPets = pickDashboardPets(pets, boardCount, selectedIds);
+  const tutorialPet = tutorialPetId
+    ? pets.find((pet) => pet.id === tutorialPetId && pet.isActive)
+    : undefined;
+  // 初回登録直後だけ作成Petを表示枠へ入れ、保存済みDashboardPet設定そのものは変更しない。
+  const dashboardPets =
+    tutorialPet && !selectedDashboardPets.some((pet) => pet.id === tutorialPet.id)
+      ? [tutorialPet, ...selectedDashboardPets].slice(0, boardCount)
+      : selectedDashboardPets;
   const dashboardPetIds = dashboardPets.map((pet) => pet.id);
   const careDayStartMinutes = normalizeCareDayStartMinutes(context.household.careDayStartMinutes);
   const careDayRecordDate = getCareDayRecordDate(new Date(), careDayStartMinutes);

@@ -174,14 +174,14 @@ export async function createPet(
           });
         }
       });
-    const { change } = preparedImage
+    const { result: createdPet, change } = preparedImage
       ? await commitWithNewPetImage({ householdId: context.household.id, image: preparedImage, commit })
       : await commit();
     publishHouseholdChangeSafely(change);
     revalidatePathsSafely([{ path: "/pets" }], "pets.create.revalidate", {
       householdId: context.household.id
     });
-    redirect("/pets?status=created");
+    redirect(`/pets?status=created&createdPetId=${encodeURIComponent(createdPet.id)}`);
   } catch (error) {
     if (error instanceof PetImageError) {
       return createPetErrorState(previousState, petImageValidationStatus(error));

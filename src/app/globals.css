@@ -199,3 +199,112 @@ a {
 .record-filter-scroll::-webkit-scrollbar {
   display: none;
 }
+
+.dcm-tutorial-popover.driver-popover {
+  width: min(22rem, calc(100vw - 1.5rem));
+  max-width: calc(100vw - 1.5rem);
+  border: 1px solid #dbe3e9;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  color: #24313d;
+  box-shadow: 0 16px 42px rgba(23, 33, 43, 0.24);
+  padding: 1.1rem;
+}
+
+.dcm-tutorial-popover .driver-popover-title {
+  padding-right: 4.75rem;
+  color: #24313d;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.dcm-tutorial-popover .driver-popover-description {
+  color: #52606d;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.dcm-tutorial-popover .driver-popover-close-btn {
+  top: 0.75rem;
+  right: 0.75rem;
+  width: auto;
+  height: auto;
+  border-radius: 0.375rem;
+  color: #52606d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  padding: 0.25rem 0.4rem;
+}
+
+.dcm-tutorial-popover .driver-popover-close-btn:hover,
+.dcm-tutorial-popover .driver-popover-close-btn:focus-visible {
+  background: #eef3f6;
+  color: #2e566f;
+}
+
+.dcm-tutorial-popover .driver-popover-footer {
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.dcm-tutorial-popover .driver-popover-progress-text {
+  color: #64748b;
+}
+
+.dcm-tutorial-popover .driver-popover-footer button {
+  min-height: 2.5rem;
+  border: 1px solid #3e6f8e;
+  border-radius: 0.375rem;
+  background: #ffffff;
+  color: #3e6f8e;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.5rem 0.8rem;
+  text-shadow: none;
+}
+
+.dcm-tutorial-popover .driver-popover-footer .driver-popover-next-btn {
+  background: #3e6f8e;
+  color: #ffffff;
+}
+
+.dcm-tutorial-popover .driver-popover-footer .driver-popover-next-btn:hover,
+.dcm-tutorial-popover .driver-popover-footer .driver-popover-next-btn:focus-visible {
+  background: #2e566f;
+}
+
+.driver-active-element {
+  outline: 3px solid #f2c879;
+  outline-offset: 2px;
+}
+
+@media (max-width: 360px) {
+  .dcm-tutorial-popover.driver-popover {
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+    padding: 0.9rem;
+  }
+
+  .dcm-tutorial-popover .driver-popover-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dcm-tutorial-popover .driver-popover-navigation-btns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-reveal,
+  .driver-overlay-animated,
+  .driver-popover,
+  .driver-active-element {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -199,7 +199,10 @@ test("Pet新規登録は修正可能エラーでredirectせず、同じフォー
   assert.match(createAction, /createPetErrorState\(previousState, petValidationStatus/);
   assert.match(createAction, /createPetErrorState\(previousState, petImageValidationStatus\(error\)\)/);
   assert.doesNotMatch(createAction, /redirect\(`?\/pets\?status=\$?\{?(?:petValidationStatus|petImageValidationStatus)/);
-  assert.match(createAction, /redirect\("\/pets\?status=created"\)/);
+  assert.match(
+    createAction,
+    /redirect\(`\/pets\?status=created&createdPetId=\$\{encodeURIComponent\(createdPet\.id\)\}`\)/
+  );
 
   assert.match(createForm, /useActionState\(createPet, INITIAL_ACTION_STATE\)/);
   assert.match(createForm, /event\.preventDefault\(\)/);

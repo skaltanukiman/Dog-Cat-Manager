@@ -84,6 +84,15 @@ export function AppNav({ isAppAdmin = false }: { isAppAdmin?: boolean }) {
               <Link
                 key={item.href}
                 href={item.href}
+                data-tutorial={
+                  item.href === "/pets"
+                    ? "nav-pets-mobile"
+                    : item.href === "/records"
+                      ? "nav-records-mobile"
+                      : item.href === "/weights"
+                        ? "nav-weights-mobile"
+                        : undefined
+                }
                 aria-current={isActive ? "page" : undefined}
                 className={`flex min-h-11 items-center justify-center whitespace-nowrap border-b-2 px-1 text-center text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand ${
                   isActive
@@ -167,6 +176,15 @@ export function AppNav({ isAppAdmin = false }: { isAppAdmin?: boolean }) {
             <Link
               key={item.href}
               href={item.href}
+              data-tutorial={
+                item.href === "/pets"
+                  ? "nav-pets-desktop"
+                  : item.href === "/records"
+                    ? "nav-records-desktop"
+                    : item.href === "/weights"
+                      ? "nav-weights-desktop"
+                      : undefined
+              }
               aria-current={isActive ? "page" : undefined}
               className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
                 isActive

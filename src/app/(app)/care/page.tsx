@@ -260,7 +260,7 @@ export default async function CarePage({
                 </p>
               ) : null}
 
-              <div className="space-y-4">
+              <div data-tutorial="care-entry" className="space-y-4">
               <CareDisclosure
                 key={`feeding-${selectedPet.id}-${getParam(params.date) ?? ""}-${expandedCareSection ?? ""}`}
                 defaultOpen={expandedCareSection === "feeding"}

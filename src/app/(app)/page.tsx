@@ -27,10 +27,14 @@ function careSummary(count: number, occurredAt: Date, suffix?: string) {
 export default async function DashboardPage({
   searchParams
 }: {
-  searchParams: Promise<{ status?: string | string[]; errorId?: string | string[] }>;
+  searchParams: Promise<{
+    status?: string | string[];
+    errorId?: string | string[];
+    tutorialPetId?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
-  const { pets, boardCount, totalPets } = await getDashboardData();
+  const { pets, boardCount, totalPets } = await getDashboardData(getParam(params.tutorialPetId));
   const hiddenPetCount = Math.max(totalPets - pets.length, 0);
 
   return (
@@ -52,6 +56,7 @@ export default async function DashboardPage({
           </Link>
           <Link
             href="/pets"
+            data-tutorial="dashboard-pet-register"
             className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
           >
             <Plus className="h-4 w-4" aria-hidden />
@@ -195,6 +200,8 @@ export default async function DashboardPage({
                     {pet.isActive ? (
                       <Link
                         href={`/care?petId=${encodeURIComponent(pet.id)}`}
+                        data-tutorial="dashboard-care-button"
+                        data-tutorial-pet-id={pet.id}
                         className="rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
                       >
                         お世話を記録

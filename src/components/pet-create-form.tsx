@@ -58,6 +58,7 @@ export function PetCreateForm({ breeds, today }: { breeds: BreedOption[]; today:
     <form
       onSubmit={handleSubmit}
       data-dirty-watch
+      data-tutorial="pet-create-form-fields"
       aria-busy={pending}
       className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4"
     >
@@ -142,6 +143,7 @@ export function PetCreateForm({ breeds, today }: { breeds: BreedOption[]; today:
       </div>
       <button
         type="submit"
+        data-tutorial="pet-create-submit"
         disabled={pending}
         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:cursor-wait disabled:bg-slate-300 md:col-span-2 lg:col-span-4 lg:justify-self-end"
       >

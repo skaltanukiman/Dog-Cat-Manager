@@ -4,6 +4,7 @@ import { CareDaySettingsForm } from "@/components/care-day-settings-form";
 import { DashboardSettingsForm } from "@/components/dashboard-settings-form";
 import { NotificationSettingsForm } from "@/components/notification-settings-form";
 import { StatusMessage } from "@/components/status-message";
+import { TutorialSettingsEntry } from "@/components/tutorial-settings-entry";
 import { getDashboardSettingsPageData } from "@/lib/queries";
 import { getPublicVapidConfiguration } from "@/lib/web-push";
 
@@ -41,6 +42,8 @@ export default async function SettingsPage({
       </div>
 
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
+
+      <TutorialSettingsEntry />
 
       <DashboardSettingsForm
         name={user.name}

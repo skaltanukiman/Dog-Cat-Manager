@@ -8,6 +8,7 @@ import { PetImageField } from "@/components/pet-image-field";
 import { PetNotificationRulesForm } from "@/components/pet-notification-rules-form";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { StatusMessage } from "@/components/status-message";
+import { TutorialPetCreatedBridge } from "@/components/tutorial-pet-created-bridge";
 import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getRequiredHouseholdContext } from "@/lib/auth-context";
 import { toDateInputValue, todayInputJst } from "@/lib/date";
@@ -28,7 +29,11 @@ function getParam(value: string | string[] | undefined) {
 export default async function PetsPage({
   searchParams
 }: {
-  searchParams: Promise<{ status?: string | string[]; errorId?: string | string[] }>;
+  searchParams: Promise<{
+    status?: string | string[];
+    errorId?: string | string[];
+    createdPetId?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
   const context = await getRequiredHouseholdContext();
@@ -66,6 +71,10 @@ export default async function PetsPage({
       }
     })
   ]);
+  const createdPet =
+    getParam(params.status) === "created"
+      ? pets.find((pet) => pet.id === getParam(params.createdPetId))
+      : undefined;
   // 誕生日とお迎え日は暦日として扱い、未来日をブラウザとServer Actionの両方で拒否する。
   const today = todayInputJst();
 
@@ -77,9 +86,13 @@ export default async function PetsPage({
       </div>
 
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
+      {createdPet ? <TutorialPetCreatedBridge petId={createdPet.id} /> : null}
 
       {canEdit ? (
-        <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <section
+          data-tutorial="pet-create-form"
+          className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"
+        >
           <h3 className="text-base font-bold text-ink">新規登録</h3>
           <PetCreateForm breeds={breeds} today={today} />
         </section>

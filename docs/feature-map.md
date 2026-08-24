@@ -1,6 +1,6 @@
 # 機能マップ
 
-最終確認: 2026-08-24。現在のruntime domainは犬・猫の`Pet`のみです。修正対象を探すときは、ここに記載した画面、Action / API、データアクセスと、その直接依存先から調査を始めてください。
+最終確認: 2026-08-25。現在のruntime domainは犬・猫の`Pet`のみです。修正対象を探すときは、ここに記載した画面、Action / API、データアクセスと、その直接依存先から調査を始めてください。
 
 ## 共通の起点
 
@@ -9,6 +9,7 @@
 | 認証・公開パス | `src/proxy.ts`, `src/auth.ts`, `src/lib/auth-cookies.ts`, `src/app/(app)/login/page.tsx`, `src/app/api/auth/[...nextauth]/route.ts` | 公開対象はログイン、Auth.js callback、health API、通知専用`/sw.js`。通常画面とPush購読APIは認証必須で、CookieはDog & Cat Manager専用名を使う。 |
 | 現在Household・権限 | `src/lib/auth-context.ts`, `src/lib/authorization.ts`, `src/app/actions/households.ts`, `src/components/household-switcher.tsx` | `OWNER` / `ADMIN` / `MEMBER` / `VIEWER`を共通判定し、共有データ更新は最新membershipをtransaction内でも確認する。 |
 | レイアウト・ナビ | `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/components/app-nav.tsx`, `src/app/globals.css` | 主要導線はDashboard、Pets、Care、Records、Weights。設定・共有・管理・問い合わせは補助導線に置く。 |
+| 初回オンボーディング・再確認ガイド | `src/components/tutorial-provider.tsx`, `src/components/tutorial-settings-entry.tsx`, `src/app/actions/tutorial.ts`, `src/lib/tutorial.ts` | 初回は実Pet登録成功後にCareまで案内し、再確認は読み取り専用。ページ間phaseは`sessionStorage`、完了versionは`User`に保存する。 |
 | 日付・検索 | `src/lib/date.ts`, `src/lib/care-day.ts`, `src/lib/search.ts`, `src/lib/tags.ts` | timestampはUTC保存・JST表示。測定日・記録日は暦日を維持し、お世話日だけHousehold境界を適用する。 |
 | フォーム状態 | `src/components/form-dirty-state.ts`, `dirty-submit-button.tsx`, `unsaved-changes-guard.tsx` | 保存確定時だけdirty基準を更新し、未保存入力があるときの更新・離脱を保護する。 |
 | エラー・ログ | `src/lib/server-errors.ts`, `src/lib/logger.ts`, `src/lib/safe-side-effects.ts`, `src/components/status-message.tsx` | 想定外例外は内部情報を隠してerrorIdを返す。commit後の通知・画像削除失敗は業務結果を巻き戻さない。 |
@@ -19,6 +20,13 @@
 - **実装:** `src/auth.ts`、`src/lib/auth-cookies.ts`、`src/proxy.ts`、`src/types/next-auth.d.ts`。
 - **Prisma:** `User`、`Account`、`Session`、`VerificationToken`。`User.accessStatus`が`SUSPENDED`ならGoogle callbackとDB Session検証の両方で拒否する。
 - **テスト:** `tests/auth-isolation.test.ts`、`tests/authorization.test.ts`、`tests/user-access.test.ts`。
+
+## オンボーディング・使い方ガイド
+
+- **初回フロー:** DashboardのPet登録導線、`/pets`の通常`PetCreateForm`、作成成功したPetのDashboardカード、`/care`の入力エリアをDriver.jsで案内する。Petだけを通常Actionで実DBへ作成し、Care記録は作成しない。
+- **再確認フロー:** `/settings`から開始し、Pet管理、お世話、Records、Weightsを説明する。Petが0件または登録権限がない場合はPet固有操作を要求せず、DBを変更しない。
+- **状態:** `User.onboardingVersion`をユーザー単位の完了versionとして保持する。進行中の`mode`・`phase`・作成Pet IDは`sessionStorage`にだけ置き、Household切替では完了状態を変えない。
+- **実装 / テスト:** `src/components/tutorial-provider.tsx`、`src/components/tutorial-pet-created-bridge.tsx`、`src/app/actions/tutorial.ts`、`src/lib/tutorial.ts`、`tests/tutorial.test.ts`。
 
 ## Household共有・メンバー管理
 

@@ -6,7 +6,10 @@ import { AppNav } from "@/components/app-nav";
 import { HouseholdSwitcher } from "@/components/household-switcher";
 import { RealtimeRefreshListener } from "@/components/realtime-refresh-listener";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { TutorialProvider } from "@/components/tutorial-provider";
+import { canEditHouseholdSharedData } from "@/lib/authorization";
 import { getCurrentHouseholdSwitcherData } from "@/lib/auth-context";
+import { prisma } from "@/lib/prisma";
 
 async function signOutAction() {
   "use server";
@@ -19,8 +22,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const currentUserLabel = session?.user?.name || session?.user?.email;
   const householdSwitcherData = session?.user ? await getCurrentHouseholdSwitcherData() : null;
   const isAppAdmin = session?.user?.appRole === "ADMIN" || session?.user?.appRole === "SUPER_ADMIN";
+  const [onboardingVersion, hasActivePets] = householdSwitcherData
+    ? await Promise.all([
+        prisma.user
+          .findUnique({
+            where: { id: householdSwitcherData.context.user.id },
+            select: { onboardingVersion: true }
+          })
+          .then((user) => user?.onboardingVersion ?? 0),
+        prisma.pet
+          .count({
+            where: { householdId: householdSwitcherData.context.household.id, isActive: true }
+          })
+          .then((count) => count > 0)
+      ])
+    : [0, false];
 
-  return (
+  const content = (
     <div className="min-h-screen">
       {session?.user ? (
         <>
@@ -66,5 +84,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ) : null}
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">{children}</main>
     </div>
+  );
+
+  return householdSwitcherData ? (
+    <TutorialProvider
+      onboardingVersion={onboardingVersion}
+      canCreatePets={canEditHouseholdSharedData(householdSwitcherData.context.membership.role)}
+      hasPets={hasActivePets}
+    >
+      {content}
+    </TutorialProvider>
+  ) : (
+    content
   );
 }
