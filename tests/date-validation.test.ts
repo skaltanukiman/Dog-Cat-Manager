@@ -70,7 +70,8 @@ test("Pet画面用schemaも不正な暦日を拒否する", () => {
     createPetSchema.safeParse({
       name: "ポチ",
       species: "DOG",
-      breed: "",
+      breedId: "",
+      customBreedName: "",
       sex: "UNKNOWN",
       memo: "",
       birthDate: "2026-02-31",

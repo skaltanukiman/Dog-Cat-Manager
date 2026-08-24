@@ -14,7 +14,9 @@ model Pet {
   // ペット名はHousehold内だけで重複を避け、別Householdでは同名を許可する。
   name                 String
   species              PetSpecies
-  breed                String?
+  breedId              String?               @map("breed_id")
+  breedMaster          Breed?                @relation(fields: [breedId], references: [id], onDelete: Restrict)
+  customBreedName      String?               @map("custom_breed_name") @db.VarChar(100)
   sex                  PetSex                @default(UNKNOWN)
   birthDate            DateTime?             @map("birth_date") @db.Date
   adoptionDate         DateTime?             @map("adoption_date") @db.Date
@@ -37,7 +39,27 @@ model Pet {
   @@unique([householdId, name])
   @@index([householdId, createdAt])
   @@index([householdId, species])
+  @@index([breedId])
   @@map("pets")
+}
+
+model Breed {
+  id        String     @id @default(cuid())
+  species   PetSpecies
+  nameJa    String     @map("name_ja") @db.VarChar(100)
+  nameKana  String?    @map("name_kana") @db.VarChar(100)
+  nameEn    String?    @map("name_en") @db.VarChar(100)
+  isPopular Boolean    @default(false) @map("is_popular")
+  sortOrder Int        @default(0) @map("sort_order")
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  pets      Pet[]
+
+  @@unique([species, nameJa])
+  @@index([species, isActive])
+  @@index([species, isPopular, sortOrder])
+  @@map("breeds")
 }
 
 model PetRecord {

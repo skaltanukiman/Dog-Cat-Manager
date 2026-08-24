@@ -54,7 +54,7 @@ function petValidationStatus(issues: ZodIssue[]) {
   if (issues.some((issue) => issue.path[0] === "name" && issue.code === "too_big")) {
     return "petNameTooLong";
   }
-  if (issues.some((issue) => issue.path[0] === "breed" && issue.code === "too_big")) {
+  if (issues.some((issue) => issue.path[0] === "customBreedName" && issue.code === "too_big")) {
     return "petBreedTooLong";
   }
   if (issues.some((issue) => issue.path[0] === "memo" && issue.code === "too_big")) {
@@ -68,6 +68,25 @@ function petValidationStatus(issues: ZodIssue[]) {
     return "future";
   }
   return "invalid";
+}
+
+/** breedIdをクライアント値だけで採用せず、有効状態とPet speciesを同一transaction内で確認する。 */
+async function assertValidBreedChoice(
+  tx: Prisma.TransactionClient,
+  input: { breedId: string | null; customBreedName: string | null },
+  species: "DOG" | "CAT",
+  allowInactiveBreedId?: string | null
+) {
+  if (!input.breedId) return;
+  const breed = await tx.breed.findFirst({
+    where: {
+      id: input.breedId,
+      species,
+      ...(input.breedId === allowInactiveBreedId ? {} : { isActive: true })
+    },
+    select: { id: true }
+  });
+  if (!breed) redirect("/pets?status=petBreedInvalid");
 }
 
 function petImageValidationStatus(error: InstanceType<typeof PetImageError>) {
@@ -110,6 +129,7 @@ export async function createPet(formData: FormData) {
         actorUserId: context.user.id,
         mutate: async (tx) => {
           await assertCurrentPetMutationPermission(tx, context.household.id, context.user.id);
+          await assertValidBreedChoice(tx, result.data, result.data.species);
           return tx.pet.create({
             data: { ...result.data, householdId: context.household.id, profileImageFileName }
           });
@@ -142,7 +162,9 @@ export async function updatePet(formData: FormData) {
       where: { id, householdId: context.household.id },
       select: {
         name: true,
-        breed: true,
+        species: true,
+        breedId: true,
+        customBreedName: true,
         sex: true,
         birthDate: true,
         adoptionDate: true,
@@ -158,7 +180,8 @@ export async function updatePet(formData: FormData) {
 
     if (
       pet.name === data.name &&
-      pet.breed === data.breed &&
+      pet.breedId === data.breedId &&
+      pet.customBreedName === data.customBreedName &&
       pet.sex === data.sex &&
       isSameNullableDate(pet.birthDate, data.birthDate) &&
       isSameNullableDate(pet.adoptionDate, data.adoptionDate) &&
@@ -177,6 +200,7 @@ export async function updatePet(formData: FormData) {
         actorUserId: context.user.id,
         mutate: async (tx) => {
           await assertCurrentPetMutationPermission(tx, context.household.id, context.user.id);
+          await assertValidBreedChoice(tx, data, pet.species, pet.breedId);
           const updated = await tx.pet.updateMany({
             where: { id, householdId: context.household.id, updatedAt: pet.updatedAt },
             data: {

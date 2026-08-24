@@ -155,15 +155,16 @@ test("Pet画像UIはpreview・削除指定・placeholder・Pet名altを提供し
 });
 
 test("Pet画面・Actionは画像追加差し替え削除を既存権限・species不変のまま扱う", async () => {
-  const [page, actions, field] = await Promise.all([
+  const [page, actions, field, breedField] = await Promise.all([
     source("src/app/(app)/pets/page.tsx"),
     source("src/app/actions/pets.ts"),
-    source("src/components/pet-image-field.tsx")
+    source("src/components/pet-image-field.tsx"),
+    source("src/components/breed-combobox.tsx")
   ]);
   assert.match(page, /<PetImageField petName="新しいPet"/);
   assert.match(page, /currentFileName=\{pet\.profileImageFileName\}/);
   assert.match(page, /disabled=\{!canEdit\}/);
-  assert.equal((page.match(/name="species"/g) ?? []).length, 1);
+  assert.equal((breedField.match(/name="species"/g) ?? []).length, 1);
 
   assert.match(field, /URL\.createObjectURL\(file\)/);
   assert.match(field, /setRemoveCurrent\(false\)/);
@@ -173,7 +174,9 @@ test("Pet画面・Actionは画像追加差し替え削除を既存権限・speci
   assert.match(actions, /removeProfileImage && pet\.profileImageFileName/);
   assert.match(actions, /profileImageFileName !== undefined/);
   assert.match(actions, /assertCurrentPetMutationPermission\(tx, context\.household\.id, context\.user\.id\)/);
-  assert.doesNotMatch(actions.slice(actions.indexOf("export async function updatePet"), actions.indexOf("export async function updatePetActiveStatus")), /data\.species|pet\.species/);
+  const updateAction = actions.slice(actions.indexOf("export async function updatePet"), actions.indexOf("export async function updatePetActiveStatus"));
+  assert.doesNotMatch(updateAction, /data\.species/);
+  assert.match(updateAction, /assertValidBreedChoice\(tx, data, pet\.species, pet\.breedId\)/);
   const updateStart = actions.indexOf("export async function updatePet");
   const commitPosition = actions.indexOf("await commit", updateStart);
   const oldDeletePosition = actions.indexOf("deletePetImageAfterMutation", commitPosition);

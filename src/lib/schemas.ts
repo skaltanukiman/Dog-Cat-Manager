@@ -28,7 +28,16 @@ const nullableMemoSchema = z.preprocess((value) => {
   return trimmed.length > 0 ? trimmed : null;
 }, z.string().max(2000).nullable());
 
-const nullableBreedSchema = z.preprocess((value) => {
+const nullableBreedIdSchema = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}, idSchema.nullable());
+
+const nullableCustomBreedNameSchema = z.preprocess((value) => {
   if (typeof value !== "string") {
     return null;
   }
@@ -58,21 +67,36 @@ const nullablePastOrTodayDateInputSchema = nullableDateInputSchema.refine(
   { message: "future" }
 );
 
-export const createPetSchema = z.object({
+const petProfileSchema = z.object({
   name: z.string().trim().min(1).max(15),
   species: z.enum(["DOG", "CAT"]),
-  breed: nullableBreedSchema,
+  breedId: nullableBreedIdSchema,
+  customBreedName: nullableCustomBreedNameSchema,
   sex: z.enum(["MALE", "FEMALE", "UNKNOWN"]),
   birthDate: nullablePastOrTodayDateInputSchema,
   adoptionDate: nullablePastOrTodayDateInputSchema,
   memo: nullableMemoSchema
 });
 
-export const updatePetSchema = createPetSchema.omit({
-  species: true
-}).extend({
-  id: idSchema
-});
+/** マスタ選択と自由入力を排他的にし、DBのCHECK制約より前に改変FormDataを拒否する。 */
+function withExclusiveBreedChoice<T extends z.ZodTypeAny>(schema: T) {
+  return schema.superRefine((value, context) => {
+    const choice = value as { breedId?: string | null; customBreedName?: string | null };
+    if (choice.breedId && choice.customBreedName) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["breedId"],
+        message: "exclusiveBreedChoice"
+      });
+    }
+  });
+}
+
+export const createPetSchema = withExclusiveBreedChoice(petProfileSchema);
+
+export const updatePetSchema = withExclusiveBreedChoice(
+  petProfileSchema.omit({ species: true }).extend({ id: idSchema })
+);
 
 export const updatePetActiveStatusSchema = z.object({
   id: idSchema,

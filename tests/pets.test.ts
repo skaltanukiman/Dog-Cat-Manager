@@ -4,11 +4,15 @@ import test from "node:test";
 
 import { createPetSchema, updatePetSchema } from "../src/lib/schemas";
 import { toDateInputValue } from "../src/lib/date";
+import { breedMatchesQuery, findExactBreed, normalizeBreedSearch, type BreedOption } from "../src/lib/breed-search";
+import { dogBreeds } from "../prisma/data/dog-breeds";
+import { catBreeds } from "../prisma/data/cat-breeds";
 
 const validPet = {
   name: "こむぎ",
   species: "DOG",
-  breed: "柴犬",
+  breedId: "breed-dog-shiba",
+  customBreedName: "",
   sex: "UNKNOWN",
   birthDate: "2024-05-06",
   adoptionDate: "2024-07-08",
@@ -46,7 +50,8 @@ test("Pet更新入力はspeciesを受け付けず、改変されたspeciesを出
   assert.deepEqual(result.data, {
     id: "pet-1",
     name: validPet.name,
-    breed: validPet.breed,
+    breedId: validPet.breedId,
+    customBreedName: null,
     sex: validPet.sex,
     birthDate: new Date("2024-05-06T00:00:00.000Z"),
     adoptionDate: new Date("2024-07-08T00:00:00.000Z"),
@@ -111,15 +116,16 @@ test("Pet ActionはVIEWERとHousehold境界を登録・更新・状態変更で�
   assert.match(actions, /canEditHouseholdSharedData\(membership\.role\)/);
 });
 
-test("Pet更新Actionはspeciesを取得・差分判定・更新データに含めない", async () => {
+test("Pet更新ActionはDBのspeciesで品種を検証し、更新データへspeciesを含めない", async () => {
   const actions = await source("src/app/actions/pets.ts");
   const start = actions.indexOf("export async function updatePet");
   const end = actions.indexOf("export async function updatePetActiveStatus", start);
   const action = actions.slice(start, end);
 
   assert.match(action, /updatePetSchema\.safeParse\(Object\.fromEntries\(formData\)\)/);
-  assert.doesNotMatch(action, /species:\s*true/);
-  assert.doesNotMatch(action, /pet\.species|data\.species/);
+  assert.match(action, /species:\s*true/);
+  assert.match(action, /assertValidBreedChoice\(tx, data, pet\.species, pet\.breedId\)/);
+  assert.doesNotMatch(action, /data\.species/);
   assert.match(action, /data: \{\s*\.\.\.data,/);
 });
 
@@ -134,16 +140,16 @@ test("管理終了はisActive更新だけを行いPet本体を保持する", asy
 
 test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規登録時のみ選択できる", async () => {
   const page = await source("src/app/(app)/pets/page.tsx");
+  const combobox = await source("src/components/breed-combobox.tsx");
 
   assert.match(page, /where: \{ householdId: context\.household\.id \}/);
-  for (const field of ["name", "breed", "sex", "birthDate", "adoptionDate", "memo"]) {
-    assert.match(page, new RegExp(`name="${field}"`));
-  }
-  assert.match(page, /<select className="h-10" name="species" required defaultValue="">/);
-  assert.equal((page.match(/name="species"/g) ?? []).length, 1);
+  for (const field of ["name", "sex", "birthDate", "adoptionDate", "memo"]) assert.match(page, new RegExp(`name="${field}"`));
+  for (const field of ["breedId", "customBreedName"]) assert.match(combobox, new RegExp(`name="${field}"`));
+  assert.equal((combobox.match(/name="species"/g) ?? []).length, 1);
+  assert.match(page, /<PetCreateSpeciesBreedFields breeds=\{breeds\} \/>/);
   assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
   assert.match(page, /<PetSpeciesBadge species=\{pet\.species\} \/>/);
-  assert.ok((page.match(/className="h-10"/g) ?? []).length >= 13);
+  assert.ok((page.match(/className="h-10"/g) ?? []).length >= 10);
   assert.match(page, /<span className="flex h-10 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-3">/);
   assert.match(page, /className="grid items-start gap-3 md:grid-cols-2 lg:grid-cols-4"/);
   assert.match(page, /種類は登録後変更できません/);
@@ -153,4 +159,69 @@ test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規�
   assert.match(page, /<PetImageField petName="新しいPet"/);
   assert.match(page, /currentFileName=\{pet\.profileImageFileName\}/);
   assert.equal((page.match(/name="name" required maxLength=\{15\}/g) ?? []).length, 2);
+});
+
+test("品種入力はマスタ、自由入力、未入力を許可し、同時指定と100文字超を拒否する", () => {
+  assert.equal(createPetSchema.safeParse(validPet).success, true);
+  assert.equal(createPetSchema.safeParse({ ...validPet, breedId: "", customBreedName: "チワプー" }).success, true);
+  assert.equal(createPetSchema.safeParse({ ...validPet, breedId: "", customBreedName: "" }).success, true);
+  assert.equal(createPetSchema.safeParse({ ...validPet, customBreedName: "チワプー" }).success, false);
+  assert.equal(createPetSchema.safeParse({ ...validPet, breedId: "", customBreedName: "あ".repeat(100) }).success, true);
+  assert.equal(createPetSchema.safeParse({ ...validPet, breedId: "", customBreedName: "あ".repeat(101) }).success, false);
+});
+
+const shiba: BreedOption = {
+  id: "shiba", species: "DOG", nameJa: "柴犬", nameKana: "しばいぬ", nameEn: "Shiba Inu",
+  isPopular: true, sortOrder: 0
+};
+
+test("品種検索は日本語・かな・英語の部分一致と表記正規化に対応する", () => {
+  for (const query of ["柴", "しば", "Shiba", "SHIBA", "Ｓｈｉｂａ"]) {
+    assert.equal(breedMatchesQuery(shiba, query), true);
+  }
+  assert.equal(normalizeBreedSearch("トイ・プードル"), normalizeBreedSearch("トイ プードル"));
+  assert.equal(findExactBreed([shiba], "shiba inu")?.id, "shiba");
+});
+
+test("Breed seedデータはspecies内でcanonical名が重複せず、十分な範囲を持つ", () => {
+  assert.ok(dogBreeds.length >= 200);
+  assert.ok(catBreeds.length >= 60);
+  assert.equal(new Set(dogBreeds.map((breed) => breed.nameJa)).size, dogBreeds.length);
+  assert.equal(new Set(catBreeds.map((breed) => breed.nameJa)).size, catBreeds.length);
+});
+
+test("新migrationは旧breedを自由入力へ退避してから削除し、排他制約と安全な外部キーを作る", async () => {
+  const migration = await source("prisma/migrations/20260824120000_add_breed_master/migration.sql");
+  const copyIndex = migration.indexOf('UPDATE "pets" SET "custom_breed_name" = "breed"');
+  const dropIndex = migration.indexOf('ALTER TABLE "pets" DROP COLUMN "breed"');
+  assert.ok(copyIndex >= 0 && dropIndex > copyIndex);
+  assert.match(migration, /pets_breed_choice_check/);
+  assert.match(migration, /ON DELETE RESTRICT/);
+});
+
+test("Breed seedはupsertで再実行可能かつspecies完全一致だけをbackfillする", async () => {
+  const seed = await source("prisma/seed-breeds.ts");
+  assert.match(seed, /prisma\.breed\.upsert/);
+  assert.match(seed, /species:\s*breed\.species/);
+  assert.match(seed, /customBreedName:\s*breed\.nameJa/);
+  assert.doesNotMatch(seed, /contains:|startsWith:|levenshtein|similarity/);
+});
+
+test("Pet ActionはbreedIdの存在・species・activeを検証し、既存inactive参照だけ維持する", async () => {
+  const actions = await source("src/app/actions/pets.ts");
+  assert.match(actions, /tx\.breed\.findFirst/);
+  assert.match(actions, /species,/);
+  assert.match(actions, /isActive:\s*true/);
+  assert.match(actions, /allowInactiveBreedId/);
+  assert.match(actions, /pet\.breedId === data\.breedId/);
+  assert.match(actions, /pet\.customBreedName === data\.customBreedName/);
+});
+
+test("品種コンボボックスはspecies変更で再生成され、ARIAとキーボード操作を備える", async () => {
+  const component = await source("src/components/breed-combobox.tsx");
+  assert.match(component, /key=\{species \|\| "unset"\}/);
+  assert.match(component, /role="combobox"/);
+  assert.match(component, /role="listbox"/);
+  for (const key of ["ArrowDown", "ArrowUp", "Enter", "Escape"]) assert.match(component, new RegExp(key));
+  assert.match(component, /data-dirty-control/);
 });

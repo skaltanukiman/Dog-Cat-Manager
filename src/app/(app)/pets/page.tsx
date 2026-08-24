@@ -1,6 +1,7 @@
 import { Archive, Plus, RotateCcw, Save } from "lucide-react";
 
 import { createPet, updatePet, updatePetActiveStatus } from "@/app/actions/pets";
+import { BreedCombobox, PetCreateSpeciesBreedFields } from "@/components/breed-combobox";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import { PetImageField } from "@/components/pet-image-field";
 import { PetNotificationRulesForm } from "@/components/pet-notification-rules-form";
@@ -31,23 +32,39 @@ export default async function PetsPage({
   const params = await searchParams;
   const context = await getRequiredHouseholdContext();
   const canEdit = canEditHouseholdSharedData(context.membership.role);
-  const pets = await prisma.pet.findMany({
-    where: { householdId: context.household.id },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    include: {
-      notificationRules: {
-        where: { userId: context.user.id, householdId: context.household.id },
-        orderBy: [{ kind: "asc" }, { deadlineMinutes: "asc" }, { id: "asc" }],
-        select: {
-          kind: true,
-          label: true,
-          deadlineMinutes: true,
-          notifyBeforeMinutes: true,
-          enabled: true
+  const [pets, breeds] = await Promise.all([
+    prisma.pet.findMany({
+      where: { householdId: context.household.id },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      include: {
+        breedMaster: { select: { nameJa: true } },
+        notificationRules: {
+          where: { userId: context.user.id, householdId: context.household.id },
+          orderBy: [{ kind: "asc" }, { deadlineMinutes: "asc" }, { id: "asc" }],
+          select: {
+            kind: true,
+            label: true,
+            deadlineMinutes: true,
+            notifyBeforeMinutes: true,
+            enabled: true
+          }
         }
       }
-    }
-  });
+    }),
+    prisma.breed.findMany({
+      where: { isActive: true },
+      orderBy: [{ species: "asc" }, { isPopular: "desc" }, { sortOrder: "asc" }, { nameJa: "asc" }],
+      select: {
+        id: true,
+        species: true,
+        nameJa: true,
+        nameKana: true,
+        nameEn: true,
+        isPopular: true,
+        sortOrder: true
+      }
+    })
+  ]);
   // 誕生日とお迎え日は暦日として扱い、未来日をブラウザとServer Actionの両方で拒否する。
   const today = todayInputJst();
 
@@ -68,18 +85,7 @@ export default async function PetsPage({
               名前
               <input className="h-10" name="name" required maxLength={15} placeholder="例: こむぎ" />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              種類
-              <select className="h-10" name="species" required defaultValue="">
-                <option value="" disabled>選択してください</option>
-                <option value="DOG">犬</option>
-                <option value="CAT">猫</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              品種
-              <input className="h-10" name="breed" maxLength={100} placeholder="例: 柴犬" />
-            </label>
+            <PetCreateSpeciesBreedFields breeds={breeds} />
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               性別
               <select className="h-10" name="sex" defaultValue="UNKNOWN">
@@ -167,10 +173,14 @@ export default async function PetsPage({
                     </span>
                     <span className="text-xs font-normal text-slate-500">種類は登録後変更できません</span>
                   </label>
-                  <label className="grid gap-1 text-sm font-medium text-slate-700">
-                    品種
-                    <input className="h-10" name="breed" maxLength={100} defaultValue={pet.breed ?? ""} readOnly={!canEdit} />
-                  </label>
+                  <BreedCombobox
+                    breeds={breeds}
+                    species={pet.species}
+                    initialBreedId={pet.breedId}
+                    initialBreedName={pet.breedMaster?.nameJa}
+                    initialCustomBreedName={pet.customBreedName}
+                    disabled={!canEdit}
+                  />
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
                     性別
                     <select className="h-10" name="sex" defaultValue={pet.sex} disabled={!canEdit}>
