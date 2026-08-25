@@ -75,19 +75,19 @@ export default function PwaInstallGuidePage() {
         </h3>
         <ol className="mt-4 space-y-8">
           {IPHONE_PWA_STEPS.map((step, index) => (
-            <li key={step.src} className="mx-auto w-full max-w-xl list-none">
+            <li key={step.src} className="mx-auto w-full max-w-lg list-none">
               <p className="mb-2 text-sm font-bold tracking-wide text-brand">
                 STEP {index + 1} / {IPHONE_PWA_STEPS.length}
               </p>
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="rounded-xl border border-slate-200 bg-slate-100 p-3 shadow-sm sm:p-4">
                 {/* public配下も認証対象のため、利用者の認証付きリクエストで画像を直接取得する。 */}
                 <Image
                   src={step.src}
                   alt={step.alt}
                   width={step.width}
                   height={step.height}
-                  sizes="(max-width: 640px) calc(100vw - 2rem), 36rem"
-                  className="block h-auto w-full"
+                  sizes="(max-width: 640px) calc(100vw - 2rem), 32rem"
+                  className="block h-auto w-full rounded-lg"
                   priority={index === 0}
                   unoptimized
                 />
