@@ -18,7 +18,7 @@ export function PwaInstallGuideEntry() {
         </div>
         <Link
           href="/settings/pwa"
-          className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-md border border-brand bg-white px-4 py-2.5 text-sm font-bold text-brand hover:bg-brand-dark hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 md:w-auto"
+          className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-md border border-brand bg-white px-4 py-2.5 text-sm font-bold text-brand hover:bg-brand-dark hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 md:w-28"
         >
           手順を見る
         </Link>
