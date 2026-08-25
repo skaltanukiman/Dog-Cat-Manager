@@ -75,23 +75,27 @@ export default function PwaInstallGuidePage() {
         </h3>
         <ol className="mt-4 space-y-8">
           {IPHONE_PWA_STEPS.map((step, index) => (
-            <li key={step.src} className="mx-auto w-full max-w-lg list-none">
-              <p className="mb-2 text-sm font-bold tracking-wide text-brand">
-                STEP {index + 1} / {IPHONE_PWA_STEPS.length}
-              </p>
-              <div className="rounded-xl border border-slate-200 bg-slate-100 p-3 shadow-sm sm:p-4">
-                {/* public配下も認証対象のため、利用者の認証付きリクエストで画像を直接取得する。 */}
-                <Image
-                  src={step.src}
-                  alt={step.alt}
-                  width={step.width}
-                  height={step.height}
-                  sizes="(max-width: 640px) calc(100vw - 2rem), 32rem"
-                  className="block h-auto w-full rounded-lg"
-                  priority={index === 0}
-                  unoptimized
-                />
+            <li
+              key={step.src}
+              className="mx-auto w-full max-w-lg list-none rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-lg shadow-slate-900/15 sm:p-4"
+            >
+              <div className="mb-3 px-1 sm:mb-4">
+                <p className="inline-flex rounded-full bg-brand px-2.5 py-1 text-xs font-bold tracking-wide text-white">
+                  STEP {index + 1} / {IPHONE_PWA_STEPS.length}
+                </p>
+                <p className="mt-2 break-words text-base font-bold leading-6 text-white">{step.summary}</p>
               </div>
+              {/* public配下も認証対象のため、利用者の認証付きリクエストで画像を直接取得する。 */}
+              <Image
+                src={step.src}
+                alt={step.alt}
+                width={step.width}
+                height={step.height}
+                sizes="(max-width: 640px) calc(100vw - 2rem), 32rem"
+                className="block h-auto w-full rounded-xl ring-1 ring-inset ring-white/15"
+                priority={index === 0}
+                unoptimized
+              />
             </li>
           ))}
         </ol>
