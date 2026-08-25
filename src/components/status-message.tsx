@@ -45,7 +45,6 @@ const messages: Record<string, string> = {
   petWalkDurationInvalid: "散歩時間は1分以上1440分以下の整数で入力してください。",
   petWalkDistanceInvalid: "散歩距離は0.01km単位の正の値で入力してください。",
   petDuplicate: "同じ名前のPetがこの共有グループに既に登録されています。",
-  petDeleted: "ペットを完全に削除しました。",
   petDeleteActive: "完全に削除するには、先に管理終了にしてください。",
   petDeleteHasHistory: "このペットには記録があるため完全削除できません。管理終了のままご利用ください。",
   petNameTooLong: "名前は15文字以内で入力してください。",

@@ -1,14 +1,14 @@
 "use client";
 
 import { MoreHorizontal, Trash2 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
-import { createPortal, useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useId, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 
 import { deletePet } from "@/app/actions/pets";
+import { usePetDeleteSuccess } from "@/components/pet-delete-success-provider";
 
-function DeleteSubmitButton() {
-  const { pending } = useFormStatus();
-
+function DeleteSubmitButton({ pending }: { pending: boolean }) {
   return (
     <button
       type="submit"
@@ -23,7 +23,10 @@ function DeleteSubmitButton() {
 
 /** 管理終了済みPetだけに表示する、取り消せない完全削除の確認UI。 */
 export function PetDeleteControl({ petId, petName }: { petId: string; petName: string }) {
+  const router = useRouter();
+  const { showPetDeleted } = usePetDeleteSuccess();
   const [isOpen, setIsOpen] = useState(false);
+  const [isDeletePending, startDeleteTransition] = useTransition();
   const titleId = useId();
   const descriptionId = useId();
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -48,6 +51,18 @@ export function PetDeleteControl({ petId, petName }: { petId: string; petName: s
     };
   }, [isOpen]);
 
+  function handleDelete(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startDeleteTransition(async () => {
+      const result = await deletePet(formData);
+      setIsOpen(false);
+      showPetDeleted(result.petName);
+      // URLを変更せず、同一画面の再取得だけを行うため現在のスクロール位置を保てる。
+      router.refresh();
+    });
+  }
+
   const dialog = isOpen && typeof document !== "undefined"
     ? createPortal(
         <div
@@ -70,7 +85,7 @@ export function PetDeleteControl({ petId, petName }: { petId: string; petName: s
               <p className="font-semibold text-red-700">この操作は取り消せません。</p>
               <p>過去の記録があるペットは完全削除できません。</p>
             </div>
-            <form action={deletePet} className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <form onSubmit={handleDelete} className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <input type="hidden" name="id" value={petId} />
               <button
                 ref={cancelButtonRef}
@@ -80,7 +95,7 @@ export function PetDeleteControl({ petId, petName }: { petId: string; petName: s
               >
                 キャンセル
               </button>
-              <DeleteSubmitButton />
+              <DeleteSubmitButton pending={isDeletePending} />
             </form>
           </section>
         </div>,

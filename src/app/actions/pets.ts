@@ -56,6 +56,11 @@ export type PetCreateActionState = {
     | null;
 };
 
+export type PetDeleteActionResult = {
+  status: "deleted";
+  petName: string;
+};
+
 function createPetErrorState(
   previousState: PetCreateActionState,
   status: Exclude<PetCreateActionState["status"], null>
@@ -329,7 +334,7 @@ export async function updatePetActiveStatus(formData: FormData) {
   }
 }
 
-export async function deletePet(formData: FormData) {
+export async function deletePet(formData: FormData): Promise<PetDeleteActionResult> {
   try {
     const context = await getRequiredHouseholdMutationContext("/pets");
     const parsed = deletePetSchema.safeParse(Object.fromEntries(formData));
@@ -362,7 +367,8 @@ export async function deletePet(formData: FormData) {
       householdId: context.household.id,
       petId: result.petId
     });
-    redirect("/pets?status=petDeleted");
+    // 削除対象はtransaction内でロック済みのPetなので、通知用の名前にもフォーム値を使わない。
+    return { status: "deleted", petName: result.petName };
   } catch (error) {
     if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
     if (error instanceof ActivePetDeleteError) redirect("/pets?status=petDeleteActive");

@@ -5,6 +5,7 @@ import { BreedCombobox } from "@/components/breed-combobox";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import { PetCreateForm } from "@/components/pet-create-form";
 import { PetDeleteControl } from "@/components/pet-delete-control";
+import { PetDeleteSuccessProvider } from "@/components/pet-delete-success-provider";
 import { PetImageField } from "@/components/pet-image-field";
 import { PetNotificationRulesForm } from "@/components/pet-notification-rules-form";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
@@ -86,33 +87,34 @@ export default async function PetsPage({
         <p className="mt-1 text-sm text-slate-600">犬と猫の基本プロフィールを管理します。</p>
       </div>
 
-      <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
-      {createdPet ? <TutorialPetCreatedBridge petId={createdPet.id} /> : null}
+      <PetDeleteSuccessProvider>
+        <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
+        {createdPet ? <TutorialPetCreatedBridge petId={createdPet.id} /> : null}
 
-      {canEdit ? (
-        <section
-          data-tutorial="pet-create-form"
-          className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"
-        >
-          <h3 className="text-base font-bold text-ink">新規登録</h3>
-          <PetCreateForm breeds={breeds} today={today} />
-        </section>
-      ) : (
-        <p className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          閲覧者はPetの登録・編集・管理状態の変更を実行できません。
-        </p>
-      )}
-
-      <section className="space-y-3">
-        <h3 className="text-base font-bold text-ink">一覧</h3>
-        {pets.length === 0 ? (
-          <div className="rounded-md border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-            登録済みの犬・猫はいません。
-          </div>
+        {canEdit ? (
+          <section
+            data-tutorial="pet-create-form"
+            className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            <h3 className="text-base font-bold text-ink">新規登録</h3>
+            <PetCreateForm breeds={breeds} today={today} />
+          </section>
         ) : (
-          <div className="grid gap-3">
-            {pets.map((pet) => (
-              <article key={pet.id} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            閲覧者はPetの登録・編集・管理状態の変更を実行できません。
+          </p>
+        )}
+
+        <section className="space-y-3">
+          <h3 className="text-base font-bold text-ink">一覧</h3>
+          {pets.length === 0 ? (
+            <div className="rounded-md border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+              登録済みの犬・猫はいません。
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {pets.map((pet) => (
+                <article key={pet.id} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span className={`rounded-md px-2 py-1 text-xs font-semibold ${pet.isActive ? "bg-highlight/40 text-slate-700" : "bg-slate-200 text-slate-600"}`}>
@@ -220,7 +222,8 @@ export default async function PetsPage({
             ))}
           </div>
         )}
-      </section>
+        </section>
+      </PetDeleteSuccessProvider>
     </div>
   );
 }

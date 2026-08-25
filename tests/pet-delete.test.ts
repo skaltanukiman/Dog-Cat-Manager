@@ -186,15 +186,19 @@ test("Server Actionは認証・最新権限・Household境界を再確認し、c
   const publishPosition = action.indexOf("publishHouseholdChangeSafely", commitPosition);
   const imagePosition = action.indexOf("deletePetImageAfterPetDeletionSafely", commitPosition);
   assert.ok(commitPosition >= 0 && publishPosition > commitPosition && imagePosition > publishPosition);
+  assert.match(action, /petName: result\.petName/);
+  assert.doesNotMatch(action, /redirect\("\/pets\?status=petDeleted"\)/);
 });
 
 test("Pets UIは管理終了済み・編集可能なPetだけに控えめな削除導線と確認Dialogを出す", async () => {
-  const [page, control, statusMessage] = await Promise.all([
+  const [page, control, provider, statusMessage] = await Promise.all([
     source("src/app/(app)/pets/page.tsx"),
     source("src/components/pet-delete-control.tsx"),
+    source("src/components/pet-delete-success-provider.tsx"),
     source("src/components/status-message.tsx")
   ]);
   assert.match(page, /canEdit && !pet\.isActive \? <PetDeleteControl/);
+  assert.match(page, /<PetDeleteSuccessProvider>/);
   assert.match(control, /その他の操作（完全削除）/);
   assert.match(control, /\{petName\}を完全に削除しますか？/);
   assert.match(control, /この操作は取り消せません。/);
@@ -204,8 +208,14 @@ test("Pets UIは管理終了済み・編集可能なPetだけに控えめな削�
   assert.match(control, /aria-labelledby=\{titleId\}/);
   assert.match(control, /aria-describedby=\{descriptionId\}/);
   assert.match(control, /キャンセル/);
-  assert.match(control, /action=\{deletePet\}/);
+  assert.match(control, /startDeleteTransition\(async \(\) =>/);
+  assert.match(control, /const result = await deletePet\(formData\)/);
+  assert.match(control, /showPetDeleted\(result\.petName\)/);
+  assert.match(control, /onSubmit=\{handleDelete\}/);
+  assert.match(control, /router\.refresh\(\)/);
+  assert.doesNotMatch(control, /router\.(?:push|replace)\(/);
   assert.match(control, /event\.key === "Escape"/);
-  assert.match(statusMessage, /petDeleted: "ペットを完全に削除しました。"/);
+  assert.match(provider, /message=\{`\$\{success\.petName\}を完全に削除しました。`\}/);
+  assert.doesNotMatch(statusMessage, /ペットを完全に削除しました。/);
   assert.match(statusMessage, /petDeleteHasHistory: "このペットには記録があるため完全削除できません。管理終了のままご利用ください。"/);
 });
