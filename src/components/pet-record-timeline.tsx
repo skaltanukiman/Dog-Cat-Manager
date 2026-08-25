@@ -16,7 +16,8 @@ import {
   X
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useState, useTransition, type FormEvent } from "react";
 
 import { updatePetHealthRecord } from "@/app/actions/pet-health-records";
 import { updatePetMedicalRecord } from "@/app/actions/pet-medical-records";
@@ -29,6 +30,7 @@ import { MemoryPetSelector } from "@/components/memory-pet-selector";
 import { PetThumbnail } from "@/components/pet-thumbnail";
 import { RecordImageField } from "@/components/record-image-field";
 import { RecordTimeInput } from "@/components/record-time-input";
+import { AutoDismissSuccessMessage } from "@/components/status-message";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { petRecordTypeStyles } from "@/lib/pet-record-style";
 import type { getPetRecordsPageData } from "@/lib/pet-record-queries";
@@ -260,16 +262,65 @@ export function PetRecordTimeline({
   canEdit: boolean;
   today: string;
 }) {
-  function confirmDelete(event: FormEvent<HTMLFormElement>) {
-    if (!window.confirm("この記録を削除します。元に戻せません。よろしいですか？")) event.preventDefault();
+  const router = useRouter();
+  const [deletedRecordIds, setDeletedRecordIds] = useState<string[]>([]);
+  const [deleteSuccess, setDeleteSuccess] = useState<{ key: number; page: number } | null>(null);
+  const [isDeletePending, startDeleteTransition] = useTransition();
+  const normalizedSuccessKey = useRef<number | null>(null);
+  const visibleRecords = records.filter((record) => !deletedRecordIds.includes(record.id));
+
+  useEffect(() => {
+    if (
+      !deleteSuccess ||
+      deleteSuccess.page === returnFilters.page ||
+      normalizedSuccessKey.current === deleteSuccess.key
+    ) {
+      return;
+    }
+
+    normalizedSuccessKey.current = deleteSuccess.key;
+    router.replace(
+      petRecordsUrl({
+        scope,
+        includeScope: true,
+        petId: returnPetId,
+        includeInactive,
+        ...returnFilters
+      }),
+      { scroll: false }
+    );
+  }, [deleteSuccess, includeInactive, returnFilters, returnPetId, router, scope]);
+
+  function handleDelete(event: FormEvent<HTMLFormElement>, recordId: string) {
+    event.preventDefault();
+    if (!window.confirm("この記録を削除します。元に戻せません。よろしいですか？")) return;
+
+    const formData = new FormData(event.currentTarget);
+    startDeleteTransition(async () => {
+      const result = await deletePetRecord(formData);
+      if (!result.success) return;
+
+      setDeletedRecordIds((current) => [...current, recordId]);
+      setDeleteSuccess((current) => ({ key: (current?.key ?? 0) + 1, page: returnFilters.page }));
+      // URLを変更せず、同一画面の再取得だけを行うため現在のスクロール位置を保てる。
+      router.refresh();
+    });
   }
 
-  if (records.length === 0) return <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">条件に一致する記録はありません。</div>;
+  if (visibleRecords.length === 0) {
+    return (
+      <>
+        {deleteSuccess ? <AutoDismissSuccessMessage key={deleteSuccess.key} message="記録を削除しました。" /> : null}
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">条件に一致する記録はありません。</div>
+      </>
+    );
+  }
 
   return (
     <UnsavedChangesGuard>
+      {deleteSuccess ? <AutoDismissSuccessMessage key={deleteSuccess.key} message="記録を削除しました。" /> : null}
       <div className="relative grid gap-4 before:absolute before:bottom-0 before:left-4 before:top-0 before:w-px before:bg-slate-200 sm:before:left-5">
-        {records.map((record) => {
+        {visibleRecords.map((record) => {
           const relatedPets = record.recordType === "MEMORY" ? record.memoryDetail?.pets ?? [record.pet] : [record.pet];
           const editable = canEdit && record.pet.isActive && relatedPets.every((pet) => pet.isActive);
           const typeStyle = petRecordTypeStyles[record.recordType];
@@ -299,7 +350,7 @@ export function PetRecordTimeline({
               {record.memo ? <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{record.memo}</p> : null}
               {editable ? <details className="group mt-4"><summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-brand"><Pencil className="h-4 w-4" aria-hidden /><span className="group-open:hidden">編集フォームを開く</span><span className="hidden group-open:inline">編集フォームを閉じる</span></summary><PetRecordEditForm record={record} pets={pets} viewScope={scope} returnPetId={returnPetId} includeInactive={includeInactive} returnFilters={returnFilters} today={today} /></details> : !canEdit ? null : <p className="mt-4 text-xs text-amber-700">管理終了したPetが関連するため、この記録は閲覧のみです。</p>}
                 </div>
-                {editable ? <form action={deletePetRecord} onSubmit={confirmDelete} className="col-span-full mt-4 justify-self-end sm:col-start-3 sm:row-start-1 sm:mt-0"><MutationContextFields record={record} viewScope={scope} returnPetId={returnPetId} includeInactive={includeInactive} returnFilters={returnFilters} /><button type="submit" className="inline-flex h-9 items-center gap-1 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" aria-hidden />削除</button></form> : null}
+                {editable ? <form onSubmit={(event) => handleDelete(event, record.id)} className="col-span-full mt-4 justify-self-end sm:col-start-3 sm:row-start-1 sm:mt-0"><MutationContextFields record={record} viewScope={scope} returnPetId={returnPetId} includeInactive={includeInactive} returnFilters={returnFilters} /><button type="submit" disabled={isDeletePending} className="inline-flex h-9 items-center gap-1 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden />{isDeletePending ? "削除中..." : "削除"}</button></form> : null}
               </div>
             </article>
           );

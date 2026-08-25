@@ -34,8 +34,13 @@ async function deleteImageAfterCommit(householdId: string, fileName: string, rec
   }
 }
 
-/** ClientのrecordTypeを受け取らず、DB上の種別から削除Activityを確定する。 */
-export async function deletePetRecord(formData: FormData) {
+export type DeletePetRecordActionResult = { success: true };
+
+/**
+ * ClientのrecordTypeを受け取らず、DB上の種別から削除Activityを確定する。
+ * 成功時は同一画面をClient側で再取得してスクロール位置を保つため、redirectせず結果を返す。
+ */
+export async function deletePetRecord(formData: FormData): Promise<DeletePetRecordActionResult> {
   const petId = formData.get("petId");
   try {
     const context = await getRequiredHouseholdMutationContext("/records");
@@ -100,7 +105,7 @@ export async function deletePetRecord(formData: FormData) {
     if (result.imageFileName) {
       await deleteImageAfterCommit(context.household.id, result.imageFileName, result.record.id);
     }
-    redirect(petRecordReturnUrl(parsed.data.petId, "petRecordDeleted", formData));
+    return { success: true };
   } catch (error) {
     redirectKnownPetRecordMutationError(error, typeof petId === "string" ? petId : null, formData);
     handleServerActionError(error, {

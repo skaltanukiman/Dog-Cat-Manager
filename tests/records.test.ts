@@ -654,7 +654,23 @@ test("Pet Record削除はDB上のtypeと全関連Petを再確認し、commit後�
   assert.match(remove, /tx\.petRecord\.deleteMany\(\{[\s\S]*pet: \{ householdId: context\.household\.id, isActive: true \}/);
   assert.match(remove, /petRecordActivity\("deleted", record\)/);
   assert.match(remove, /publishAndRevalidatePetRecord\([\s\S]*deleteImageAfterCommit\(context\.household\.id, result\.imageFileName/);
+  assert.match(remove, /return \{ success: true \}/);
+  assert.doesNotMatch(remove, /petRecordReturnUrl\(parsed\.data\.petId, "petRecordDeleted", formData\)/);
   assert.doesNotMatch(remove, /formData\.get\("recordType"\)/);
+});
+
+test("Pet Record削除成功はClient側で通知・再取得し、スクロールを保ったまま末尾ページだけ補正する", () => {
+  const timeline = source("src/components/pet-record-timeline.tsx");
+
+  assert.match(timeline, /const result = await deletePetRecord\(formData\)/);
+  assert.match(timeline, /setDeletedRecordIds\(\(current\) => \[\.\.\.current, recordId\]\)/);
+  assert.match(timeline, /AutoDismissSuccessMessage[^>]*message="記録を削除しました。"/);
+  assert.match(timeline, /router\.refresh\(\)/);
+  assert.match(timeline, /router\.replace\([\s\S]*\{ scroll: false \}/);
+  assert.match(timeline, /deleteSuccess\.page === returnFilters\.page/);
+  for (const field of ["scope", "petId", "includeInactive", "type", "from", "to", "keyword", "favoriteOnly", "page"]) {
+    assert.match(timeline, new RegExp(field));
+  }
 });
 
 test("Pet SavedMemoryTag削除は現在Household・最新membership・revisionと同一transactionに限定する", () => {
@@ -698,9 +714,9 @@ test("Pet Record timelineは主情報から本文・操作へ進む単一DOMの�
 
   assert.match(
     timeline,
-    /PET_RECORD_TYPE_LABELS\[record\.recordType\][\s\S]*record\.title[\s\S]*record\.recordDate[\s\S]*relatedPets\.map[\s\S]*record\.memoryDetail\?\.isFavorite[\s\S]*record\.memo[\s\S]*<details[\s\S]*<form action=\{deletePetRecord\}/
+    /PET_RECORD_TYPE_LABELS\[record\.recordType\][\s\S]*record\.title[\s\S]*record\.recordDate[\s\S]*relatedPets\.map[\s\S]*record\.memoryDetail\?\.isFavorite[\s\S]*record\.memo[\s\S]*<details[\s\S]*<form onSubmit=/
   );
-  assert.equal(timeline.match(/<form action=\{deletePetRecord\}/g)?.length, 1);
+  assert.equal(timeline.match(/<form onSubmit=\{\(event\) => handleDelete\(event, record\.id\)\}/g)?.length, 1);
   assert.equal(timeline.match(/relatedPets\.map/g)?.length, 1);
 });
 
@@ -852,7 +868,7 @@ test("VIEWERと管理終了Petはフォームを描画せず、Pet timelineを�
   assert.match(page, /!data\.selectedPet\.isActive[\s\S]*このPetは管理終了済みのため、記録の閲覧のみ可能です。/);
   assert.match(page, /<PetRecordTimeline[\s\S]*canEdit=\{canEdit\}/);
   assert.match(timeline, /const editable = canEdit && record\.pet\.isActive && relatedPets\.every\(\(pet\) => pet\.isActive\)/);
-  assert.match(timeline, /\{editable \? <form action=\{deletePetRecord\}/);
+  assert.match(timeline, /\{editable \? <form onSubmit=\{\(event\) => handleDelete\(event, record\.id\)\}/);
   assert.match(timeline, /\{editable \? <details/);
 });
 
