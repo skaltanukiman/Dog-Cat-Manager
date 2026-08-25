@@ -309,18 +309,19 @@ export function PetRecordTimeline({
 
   if (visibleRecords.length === 0) {
     return (
-      <>
+      <div className="grid gap-4">
         {deleteSuccess ? <AutoDismissSuccessMessage key={deleteSuccess.key} message="記録を削除しました。" /> : null}
         <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">条件に一致する記録はありません。</div>
-      </>
+      </div>
     );
   }
 
   return (
     <UnsavedChangesGuard>
-      {deleteSuccess ? <AutoDismissSuccessMessage key={deleteSuccess.key} message="記録を削除しました。" /> : null}
-      <div className="relative grid gap-4 before:absolute before:bottom-0 before:left-4 before:top-0 before:w-px before:bg-slate-200 sm:before:left-5">
-        {visibleRecords.map((record) => {
+      <div className="grid gap-4">
+        {deleteSuccess ? <AutoDismissSuccessMessage key={deleteSuccess.key} message="記録を削除しました。" /> : null}
+        <div className="relative grid gap-4 before:absolute before:bottom-0 before:left-4 before:top-0 before:w-px before:bg-slate-200 sm:before:left-5">
+          {visibleRecords.map((record) => {
           const relatedPets = record.recordType === "MEMORY" ? record.memoryDetail?.pets ?? [record.pet] : [record.pet];
           const editable = canEdit && record.pet.isActive && relatedPets.every((pet) => pet.isActive);
           const typeStyle = petRecordTypeStyles[record.recordType];
@@ -354,7 +355,8 @@ export function PetRecordTimeline({
               </div>
             </article>
           );
-        })}
+          })}
+        </div>
       </div>
     </UnsavedChangesGuard>
   );
