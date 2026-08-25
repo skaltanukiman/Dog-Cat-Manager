@@ -204,7 +204,8 @@ test("Household cleanupとDocker/envはPet画像rootだけを使用する", asyn
 
 test("管理終了Actionは画像を削除しない", async () => {
   const actions = await source("src/app/actions/pets.ts");
-  const activeStatusAction = actions.slice(actions.indexOf("export async function updatePetActiveStatus"));
+  const start = actions.indexOf("export async function updatePetActiveStatus");
+  const activeStatusAction = actions.slice(start, actions.indexOf("export async function deletePet", start));
   assert.match(activeStatusAction, /data: \{ isActive: result\.data\.isActive \}/);
   assert.doesNotMatch(activeStatusAction, /deletePetImage|profileImageFileName/);
 });

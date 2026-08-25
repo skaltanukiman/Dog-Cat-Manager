@@ -14,11 +14,13 @@ import {
   PetImageError,
   preparePetImage
 } from "@/lib/pet-image";
+import { createPrismaPetDeleteRepository, deletePetWithoutHistory } from "@/lib/pet-delete";
+import { deletePetImageAfterPetDeletionSafely } from "@/lib/pet-delete-image";
 import { prisma } from "@/lib/prisma";
 import { commitHouseholdMutation, publishHouseholdChangeSafely } from "@/lib/realtime";
 import { revalidatePathsSafely } from "@/lib/safe-side-effects";
 import { handleServerActionError, isPrismaUniqueConstraintError } from "@/lib/server-errors";
-import { createPetSchema, updatePetActiveStatusSchema, updatePetSchema } from "@/lib/schemas";
+import { createPetSchema, deletePetSchema, updatePetActiveStatusSchema, updatePetSchema } from "@/lib/schemas";
 
 class PetMutationForbiddenError extends Error {
   constructor() {
@@ -33,6 +35,10 @@ class PetBreedInvalidError extends Error {
     this.name = "PetBreedInvalidError";
   }
 }
+
+class PetDeleteNotFoundError extends Error {}
+class ActivePetDeleteError extends Error {}
+class PetDeleteHistoryExistsError extends Error {}
 
 export type PetCreateActionState = {
   submissionId: number;
@@ -320,5 +326,48 @@ export async function updatePetActiveStatus(formData: FormData) {
   } catch (error) {
     if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
     handleServerActionError(error, { operation: "pets.activeStatus", pathname: "/pets" });
+  }
+}
+
+export async function deletePet(formData: FormData) {
+  try {
+    const context = await getRequiredHouseholdMutationContext("/pets");
+    const parsed = deletePetSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) redirect("/pets?status=invalid");
+
+    const { result, change } = await commitHouseholdMutation({
+      householdId: context.household.id,
+      source: "pet",
+      actorUserId: context.user.id,
+      mutate: async (tx) => {
+        await assertCurrentPetMutationPermission(tx, context.household.id, context.user.id);
+        const result = await deletePetWithoutHistory(
+          { householdId: context.household.id, petId: parsed.data.id },
+          createPrismaPetDeleteRepository(tx)
+        );
+        if (result.status === "notFound") throw new PetDeleteNotFoundError();
+        if (result.status === "active") throw new ActivePetDeleteError();
+        if (result.status === "hasHistory") throw new PetDeleteHistoryExistsError();
+        return result;
+      }
+    });
+
+    publishHouseholdChangeSafely(change);
+    await deletePetImageAfterPetDeletionSafely(
+      context.household.id,
+      result.petId,
+      result.profileImageFileName
+    );
+    revalidatePathsSafely([{ path: "/pets" }], "pets.delete.revalidate", {
+      householdId: context.household.id,
+      petId: result.petId
+    });
+    redirect("/pets?status=petDeleted");
+  } catch (error) {
+    if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
+    if (error instanceof ActivePetDeleteError) redirect("/pets?status=petDeleteActive");
+    if (error instanceof PetDeleteHistoryExistsError) redirect("/pets?status=petDeleteHasHistory");
+    if (error instanceof PetDeleteNotFoundError) redirect("/pets?status=invalid");
+    handleServerActionError(error, { operation: "pets.delete", pathname: "/pets" });
   }
 }

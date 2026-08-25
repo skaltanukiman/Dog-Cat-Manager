@@ -4,6 +4,7 @@ import { updatePet, updatePetActiveStatus } from "@/app/actions/pets";
 import { BreedCombobox } from "@/components/breed-combobox";
 import { DirtySubmitButton } from "@/components/dirty-submit-button";
 import { PetCreateForm } from "@/components/pet-create-form";
+import { PetDeleteControl } from "@/components/pet-delete-control";
 import { PetImageField } from "@/components/pet-image-field";
 import { PetNotificationRulesForm } from "@/components/pet-notification-rules-form";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
@@ -214,6 +215,7 @@ export default async function PetsPage({
                   careDayStartMinutes={context.household.careDayStartMinutes}
                   initialRules={pet.notificationRules}
                 />
+                {canEdit && !pet.isActive ? <PetDeleteControl petId={pet.id} petName={pet.name} /> : null}
               </article>
             ))}
           </div>

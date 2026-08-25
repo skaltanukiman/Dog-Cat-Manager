@@ -132,7 +132,8 @@ test("Pet更新ActionはDBのspeciesで品種を検証し、更新データへsp
 test("管理終了はisActive更新だけを行いPet本体を保持する", async () => {
   const actions = await source("src/app/actions/pets.ts");
   const start = actions.indexOf("export async function updatePetActiveStatus");
-  const action = actions.slice(start);
+  const end = actions.indexOf("export async function deletePet", start);
+  const action = actions.slice(start, end);
 
   assert.match(action, /data: \{ isActive: result\.data\.isActive \}/);
   assert.doesNotMatch(action, /pet\.delete|deleteMany/);

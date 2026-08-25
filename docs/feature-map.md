@@ -54,11 +54,11 @@
 
 ## Petプロフィール
 
-- **画面:** `/pets`。新規登録は`src/components/pet-create-form.tsx`が修正可能エラー時の入力状態を保持し、プロフィールとは独立した折りたたみ式の本人用Pet通知ルールも表示する。品種は`src/components/breed-combobox.tsx`でspecies別の有効なマスタを検索・選択でき、マスタ外の名称は自由入力として保持する。
-- **Action:** `src/app/actions/pets.ts`。作成、更新、管理終了、画像更新を行う。`src/app/actions/pet-notifications.ts`はVIEWERを含む所属メンバー本人の通知ルールだけを一括保存する。
+- **画面:** `/pets`。新規登録は`src/components/pet-create-form.tsx`が修正可能エラー時の入力状態を保持し、プロフィールとは独立した折りたたみ式の本人用Pet通知ルールも表示する。品種は`src/components/breed-combobox.tsx`でspecies別の有効なマスタを検索・選択でき、マスタ外の名称は自由入力として保持する。管理終了済みPetだけに`src/components/pet-delete-control.tsx`の完全削除確認を表示する。
+- **Action:** `src/app/actions/pets.ts`。作成、更新、管理終了、画像更新、履歴のない管理終了済みPetの完全削除を行う。完全削除は`src/lib/pet-delete.ts`がPet行をlockしてから体重・4種Care・Pet Record・思い出の多対多関連を同一transaction内で再確認し、Dashboard設定と通知ルールだけをCascade削除対象として許容する。`src/app/actions/pet-notifications.ts`はVIEWERを含む所属メンバー本人の通知ルールだけを一括保存する。
 - **画像:** `src/lib/pet-image.ts`、`src/components/pet-image-field.tsx`、認証付き`/api/pets/[id]/image`。`PET_IMAGE_DIR`へHousehold別UUID WebPを保存する。
 - **Prisma:** `Pet`、`Breed`、`PetSpecies`、`PetSex`、`PetNotificationRule`。speciesは作成後に変更せず、管理終了後も履歴と通知ルールを保持する。`Breed`は`isActive`で候補から外し、既存Petの参照は維持する。マスタ投入と旧自由入力の完全一致backfillは`prisma/seed-breeds.ts`が担う。
-- **テスト:** `tests/pets.test.ts`、`tests/pet-image.test.tsx`、`tests/authorization.test.ts`、`tests/pet-notifications.test.ts`。
+- **テスト:** `tests/pets.test.ts`、`tests/pet-delete.test.ts`、`tests/pet-image.test.tsx`、`tests/authorization.test.ts`、`tests/pet-notifications.test.ts`。
 
 ## Pet体重
 

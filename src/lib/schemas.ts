@@ -103,6 +103,10 @@ export const updatePetActiveStatusSchema = z.object({
   isActive: z.enum(["true", "false"]).transform((value) => value === "true")
 });
 
+export const deletePetSchema = z.object({
+  id: idSchema
+});
+
 const petWeightRecordDateSchema = z
   .string()
   .refine(isValidDateInput, { message: "invalidDate" })

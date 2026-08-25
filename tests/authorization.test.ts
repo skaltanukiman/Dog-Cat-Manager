@@ -148,7 +148,7 @@ test("Household権限変更はOWNERだけに許可し、自己変更とOWNER変�
 
 test("共有データ更新Server Actionは直接呼び出されても共通更新ガードを必須とする", () => {
   const guardedActions = {
-    "src/app/actions/pets.ts": ["createPet", "updatePet", "updatePetActiveStatus"],
+    "src/app/actions/pets.ts": ["createPet", "updatePet", "updatePetActiveStatus", "deletePet"],
     "src/app/actions/pet-weights.ts": [
       "createPetWeightRecord",
       "updatePetWeightRecord",
