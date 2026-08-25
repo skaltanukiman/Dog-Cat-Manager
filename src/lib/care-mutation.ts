@@ -18,6 +18,19 @@ export type CareMutationResult = {
   status: CareMutationStatus;
 };
 
+/**
+ * Care更新フォームで編集対象の現在値を初期値と比較するための安定したスナップショットを作る。
+ * hidden inputはfieldNamesに渡さないため、画面状態のための値をdirty判定から除外できる。
+ */
+export function getCareMutationFieldSnapshot(formData: FormData, fieldNames: readonly string[]) {
+  return JSON.stringify(
+    fieldNames.map((name) => [
+      name,
+      formData.getAll(name).map((value) => (typeof value === "string" ? value : value.name))
+    ])
+  );
+}
+
 export const CARE_MUTATION_SUCCESS_MESSAGES: Record<CareMutationStatus, string> = {
   petFeedingCreated: "食事を記録しました。",
   petFeedingUpdated: "食事を更新しました。",

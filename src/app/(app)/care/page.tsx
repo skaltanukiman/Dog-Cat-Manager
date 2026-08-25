@@ -313,7 +313,7 @@ export default async function CarePage({
                           record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                         ) : (
                           <div className="mt-4 grid gap-3">
-                            <CareMutationForm action={updatePetFeedingRecord} className="grid gap-3 md:grid-cols-2">
+                            <CareMutationForm action={updatePetFeedingRecord} requireChanges changeFieldNames={["fedAt", "memo"]} className="grid gap-3 md:grid-cols-2">
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                               <input type="hidden" name="id" value={record.id} />
                               <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -324,7 +324,7 @@ export default async function CarePage({
                                 メモ
                                 <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                               </label>
-                              <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2">更新</CareMutationSubmitButton>
+                              <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-slate-50 md:col-span-2">更新</CareMutationSubmitButton>
                             </CareMutationForm>
                             <CareMutationForm action={deletePetFeedingRecord}>
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -394,7 +394,7 @@ export default async function CarePage({
                           record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                         ) : (
                           <div className="mt-4 grid gap-3">
-                            <CareMutationForm action={updatePetWaterRecord} className="grid gap-3 md:grid-cols-3">
+                            <CareMutationForm action={updatePetWaterRecord} requireChanges changeFieldNames={["caredAt", "action", "memo"]} className="grid gap-3 md:grid-cols-3">
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                               <input type="hidden" name="id" value={record.id} />
                               <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -412,7 +412,7 @@ export default async function CarePage({
                                 メモ
                                 <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                               </label>
-                              <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</CareMutationSubmitButton>
+                              <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-slate-50 md:col-span-3">更新</CareMutationSubmitButton>
                             </CareMutationForm>
                             <CareMutationForm action={deletePetWaterRecord}>
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -484,7 +484,7 @@ export default async function CarePage({
                             record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                           ) : (
                             <div className="mt-4 grid gap-3">
-                              <CareMutationForm action={updatePetWalkRecord} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                              <CareMutationForm action={updatePetWalkRecord} requireChanges changeFieldNames={["startedAt", "durationMinutes", "distanceKm", "memo"]} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                                 <input type="hidden" name="id" value={record.id} />
                                 <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -509,7 +509,7 @@ export default async function CarePage({
                                   メモ
                                   <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                                 </label>
-                                <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2 xl:col-span-4">更新</CareMutationSubmitButton>
+                                <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-slate-50 md:col-span-2 xl:col-span-4">更新</CareMutationSubmitButton>
                               </CareMutationForm>
                               <CareMutationForm action={deletePetWalkRecord}>
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -583,7 +583,7 @@ export default async function CarePage({
                             record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                           ) : (
                             <div className="mt-4 grid gap-3">
-                              <CareMutationForm action={updatePetLitterRecord} className="grid gap-3 md:grid-cols-3">
+                              <CareMutationForm action={updatePetLitterRecord} requireChanges changeFieldNames={["occurredAt", "action", "memo"]} className="grid gap-3 md:grid-cols-3">
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                                 <input type="hidden" name="id" value={record.id} />
                                 <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -603,7 +603,7 @@ export default async function CarePage({
                                   メモ
                                   <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                                 </label>
-                                <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</CareMutationSubmitButton>
+                                <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-slate-50 md:col-span-3">更新</CareMutationSubmitButton>
                               </CareMutationForm>
                               <CareMutationForm action={deletePetLitterRecord}>
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />

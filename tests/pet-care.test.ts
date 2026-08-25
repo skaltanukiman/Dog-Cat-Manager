@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { formatHouseholdActivity, type HouseholdActivityListItem } from "../src/lib/household-activity";
+import { getCareMutationFieldSnapshot } from "../src/lib/care-mutation";
 
 async function source(path: string) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -25,6 +26,12 @@ function activity(eventType: HouseholdActivityListItem["eventType"], details: Ho
     details,
     createdAt: new Date("2026-08-12T00:00:00.000Z")
   });
+}
+
+function careMutationSnapshot(fieldNames: readonly string[], values: Record<string, string>) {
+  const formData = new FormData();
+  for (const [name, value] of Object.entries(values)) formData.set(name, value);
+  return getCareMutationFieldSnapshot(formData, fieldNames);
 }
 
 test("Pet Careモデルは同日複数イベントを許可する", async () => {
@@ -217,6 +224,52 @@ test("Careの全成功Mutationはredirectせず、Client側の同一Disclosure�
   assert.match(feedback, /router\.refresh\(\)/);
   assert.doesNotMatch(feedback, /router\.(?:push|replace)\(/);
   assert.match(feedback, /CareMutationSubmitButton/);
+});
+
+test("Care更新フォームのdirty判定は編集可能な値だけを初期値と比較し、元へ戻すとcleanになる", async () => {
+  const page = await source("src/app/(app)/care/page.tsx");
+  const feedback = await source("src/components/care-mutation-feedback.tsx");
+  const cases = [
+    {
+      fieldNames: ["fedAt", "memo"],
+      initial: { fedAt: "2026-08-26T10:00", memo: "朝" },
+      changed: [["fedAt", "2026-08-26T11:00"], ["memo", "夜"]]
+    },
+    {
+      fieldNames: ["caredAt", "action", "memo"],
+      initial: { caredAt: "2026-08-26T10:00", action: "REPLACED", memo: "洗浄" },
+      changed: [["caredAt", "2026-08-26T11:00"], ["action", "REFILLED"], ["memo", "補充"]]
+    },
+    {
+      fieldNames: ["startedAt", "durationMinutes", "distanceKm", "memo"],
+      initial: { startedAt: "2026-08-26T10:00", durationMinutes: "", distanceKm: "", memo: "公園" },
+      changed: [["startedAt", "2026-08-26T11:00"], ["durationMinutes", "30"], ["distanceKm", "2.5"], ["memo", "川沿い"]]
+    },
+    {
+      fieldNames: ["occurredAt", "action", "memo"],
+      initial: { occurredAt: "2026-08-26T10:00", action: "URINATION", memo: "普通" },
+      changed: [["occurredAt", "2026-08-26T11:00"], ["action", "CLEANED"], ["memo", "砂を交換"]]
+    }
+  ] as const;
+
+  for (const { fieldNames, initial, changed } of cases) {
+    const baseline = careMutationSnapshot(fieldNames, { ...initial, petId: "pet-1", id: "record-1" });
+    assert.equal(careMutationSnapshot(fieldNames, { ...initial, petId: "pet-2", id: "record-2" }), baseline);
+    for (const [name, value] of changed) {
+      assert.notEqual(careMutationSnapshot(fieldNames, { ...initial, [name]: value }), baseline);
+      assert.equal(careMutationSnapshot(fieldNames, { ...initial }), baseline);
+    }
+  }
+
+  assert.match(page, /updatePetFeedingRecord} requireChanges changeFieldNames=\{\["fedAt", "memo"\]\}/);
+  assert.match(page, /updatePetWaterRecord} requireChanges changeFieldNames=\{\["caredAt", "action", "memo"\]\}/);
+  assert.match(page, /updatePetWalkRecord} requireChanges changeFieldNames=\{\["startedAt", "durationMinutes", "distanceKm", "memo"\]\}/);
+  assert.match(page, /updatePetLitterRecord} requireChanges changeFieldNames=\{\["occurredAt", "action", "memo"\]\}/);
+  assert.equal((page.match(/requireChanges/g) ?? []).length, 4);
+  assert.match(feedback, /context\.isPending \|\| props\.disabled \|\| Boolean\(formContext\?\.requireChanges && !formContext\.isDirty\)/);
+  assert.match(feedback, /initialSnapshotRef\.current = getCareMutationFieldSnapshot/);
+  assert.match(feedback, /setIsDirty\(false\)/);
+  assert.match(feedback, /router\.refresh\(\)/);
 });
 
 test("主要ナビは5項目を維持してPet Care導線を表示する", async () => {
