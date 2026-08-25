@@ -9,6 +9,7 @@ import { getRequiredHouseholdMutationContext } from "@/lib/auth-context";
 import { getCareDayRecordDate } from "@/lib/care-day";
 import { isValidDateInput, parseDateInput } from "@/lib/date";
 import { activityActorName } from "@/lib/household-activity";
+import type { CareMutationResult } from "@/lib/care-mutation";
 import {
   isFuturePetCareTimestamp,
   isSameInputMinute,
@@ -72,7 +73,7 @@ function handleKnownPetLitterError(error: unknown, petId: string, formData: Form
   if (error instanceof PetLitterRecordNotFoundError) petLitterRedirect(petId, "invalid", formData);
 }
 
-export async function createPetLitterRecord(formData: FormData) {
+export async function createPetLitterRecord(formData: FormData): Promise<CareMutationResult> {
   const rawPetId = formData.get("petId");
   const petId = typeof rawPetId === "string" ? rawPetId : "";
   try {
@@ -128,7 +129,7 @@ export async function createPetLitterRecord(formData: FormData) {
       "petLitter.create.revalidate",
       { householdId: context.household.id, petId: result.data.petId }
     );
-    petLitterRedirect(result.data.petId, "petLitterCreated", formData);
+    return { success: true, status: "petLitterCreated" };
   } catch (error) {
     handleKnownPetLitterError(error, petId, formData);
     handleServerActionError(error, {
@@ -140,7 +141,7 @@ export async function createPetLitterRecord(formData: FormData) {
   }
 }
 
-export async function updatePetLitterRecord(formData: FormData) {
+export async function updatePetLitterRecord(formData: FormData): Promise<CareMutationResult> {
   const rawPetId = formData.get("petId");
   const petId = typeof rawPetId === "string" ? rawPetId : "";
   try {
@@ -225,7 +226,7 @@ export async function updatePetLitterRecord(formData: FormData) {
       "petLitter.update.revalidate",
       { householdId: context.household.id, petId: result.data.petId, recordId: result.data.id }
     );
-    petLitterRedirect(result.data.petId, "petLitterUpdated", formData);
+    return { success: true, status: "petLitterUpdated" };
   } catch (error) {
     handleKnownPetLitterError(error, petId, formData);
     handleServerActionError(error, {
@@ -237,7 +238,7 @@ export async function updatePetLitterRecord(formData: FormData) {
   }
 }
 
-export async function deletePetLitterRecord(formData: FormData) {
+export async function deletePetLitterRecord(formData: FormData): Promise<CareMutationResult> {
   const rawPetId = formData.get("petId");
   const petId = typeof rawPetId === "string" ? rawPetId : "";
   try {
@@ -298,7 +299,7 @@ export async function deletePetLitterRecord(formData: FormData) {
       "petLitter.delete.revalidate",
       { householdId: context.household.id, petId: result.data.petId, recordId: result.data.id }
     );
-    petLitterRedirect(result.data.petId, "petLitterDeleted", formData);
+    return { success: true, status: "petLitterDeleted" };
   } catch (error) {
     handleKnownPetLitterError(error, petId, formData);
     handleServerActionError(error, {

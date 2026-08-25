@@ -13,6 +13,11 @@ import { createPetWaterRecord, deletePetWaterRecord, updatePetWaterRecord } from
 import { AutoSubmitInput } from "@/components/auto-submit-input";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { CareDisclosure } from "@/components/care-disclosure";
+import {
+  CareMutationFeedback,
+  CareMutationForm,
+  CareMutationSubmitButton
+} from "@/components/care-mutation-feedback";
 import { EmptyState } from "@/components/empty-state";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { PetThumbnail } from "@/components/pet-thumbnail";
@@ -268,9 +273,10 @@ export default async function CarePage({
                 headerClassName="border-accent bg-accent/5"
               >
                 <div className="space-y-6 px-3 py-4 sm:px-4">
+                <CareMutationFeedback>
                 <p className="text-sm text-slate-600">同じお世話日に複数回記録できます。</p>
                 {canMutateSelectedPet ? (
-                  <form action={createPetFeedingRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                  <CareMutationForm action={createPetFeedingRecord} resetOnSuccess className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                     <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
                     <div className="grid gap-4 p-5 md:grid-cols-2">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -282,11 +288,11 @@ export default async function CarePage({
                       メモ
                       <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="朝ごはん" />
                     </label>
-                    <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2">
+                    <CareMutationSubmitButton pendingLabel="登録中..." className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2">
                       登録
-                    </button>
+                    </CareMutationSubmitButton>
                     </div>
-                  </form>
+                  </CareMutationForm>
                 ) : null}
                 <div className="space-y-3">
                   <CareHistoryHeading count={feedingRecords.length} />
@@ -307,7 +313,7 @@ export default async function CarePage({
                           record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                         ) : (
                           <div className="mt-4 grid gap-3">
-                            <form action={updatePetFeedingRecord} className="grid gap-3 md:grid-cols-2">
+                            <CareMutationForm action={updatePetFeedingRecord} className="grid gap-3 md:grid-cols-2">
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                               <input type="hidden" name="id" value={record.id} />
                               <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -318,13 +324,13 @@ export default async function CarePage({
                                 メモ
                                 <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                               </label>
-                              <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2">更新</button>
-                            </form>
-                            <form action={deletePetFeedingRecord}>
+                              <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2">更新</CareMutationSubmitButton>
+                            </CareMutationForm>
+                            <CareMutationForm action={deletePetFeedingRecord}>
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                               <input type="hidden" name="id" value={record.id} />
-                              <button type="submit" className="text-sm font-semibold text-red-600 hover:underline">この食事記録を削除</button>
-                            </form>
+                              <CareMutationSubmitButton pendingLabel="削除中..." className="text-sm font-semibold text-red-600 hover:underline">この食事記録を削除</CareMutationSubmitButton>
+                            </CareMutationForm>
                           </div>
                         )}
                       </article>
@@ -332,6 +338,7 @@ export default async function CarePage({
                   </div>
                 )}
                 </div>
+                </CareMutationFeedback>
                 </div>
               </CareDisclosure>
 
@@ -342,9 +349,10 @@ export default async function CarePage({
                 headerClassName="border-brand bg-brand/5"
               >
                 <div className="space-y-6 px-3 py-4 sm:px-4">
+                <CareMutationFeedback>
                 <p className="text-sm text-slate-600">交換と補充をイベントとして記録します。</p>
                 {canMutateSelectedPet ? (
-                  <form action={createPetWaterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                  <CareMutationForm action={createPetWaterRecord} resetOnSuccess className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                     <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
                     <div className="grid gap-4 p-5 md:grid-cols-3">
                     <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -363,9 +371,9 @@ export default async function CarePage({
                       メモ
                       <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="容器も洗浄" />
                     </label>
-                    <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
+                    <CareMutationSubmitButton pendingLabel="登録中..." className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</CareMutationSubmitButton>
                     </div>
-                  </form>
+                  </CareMutationForm>
                 ) : null}
                 <div className="space-y-3">
                   <CareHistoryHeading count={waterRecords.length} />
@@ -386,7 +394,7 @@ export default async function CarePage({
                           record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                         ) : (
                           <div className="mt-4 grid gap-3">
-                            <form action={updatePetWaterRecord} className="grid gap-3 md:grid-cols-3">
+                            <CareMutationForm action={updatePetWaterRecord} className="grid gap-3 md:grid-cols-3">
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                               <input type="hidden" name="id" value={record.id} />
                               <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -404,13 +412,13 @@ export default async function CarePage({
                                 メモ
                                 <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                               </label>
-                              <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</button>
-                            </form>
-                            <form action={deletePetWaterRecord}>
+                              <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</CareMutationSubmitButton>
+                            </CareMutationForm>
+                            <CareMutationForm action={deletePetWaterRecord}>
                               <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                               <input type="hidden" name="id" value={record.id} />
-                              <button type="submit" className="text-sm font-semibold text-red-600 hover:underline">この水の記録を削除</button>
-                            </form>
+                              <CareMutationSubmitButton pendingLabel="削除中..." className="text-sm font-semibold text-red-600 hover:underline">この水の記録を削除</CareMutationSubmitButton>
+                            </CareMutationForm>
                           </div>
                         )}
                       </article>
@@ -418,6 +426,7 @@ export default async function CarePage({
                   </div>
                 )}
                 </div>
+                </CareMutationFeedback>
                 </div>
               </CareDisclosure>
 
@@ -429,9 +438,10 @@ export default async function CarePage({
                   headerClassName="border-care-walk bg-care-walk/5"
                 >
                   <div className="space-y-6 px-3 py-4 sm:px-4">
+                  <CareMutationFeedback>
                   <p className="text-sm text-slate-600">開始日時と任意の散歩時間・距離を記録します。</p>
                   {canMutateSelectedPet ? (
-                    <form action={createPetWalkRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                    <CareMutationForm action={createPetWalkRecord} resetOnSuccess className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                       <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
                       <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -451,9 +461,9 @@ export default async function CarePage({
                         メモ
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="公園まで" />
                       </label>
-                      <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2 xl:col-span-4">登録</button>
+                      <CareMutationSubmitButton pendingLabel="登録中..." className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-2 xl:col-span-4">登録</CareMutationSubmitButton>
                       </div>
-                    </form>
+                    </CareMutationForm>
                   ) : null}
                   <div className="space-y-3">
                     <CareHistoryHeading count={walkRecords.length} />
@@ -474,7 +484,7 @@ export default async function CarePage({
                             record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                           ) : (
                             <div className="mt-4 grid gap-3">
-                              <form action={updatePetWalkRecord} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                              <CareMutationForm action={updatePetWalkRecord} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                                 <input type="hidden" name="id" value={record.id} />
                                 <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -499,13 +509,13 @@ export default async function CarePage({
                                   メモ
                                   <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                                 </label>
-                                <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2 xl:col-span-4">更新</button>
-                              </form>
-                              <form action={deletePetWalkRecord}>
+                                <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-2 xl:col-span-4">更新</CareMutationSubmitButton>
+                              </CareMutationForm>
+                              <CareMutationForm action={deletePetWalkRecord}>
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                                 <input type="hidden" name="id" value={record.id} />
-                                <button type="submit" className="text-sm font-semibold text-red-600 hover:underline">この散歩記録を削除</button>
-                              </form>
+                                <CareMutationSubmitButton pendingLabel="削除中..." className="text-sm font-semibold text-red-600 hover:underline">この散歩記録を削除</CareMutationSubmitButton>
+                              </CareMutationForm>
                             </div>
                           )}
                         </article>
@@ -513,6 +523,7 @@ export default async function CarePage({
                     </div>
                   )}
                   </div>
+                  </CareMutationFeedback>
                   </div>
                 </CareDisclosure>
               ) : null}
@@ -525,9 +536,10 @@ export default async function CarePage({
                   headerClassName="border-care-litter bg-care-litter/5"
                 >
                   <div className="space-y-6 px-3 py-4 sm:px-4">
+                  <CareMutationFeedback>
                   <p className="text-sm text-slate-600">排泄の確認またはトイレ掃除を記録します。</p>
                   {canMutateSelectedPet ? (
-                    <form action={createPetLitterRecord} className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                    <CareMutationForm action={createPetLitterRecord} resetOnSuccess className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                       <h4 className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm font-semibold text-slate-700">記録の追加</h4>
                       <div className="grid gap-4 p-5 md:grid-cols-3">
                       <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
@@ -548,9 +560,9 @@ export default async function CarePage({
                         メモ
                         <input type="text" name="memo" maxLength={PET_CARE_MEMO_MAX_LENGTH} placeholder="普通" />
                       </label>
-                      <button type="submit" className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</button>
+                      <CareMutationSubmitButton pendingLabel="登録中..." className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark md:col-span-3">登録</CareMutationSubmitButton>
                       </div>
-                    </form>
+                    </CareMutationForm>
                   ) : null}
                   <div className="space-y-3">
                     <CareHistoryHeading count={litterRecords.length} />
@@ -571,7 +583,7 @@ export default async function CarePage({
                             record.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">メモ: {record.memo}</p> : null
                           ) : (
                             <div className="mt-4 grid gap-3">
-                              <form action={updatePetLitterRecord} className="grid gap-3 md:grid-cols-3">
+                              <CareMutationForm action={updatePetLitterRecord} className="grid gap-3 md:grid-cols-3">
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                                 <input type="hidden" name="id" value={record.id} />
                                 <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -591,13 +603,13 @@ export default async function CarePage({
                                   メモ
                                   <input type="text" name="memo" defaultValue={record.memo ?? ""} maxLength={PET_CARE_MEMO_MAX_LENGTH} />
                                 </label>
-                                <button type="submit" className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</button>
-                              </form>
-                              <form action={deletePetLitterRecord}>
+                                <CareMutationSubmitButton pendingLabel="更新中..." className="rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/5 md:col-span-3">更新</CareMutationSubmitButton>
+                              </CareMutationForm>
+                              <CareMutationForm action={deletePetLitterRecord}>
                                 <MutationHiddenFields petId={selectedPet.id} careDate={selectedCareDate} includeInactive={includeInactive} />
                                 <input type="hidden" name="id" value={record.id} />
-                                <button type="submit" className="text-sm font-semibold text-red-600 hover:underline">この猫トイレ記録を削除</button>
-                              </form>
+                                <CareMutationSubmitButton pendingLabel="削除中..." className="text-sm font-semibold text-red-600 hover:underline">この猫トイレ記録を削除</CareMutationSubmitButton>
+                              </CareMutationForm>
                             </div>
                           )}
                         </article>
@@ -605,6 +617,7 @@ export default async function CarePage({
                     </div>
                   )}
                   </div>
+                  </CareMutationFeedback>
                   </div>
                 </CareDisclosure>
               ) : null}

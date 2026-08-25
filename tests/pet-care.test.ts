@@ -184,6 +184,41 @@ test("/careは独立Disclosureとallowlist済みのmutation後開状態を提供
   }
 });
 
+test("Careの全成功Mutationはredirectせず、Client側の同一Disclosureで通知と再取得を行う", async () => {
+  const page = await source("src/app/(app)/care/page.tsx");
+  const feedback = await source("src/components/care-mutation-feedback.tsx");
+  const result = await source("src/lib/care-mutation.ts");
+  const actionsByKind = [
+    ["src/app/actions/pet-feeding.ts", "petFeeding", "食事"],
+    ["src/app/actions/pet-water.ts", "petWater", "水"],
+    ["src/app/actions/pet-walk.ts", "petWalk", "散歩"],
+    ["src/app/actions/pet-litter.ts", "petLitter", "猫トイレ"]
+  ] as const;
+
+  for (const [path, prefix, label] of actionsByKind) {
+    const actions = await source(path);
+    for (const [verb, suffix] of [["create", "Created"], ["update", "Updated"], ["delete", "Deleted"]] as const) {
+      const action = actionSource(actions, `${verb}Pet${prefix.slice(3)}Record`);
+      const status = `${prefix}${suffix}`;
+      assert.match(action, new RegExp(`return \\{ success: true, status: "${status}" \\};`));
+      assert.doesNotMatch(action, new RegExp(`Redirect\\(result\\.data\\.petId, "${status}"`));
+      assert.match(result, new RegExp(`${status}: "`));
+    }
+    assert.match(result, new RegExp(`${prefix}Created: "${label}`));
+    assert.match(actions, /params\.set\("careSection",/);
+  }
+
+  assert.equal((page.match(/<CareMutationFeedback>/g) ?? []).length, 4);
+  assert.equal((page.match(/<CareMutationForm action=\{(?:create|update|delete)Pet(?:Feeding|Water|Walk|Litter)Record\}/g) ?? []).length, 12);
+  assert.equal((page.match(/resetOnSuccess/g) ?? []).length, 4);
+  assert.match(feedback, /CARE_MUTATION_SUCCESS_MESSAGES\[result\.status\]/);
+  assert.match(feedback, /AutoDismissSuccessMessage/);
+  assert.match(feedback, /form\.reset\(\)/);
+  assert.match(feedback, /router\.refresh\(\)/);
+  assert.doesNotMatch(feedback, /router\.(?:push|replace)\(/);
+  assert.match(feedback, /CareMutationSubmitButton/);
+});
+
 test("主要ナビは5項目を維持してPet Care導線を表示する", async () => {
   const nav = await source("src/components/app-nav.tsx");
   assert.match(nav, /href: "\/care", label: "お世話管理", mobileLabel: "お世話"/);

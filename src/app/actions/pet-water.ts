@@ -9,6 +9,7 @@ import { getRequiredHouseholdMutationContext } from "@/lib/auth-context";
 import { getCareDayRecordDate } from "@/lib/care-day";
 import { isValidDateInput } from "@/lib/date";
 import { activityActorName } from "@/lib/household-activity";
+import type { CareMutationResult } from "@/lib/care-mutation";
 import {
   isFuturePetCareTimestamp,
   isSameInputMinute,
@@ -70,7 +71,7 @@ function handleKnownPetWaterError(error: unknown, petId: string, formData: FormD
   if (error instanceof PetWaterRecordNotFoundError) petWaterRedirect(petId, "invalid", formData);
 }
 
-export async function createPetWaterRecord(formData: FormData) {
+export async function createPetWaterRecord(formData: FormData): Promise<CareMutationResult> {
   const rawPetId = formData.get("petId");
   const petId = typeof rawPetId === "string" ? rawPetId : "";
   try {
@@ -127,7 +128,7 @@ export async function createPetWaterRecord(formData: FormData) {
       "petWater.create.revalidate",
       { householdId: context.household.id, petId: result.data.petId }
     );
-    petWaterRedirect(result.data.petId, "petWaterCreated", formData);
+    return { success: true, status: "petWaterCreated" };
   } catch (error) {
     handleKnownPetWaterError(error, petId, formData);
     handleServerActionError(error, {
@@ -139,7 +140,7 @@ export async function createPetWaterRecord(formData: FormData) {
   }
 }
 
-export async function updatePetWaterRecord(formData: FormData) {
+export async function updatePetWaterRecord(formData: FormData): Promise<CareMutationResult> {
   const rawPetId = formData.get("petId");
   const petId = typeof rawPetId === "string" ? rawPetId : "";
   try {
@@ -224,7 +225,7 @@ export async function updatePetWaterRecord(formData: FormData) {
       "petWater.update.revalidate",
       { householdId: context.household.id, petId: result.data.petId, recordId: result.data.id }
     );
-    petWaterRedirect(result.data.petId, "petWaterUpdated", formData);
+    return { success: true, status: "petWaterUpdated" };
   } catch (error) {
     handleKnownPetWaterError(error, petId, formData);
     handleServerActionError(error, {
@@ -236,7 +237,7 @@ export async function updatePetWaterRecord(formData: FormData) {
   }
 }
 
-export async function deletePetWaterRecord(formData: FormData) {
+export async function deletePetWaterRecord(formData: FormData): Promise<CareMutationResult> {
   const rawPetId = formData.get("petId");
   const petId = typeof rawPetId === "string" ? rawPetId : "";
   try {
@@ -292,7 +293,7 @@ export async function deletePetWaterRecord(formData: FormData) {
       "petWater.delete.revalidate",
       { householdId: context.household.id, petId: result.data.petId, recordId: result.data.id }
     );
-    petWaterRedirect(result.data.petId, "petWaterDeleted", formData);
+    return { success: true, status: "petWaterDeleted" };
   } catch (error) {
     handleKnownPetWaterError(error, petId, formData);
     handleServerActionError(error, {
