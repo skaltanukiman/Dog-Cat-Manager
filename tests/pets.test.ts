@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { createPetSchema, updatePetSchema } from "../src/lib/schemas";
+import { createPetSchema, updatePetActiveStatusSchema, updatePetSchema } from "../src/lib/schemas";
 import { toDateInputValue } from "../src/lib/date";
 import { breedMatchesQuery, findExactBreed, normalizeBreedSearch, type BreedOption } from "../src/lib/breed-search";
 import { dogBreeds } from "../prisma/data/dog-breeds";
@@ -129,7 +129,7 @@ test("Pet更新ActionはDBのspeciesで品種を検証し、更新データへsp
   assert.match(action, /data: \{\s*\.\.\.data,/);
 });
 
-test("管理終了はisActive更新だけを行いPet本体を保持する", async () => {
+test("管理状態変更はisActiveだけを更新し、再検証とRealtime通知を維持して成功時に遷移しない", async () => {
   const actions = await source("src/app/actions/pets.ts");
   const start = actions.indexOf("export async function updatePetActiveStatus");
   const end = actions.indexOf("export async function deletePet", start);
@@ -137,6 +137,18 @@ test("管理終了はisActive更新だけを行いPet本体を保持する", asy
 
   assert.match(action, /data: \{ isActive: result\.data\.isActive \}/);
   assert.doesNotMatch(action, /pet\.delete|deleteMany/);
+  assert.match(action, /commitHouseholdMutation\(\{/);
+  assert.match(action, /publishHouseholdChangeSafely\(change\)/);
+  assert.match(action, /revalidatePathsSafely\(\[\{ path: "\/pets" \}\], "pets\.activeStatus\.revalidate"/);
+  assert.doesNotMatch(action, /redirect\("\/pets\?status=updated"\)/);
+});
+
+test("管理状態変更は管理終了と管理中への復帰の両方を受け付ける", () => {
+  for (const isActive of ["false", "true"]) {
+    const result = updatePetActiveStatusSchema.safeParse({ id: "pet-1", isActive });
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.data.isActive, isActive === "true");
+  }
 });
 
 test("Pet画面は選択中Householdだけを一覧表示し、speciesを新規登録時のみ選択できる", async () => {

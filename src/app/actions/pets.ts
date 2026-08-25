@@ -322,7 +322,7 @@ export async function updatePetActiveStatus(formData: FormData) {
       householdId: context.household.id,
       petId: result.data.id
     });
-    redirect("/pets?status=updated");
+    // 同一画面の表示更新はServer Actionの再描画に任せ、URL遷移によるスクロール位置のリセットを避ける。
   } catch (error) {
     if (error instanceof PetMutationForbiddenError) redirect("/pets?status=viewerForbidden");
     handleServerActionError(error, { operation: "pets.activeStatus", pathname: "/pets" });
