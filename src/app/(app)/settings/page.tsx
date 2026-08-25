@@ -3,6 +3,7 @@ import { ContactSupportEntry } from "@/components/contact-support-entry";
 import { CareDaySettingsForm } from "@/components/care-day-settings-form";
 import { DashboardSettingsForm } from "@/components/dashboard-settings-form";
 import { NotificationSettingsForm } from "@/components/notification-settings-form";
+import { PwaInstallGuideEntry } from "@/components/pwa-install-guide-entry";
 import { StatusMessage } from "@/components/status-message";
 import { TutorialSettingsEntry } from "@/components/tutorial-settings-entry";
 import { getDashboardSettingsPageData } from "@/lib/queries";
@@ -44,6 +45,8 @@ export default async function SettingsPage({
       <StatusMessage status={getParam(params.status)} errorId={getParam(params.errorId)} />
 
       <TutorialSettingsEntry />
+
+      <PwaInstallGuideEntry />
 
       <DashboardSettingsForm
         name={user.name}

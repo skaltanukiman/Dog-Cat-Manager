@@ -90,11 +90,11 @@
 
 ## 設定
 
-- **画面:** `/settings`。プロフィール、記録画面の初期表示（選択中のPet / 共有グループ全体）、Pet Dashboard表示数・対象・順序、お世話日の切り替え時刻、通知端末・本人用通知本文、問い合わせ・アカウント削除導線を持つ。
+- **画面:** `/settings`。プロフィール、記録画面の初期表示（選択中のPet / 共有グループ全体）、Pet Dashboard表示数・対象・順序、お世話日の切り替え時刻、通知端末・本人用通知本文、iPhoneホーム画面追加ガイド、問い合わせ・アカウント削除導線を持つ。PWAガイドは`/settings/pwa`で、画像は`public/help/pwa/iphone/`に置く。
 - **Action:** `src/app/actions/settings.ts`、`src/app/actions/care-day-settings.ts`。
 - **状態管理:** `src/lib/settings-diff.ts`、`settings-save-state.ts`、`src/components/dashboard-settings-form.tsx`、`display-settings-section.tsx`、`care-day-settings-form.tsx`。記録画面scopeだけの変更は`DashboardPet`を再作成しない。
 - **Prisma:** `AppSetting.dashboardBoardCount`、`AppSetting.recordTimelineDefaultScope`（DB default・アプリfallbackとも`household`）、`AppSetting.careNotificationCompactBody`、`DashboardPet`、`Household.careDayStartMinutes`。
-- **テスト:** `tests/settings.test.ts`、`settings-save-behavior.test.ts`、`dashboard-settings.test.ts`、`care-day-settings.test.ts`。
+- **テスト:** `tests/settings.test.ts`、`settings-save-behavior.test.ts`、`dashboard-settings.test.ts`、`care-day-settings.test.ts`、`pwa-install-guide.test.ts`。
 
 ## アカウント削除
 
