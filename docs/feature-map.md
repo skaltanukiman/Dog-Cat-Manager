@@ -64,7 +64,7 @@
 
 - **画面:** `/weights`、`/weights/export`（CSVエクスポート）。
 - **Action / query:** `src/app/actions/pet-weights.ts`、`src/lib/pet-weight-queries.ts`、`src/lib/pet-weight-rules.ts`、`src/lib/pet-weight-csv-export.ts`、`/weights/export/download` Route。
-- **UI:** `src/components/pet-weight-chart.tsx`、`src/components/pet-weight-history-list.tsx`、`src/components/pet-weight-csv-export-form.tsx`。
+- **UI:** `src/components/pet-weight-chart.tsx`、`src/components/pet-weight-history-list.tsx`、`src/components/pet-weight-data-management-menu.tsx`、`src/components/pet-weight-csv-export-form.tsx`。
 - **Prisma:** `PetWeightRecord`。Petと測定日の組み合わせは一意で、重量をg単位のDecimalで保存する。
 - **テスト:** `tests/pet-weights.test.ts`、`tests/pet-weight-csv-export.test.ts`、`tests/date-validation.test.ts`。
 

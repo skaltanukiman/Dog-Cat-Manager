@@ -7,6 +7,7 @@ import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationLayout } from "@/components/pagination";
 import { PetWeightChart } from "@/components/pet-weight-chart";
+import { PetWeightDataManagementMenu } from "@/components/pet-weight-data-management-menu";
 import { PetWeightHistoryList } from "@/components/pet-weight-history-list";
 import { PetSpeciesBadge } from "@/components/pet-species-badge";
 import { StatusMessage } from "@/components/status-message";
@@ -72,11 +73,12 @@ export default async function WeightsPage({
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1 sm:flex-none">
           <h2 className="text-xl font-bold text-ink">体重管理</h2>
           <p className="mt-1 text-sm text-slate-600">犬・猫の日付ごとの体重を記録し、推移を確認します。</p>
         </div>
-        <Link href="/weights/export" className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+        <PetWeightDataManagementMenu />
+        <Link href="/weights/export" className="hidden h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex">
           <Download className="h-4 w-4" aria-hidden />
           CSVエクスポート
         </Link>
