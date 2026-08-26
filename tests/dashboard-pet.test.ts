@@ -17,6 +17,7 @@ function readSource(path: string) {
 }
 
 const page = readSource("src/app/(app)/page.tsx");
+const thumbnail = readSource("src/components/pet-thumbnail.tsx");
 const speciesBadge = readSource("src/components/pet-species-badge.tsx");
 const queries = readSource("src/lib/queries.ts");
 const settingsAction = readSource("src/app/actions/settings.ts");
@@ -127,7 +128,10 @@ test("最新体重だけをDecimalのまま表示し、PetThumbnailと犬猫・�
   assert.match(queries, /weightRecords: \{[\s\S]*take: 1[\s\S]*weightKg: true/);
   assert.match(page, /latestWeight\.weightKg\.toString\(\)/);
   assert.doesNotMatch(page, /Number\(latestWeight\.weightKg\)|parseFloat/);
-  assert.match(page, /<PetThumbnail/);
+  assert.match(page, /<PetThumbnail[\s\S]*size="dashboard"/);
+  assert.match(thumbnail, /size\?: "card" \| "dashboard" \| "management" \| "timeline"/);
+  assert.match(thumbnail, /size === "dashboard"[\s\S]*"h-24 w-24"/);
+  assert.match(thumbnail, /size === "card"[\s\S]*"h-20 w-20 sm:h-24 sm:w-24"/);
   assert.match(page, /import \{ PetSpeciesBadge \} from "@\/components\/pet-species-badge";/);
   assert.match(page, /pet\.isActive \? "管理中" : "管理終了"/);
 });

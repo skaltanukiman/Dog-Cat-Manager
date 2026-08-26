@@ -110,6 +110,7 @@ export default async function DashboardPage({
                       petId={pet.id}
                       petName={pet.name}
                       profileImageFileName={pet.profileImageFileName}
+                      size="dashboard"
                     />
                   </div>
 
