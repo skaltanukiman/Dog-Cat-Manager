@@ -102,7 +102,7 @@ export default async function RecordsPage({
 
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6 lg:px-8">
-      <header>
+      <header data-tutorial="records-overview">
         <p className="text-sm font-semibold text-brand">健康と大切な時間をひとつの年表に</p>
         <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">記録</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">犬・猫の健康、通院、投薬、ワクチン、思い出を記録します。</p>

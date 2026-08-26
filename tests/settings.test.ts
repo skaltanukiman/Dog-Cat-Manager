@@ -18,6 +18,13 @@ const current: SettingsSnapshot = {
   petIds: ["pet-1", "pet-2"]
 };
 
+test("共有画面の権限に依存しない概要部分をツアー対象にする", () => {
+  const page = readSource("src/app/(app)/settings/members/page.tsx");
+
+  assert.match(page, /<div data-tutorial="sharing-overview">[\s\S]*?<h2[^>]*>共有<\/h2>/);
+  assert.match(page, /\{context\.household\.name\} のメンバーを管理します。/);
+});
+
 test("設定が同一ならプロフィール・ダッシュボードとも変更なしになる", () => {
   assert.deepEqual(getSettingsChanges(current, { ...current }), {
     profileChanged: false,

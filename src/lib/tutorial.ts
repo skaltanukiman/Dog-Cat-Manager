@@ -9,6 +9,8 @@ export type TutorialPhase =
   | "pets-created"
   | "dashboard-care"
   | "care-entry"
+  | "records-entry"
+  | "sharing-entry"
   | "replay-overview";
 
 export type TutorialProgress = {
@@ -24,6 +26,8 @@ const TUTORIAL_PHASES = new Set<TutorialPhase>([
   "pets-created",
   "dashboard-care",
   "care-entry",
+  "records-entry",
+  "sharing-entry",
   "replay-overview"
 ]);
 

@@ -16,7 +16,7 @@ async function source(path: string) {
 }
 
 test("現在version未満のユーザーだけ初回オンボーディング対象になる", () => {
-  assert.ok(CURRENT_ONBOARDING_VERSION > 0);
+  assert.equal(CURRENT_ONBOARDING_VERSION, 1);
   assert.equal(isOnboardingRequired(0), true);
   assert.equal(isOnboardingRequired(CURRENT_ONBOARDING_VERSION), false);
   assert.equal(isOnboardingRequired(CURRENT_ONBOARDING_VERSION + 1), false);
@@ -42,6 +42,14 @@ test("ページ間の進行状態は既知値だけをsessionStorageから復元
   assert.deepEqual(
     parseTutorialProgress('{"mode":"initial","phase":"pets-create"}'),
     { mode: "initial", phase: "pets-create" }
+  );
+  assert.deepEqual(
+    parseTutorialProgress('{"mode":"initial","phase":"records-entry"}'),
+    { mode: "initial", phase: "records-entry" }
+  );
+  assert.deepEqual(
+    parseTutorialProgress('{"mode":"replay","phase":"sharing-entry"}'),
+    { mode: "replay", phase: "sharing-entry" }
   );
   assert.equal(parseTutorialProgress('{"mode":"unknown","phase":"pets-create"}'), null);
   assert.equal(parseTutorialProgress('{"mode":"initial","phase":"unknown"}'), null);
@@ -80,14 +88,72 @@ test("完了versionはHousehold別AppSettingではなくUserへ保存する", as
   assert.match(action, /data: \{ onboardingVersion: CURRENT_ONBOARDING_VERSION \}/);
 });
 
-test("初回のスキップと完了だけがcurrent version保存Actionを呼ぶ", async () => {
+test("初回は共有説明で初めて完了し、再確認はDB更新せず進行状態だけ削除する", async () => {
   const provider = await source("src/components/tutorial-provider.tsx");
+  const careEntry = provider.slice(
+    provider.indexOf('progress.phase === "care-entry"'),
+    provider.indexOf('progress.phase === "records-entry"')
+  );
+  const sharingEntry = provider.slice(
+    provider.indexOf('progress.phase === "sharing-entry"'),
+    provider.indexOf("if (!steps) return")
+  );
 
   assert.match(provider, /if \(progress\?\.mode === "initial"\) \{\s*await completeInitial\(\)/);
-  assert.match(provider, /progress\.mode === "initial"[\s\S]*void completeInitial\(\)/);
-  assert.match(provider, /doneBtnText: "ガイドを完了"[\s\S]*onDoneClick: \(\) => void completeInitial\(\)/);
-  assert.match(provider, /if \(progress\.mode === "initial"\)[\s\S]*else \{[\s\S]*saveProgress\(null\)/);
+  assert.doesNotMatch(careEntry, /completeInitial/);
+  assert.match(sharingEntry, /doneBtnText: "ガイドを完了"/);
+  assert.match(sharingEntry, /if \(progress\.mode === "initial"\) \{\s*void completeInitial\(\)/);
+  assert.match(sharingEntry, /else \{\s*driverRef\.current\?\.destroy\(\);\s*saveProgress\(null\)/);
   assert.doesNotMatch(provider, /onboardingVersion\s*=\s*0|onboardingVersion:\s*0/);
+});
+
+test("記録・共有へ遷移した後もinitialのスキップだけを完了保存する", async () => {
+  const provider = await source("src/components/tutorial-provider.tsx");
+  const closeOrSkip = provider.slice(
+    provider.indexOf("const closeOrSkip"),
+    provider.indexOf("const startInitial")
+  );
+
+  assert.match(closeOrSkip, /if \(progress\?\.mode === "initial"\) \{\s*await completeInitial\(\);\s*return/);
+  assert.match(closeOrSkip, /driverRef\.current\?\.destroy\(\);\s*saveProgress\(null\)/);
+  assert.doesNotMatch(closeOrSkip, /phase/);
+});
+
+test("お世話から記録、共有へ直接遷移し、5種類の用途を1ステップで説明する", async () => {
+  const provider = await source("src/components/tutorial-provider.tsx");
+  const careEntry = provider.slice(
+    provider.indexOf('progress.phase === "care-entry"'),
+    provider.indexOf('progress.phase === "records-entry"')
+  );
+  const recordsEntry = provider.slice(
+    provider.indexOf('progress.phase === "records-entry"'),
+    provider.indexOf('progress.phase === "sharing-entry"')
+  );
+
+  assert.match(careEntry, /phase: "records-entry"/);
+  assert.match(careEntry, /router\.push\("\/records"\)/);
+  assert.match(recordsEntry, /element: recordEntryTarget\(\)/);
+  assert.match(recordsEntry, /title: "健康や思い出を記録できます"/);
+  for (const kind of ["体調", "通院", "投薬", "ワクチン", "思い出"]) {
+    assert.match(recordsEntry, new RegExp(kind));
+  }
+  assert.match(recordsEntry, /phase: "sharing-entry"/);
+  assert.match(recordsEntry, /router\.push\("\/settings\/members"\)/);
+});
+
+test("再確認の既存説明後も共通の記録・共有phaseへ進み、終了時はsessionStorageを削除する", async () => {
+  const provider = await source("src/components/tutorial-provider.tsx");
+  const replayOverview = provider.slice(
+    provider.indexOf('progress.phase === "replay-overview"'),
+    provider.indexOf('progress.mode === "initial" && progress.phase === "dashboard-register"')
+  );
+
+  for (const title of ["ペット管理", "お世話", "記録", "体重"]) {
+    assert.match(replayOverview, new RegExp(title));
+  }
+  assert.match(replayOverview, /phase: "records-entry"/);
+  assert.match(replayOverview, /router\.push\("\/records"\)/);
+  assert.match(provider, /window\.sessionStorage\.removeItem\(TUTORIAL_SESSION_STORAGE_KEY\)/);
 });
 
 test("Pet作成成功URLはtransactionで作成された実Pet IDを渡し、失敗stateはredirectしない", async () => {
@@ -104,11 +170,14 @@ test("Pet作成成功URLはtransactionで作成された実Pet IDを渡し、失
 });
 
 test("初回ツアーは実画面の安定したDOMターゲットを使用する", async () => {
-  const [dashboard, petsPage, petForm, carePage, nav] = await Promise.all([
+  const [dashboard, petsPage, petForm, carePage, recordsPage, recordForms, membersPage, nav] = await Promise.all([
     source("src/app/(app)/page.tsx"),
     source("src/app/(app)/pets/page.tsx"),
     source("src/components/pet-create-form.tsx"),
     source("src/app/(app)/care/page.tsx"),
+    source("src/app/(app)/records/page.tsx"),
+    source("src/components/pet-record-create-forms.tsx"),
+    source("src/app/(app)/settings/members/page.tsx"),
     source("src/components/app-nav.tsx")
   ]);
 
@@ -117,9 +186,15 @@ test("初回ツアーは実画面の安定したDOMターゲットを使用す�
     "dashboard-care-button",
     "pet-create-form",
     "pet-create-submit",
-    "care-entry"
+    "care-entry",
+    "records-overview",
+    "record-kind-selector",
+    "sharing-overview"
   ]) {
-    assert.match(`${dashboard}\n${petsPage}\n${petForm}\n${carePage}`, new RegExp(`data-tutorial="${target}"`));
+    assert.match(
+      `${dashboard}\n${petsPage}\n${petForm}\n${carePage}\n${recordsPage}\n${recordForms}\n${membersPage}`,
+      new RegExp(`data-tutorial="${target}"`)
+    );
   }
   for (const target of ["pets", "records", "weights"]) {
     assert.match(nav, new RegExp(`nav-${target}-mobile`));
@@ -157,6 +232,7 @@ test("対象DOM欠落は待機後にskipし、例外や完了保存へ変換し�
 
   assert.match(provider, /waitForElement: 2500/);
   assert.match(provider, /skipMissingElement: true/);
+  assert.match(provider, /document\.querySelector\(selector\) \? selector : '\[data-tutorial="records-overview"\]'/);
   assert.doesNotMatch(provider, /onDestroyed:[\s\S]*completeInitial/);
 });
 

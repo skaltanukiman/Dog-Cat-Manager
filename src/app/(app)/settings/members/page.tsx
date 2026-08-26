@@ -92,7 +92,7 @@ export default async function MembersPage({
 
   return (
     <div className="space-y-6">
-      <div>
+      <div data-tutorial="sharing-overview">
         <h2 className="text-xl font-bold text-ink">共有</h2>
         <p className="mt-1 text-sm text-slate-600">{context.household.name} のメンバーを管理します。</p>
       </div>

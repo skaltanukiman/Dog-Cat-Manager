@@ -148,7 +148,11 @@ export function PetRecordCreateForms({
   return (
     <UnsavedChangesGuard>
       <section className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5 sm:py-3">
-        <div className="grid grid-cols-5 gap-px sm:gap-2" aria-label="登録する記録種類">
+        <div
+          className="grid grid-cols-5 gap-px sm:gap-2"
+          aria-label="登録する記録種類"
+          data-tutorial="record-kind-selector"
+        >
           {kinds.map((option) => {
             const Icon = option.icon;
             return (

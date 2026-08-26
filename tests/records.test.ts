@@ -728,6 +728,7 @@ test("Pet Recordsの作成selectorは全幅で5列を維持し、短い表示ラ
   const selector = forms.slice(forms.lastIndexOf("<div", selectorStart), forms.indexOf('<div className={kind === "health"'));
 
   assert.match(selector, /grid grid-cols-5/);
+  assert.match(selector, /data-tutorial="record-kind-selector"/);
   assert.doesNotMatch(selector, /sm:flex|sm:flex-wrap|grid-cols-2/);
   assert.match(selector, /min-h-12[\s\S]*whitespace-nowrap/);
   assert.match(selector, /md:flex-row/);
@@ -742,6 +743,14 @@ test("Pet Recordsの作成selectorは全幅で5列を維持し、短い表示ラ
     assert.match(styles, new RegExp(`record-${token}`));
   }
   assert.match(timeline, /petRecordTypeStyles\[record\.recordType\]/);
+});
+
+test("記録ツアーは作成selectorが非表示でも常時表示ヘッダーへフォールバックできる", () => {
+  const page = source("src/app/(app)/records/page.tsx");
+
+  assert.match(page, /<header data-tutorial="records-overview">/);
+  assert.match(page, /data\.totalPets === 0/);
+  assert.match(page, /!canEdit[\s\S]*<PetRecordCreateForms/);
 });
 
 test("Pet記録フィルターはPet・日付・keyword・favoriteを自動適用し、不正範囲と未来日を表示する", () => {

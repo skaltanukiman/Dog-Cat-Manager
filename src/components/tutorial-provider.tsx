@@ -41,6 +41,12 @@ function createdPetCareTarget(petId: string) {
   return `[data-tutorial="dashboard-care-button"][data-tutorial-pet-id="${petId}"]`;
 }
 
+/** 記録作成UIが権限やPet状態により非表示の場合も、画面概要を案内対象にする。 */
+function recordEntryTarget() {
+  const selector = '[data-tutorial="record-kind-selector"]';
+  return document.querySelector(selector) ? selector : '[data-tutorial="records-overview"]';
+}
+
 /**
  * Driver.jsのページ内表示と、sessionStorageに置くページ間phaseを接続する。
  * DBへ書き込むのはinitialの完了・明示的スキップだけで、replayは常に読み取り専用にする。
@@ -235,16 +241,12 @@ export function TutorialProvider({
         },
         {
           popover: {
-            title: "ガイドは以上です",
-            description: "分からなくなった場合は、設定画面からいつでもこのガイドを確認できます。",
-            doneBtnText: "完了",
+            title: "記録画面も見てみましょう",
+            description: "続いて、健康や思い出を残す記録画面をご案内します。",
+            doneBtnText: "記録について見る",
             onDoneClick: () => {
-              if (progress.mode === "initial") {
-                void completeInitial();
-              } else {
-                driverRef.current?.destroy();
-                saveProgress(null);
-              }
+              saveProgress({ ...progress, phase: "records-entry" });
+              router.push("/records");
             }
           }
         }
@@ -324,10 +326,51 @@ export function TutorialProvider({
           popover: {
             title: "お世話を記録できます",
             description: "ここでは、食事・水・散歩・猫トイレなどのお世話を記録できます。実際にお世話をしたときに使ってみてください。",
-            doneBtnText: "ガイドを完了",
+            doneBtnText: "記録について見る",
             side: "top",
             align: "start",
-            onDoneClick: () => void completeInitial()
+            onDoneClick: () => {
+              saveProgress({ ...progress, phase: "records-entry" });
+              router.push("/records");
+            }
+          }
+        }
+      ];
+    } else if (progress.phase === "records-entry" && pathname === "/records") {
+      steps = [
+        {
+          element: recordEntryTarget(),
+          popover: {
+            title: "健康や思い出を記録できます",
+            description: "体調では日々の健康状態、通院では受診内容、投薬では薬の記録、ワクチンでは接種履歴、思い出では写真や出来事を残せます。",
+            doneBtnText: "共有について見る",
+            side: "top",
+            align: "start",
+            onDoneClick: () => {
+              saveProgress({ ...progress, phase: "sharing-entry" });
+              router.push("/settings/members");
+            }
+          }
+        }
+      ];
+    } else if (progress.phase === "sharing-entry" && pathname === "/settings/members") {
+      steps = [
+        {
+          element: '[data-tutorial="sharing-overview"]',
+          popover: {
+            title: "家族と一緒に管理できます",
+            description: "家族や一緒にお世話する人を共有グループへ招待できます。参加したメンバーとペットのお世話や記録を共有できます。",
+            doneBtnText: "ガイドを完了",
+            side: "bottom",
+            align: "start",
+            onDoneClick: () => {
+              if (progress.mode === "initial") {
+                void completeInitial();
+              } else {
+                driverRef.current?.destroy();
+                saveProgress(null);
+              }
+            }
           }
         }
       ];
